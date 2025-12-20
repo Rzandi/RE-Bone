@@ -1,0 +1,178 @@
+/* Inventory Rarity Styles */
+
+.item-rarity-common {
+  border-left: 3px solid #888;
+}
+
+.item-rarity-rare {
+  border-left: 3px solid #4a9eff;
+}
+
+.item-rarity-epic {
+  border-left: 3px solid #a335ee;
+}
+
+.item-rarity-legend {
+  border-left: 3px solid #ffd700;
+  background: linear-gradient(90deg, rgba(255,215,0,0.05) 0%, transparent 100%);
+}
+
+.item-rarity-mythic {
+  border-left: 3px solid #ff3333;
+  background: linear-gradient(90deg, rgba(255,0,0,0.1) 0%, transparent 100%);
+  border-right: 1px solid rgba(255,0,0,0.3);
+}
+
+.rare-legend {
+  animation: legendary-glow 2s ease-in-out infinite;
+}
+
+@keyframes legendary-glow {
+  0%, 100% { 
+    text-shadow: 0 0 5px rgba(255,215,0,0.5);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(255,215,0,0.8);
+  }
+}
+
+/* Set Item Indicator */
+.set-item::after {
+  content: " ⚡";
+  color: var(--c-gold);
+  font-size: 0.9em;
+}
+
+/* Stat Tooltips */
+.stat-display {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.stat-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid var(--c-gold);
+  padding: 8px 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 11px;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  margin-bottom: 5px;
+}
+
+.stat-display:hover .stat-tooltip {
+  opacity: 1;
+}
+
+.stat-tooltip-line {
+  color: #aaa;
+  margin: 2px 0;
+}
+
+.stat-tooltip-total {
+  color: var(--c-gold);
+  font-weight: bold;
+  border-top: 1px solid #444;
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+/* Achievement Unlock Popup */
+.achievement-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  background: linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(20,10,0,0.95) 100%);
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 30px rgba(255,215,0,0.5), inset 0 0 20px rgba(255,215,0,0.1);
+  padding: 30px;
+  border-radius: 10px;
+  z-index: 10000;
+  animation: achievement-popup 3s ease-out forwards;
+  min-width: 300px;
+  text-align: center;
+}
+
+.achievement-content {
+  color: #fff;
+}
+
+.achievement-icon {
+  font-size: 64px;
+  margin-bottom: 10px;
+  animation: achievement-icon-bounce 0.6s ease-out;
+}
+
+.achievement-title {
+  color: #ffd700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.achievement-name {
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.achievement-desc {
+  color: #aaa;
+  font-size: 13px;
+}
+
+@keyframes achievement-popup {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+@keyframes achievement-icon-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Screen Flash Effect */
+.screen-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, transparent 60%);
+  z-index: 9999;
+  pointer-events: none;
+  animation: screen-flash 0.5s ease-out;
+}
+
+@keyframes screen-flash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}

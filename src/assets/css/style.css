@@ -1,0 +1,337 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600&family=VT323&display=swap");
+
+/* Reset & Base */
+* {
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: #000;
+  color: var(--text-primary);
+  font-family: var(--font-ui); /* Default to clean font */
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  background-image: radial-gradient(circle at center, #111 0%, #000 100%);
+}
+
+/* App Container */
+#app {
+  width: 100%;
+  max-width: 600px;
+  height: 95vh;
+  background-color: var(--bg-core);
+  border: 1px solid #333;
+  box-shadow: 0 0 50px rgba(0,0,0,0.9);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* HEADERS */
+h1, h2, h3 {
+  font-family: var(--font-header);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0 0 10px 0;
+}
+
+/* HEADER BAR */
+header {
+  padding: 12px;
+  border-bottom: 1px solid #333;
+  background: rgba(10, 10, 10, 0.9);
+  z-index: 10;
+  display: grid;
+  grid-template-columns: 0.8fr 1fr 1.2fr;
+  gap: 10px;
+  font-family: var(--font-pixel); /* Keep pixel font for status numbers mainly? Or switch? Lets keep pixel for classic feel */
+  font-size: 1.1rem;
+}
+
+/* PANELS (Central View) */
+#main-view {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  position: relative;
+  /* Subtle texture or noise could go here */
+}
+
+/* Glassmorphism Panels */
+.panel {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+  animation: fadeIn 0.3s ease-out;
+}
+.panel.active {
+  display: block;
+}
+
+/* Buttons */
+button {
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  border: 1px solid #444;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+button:hover {
+  border-color: var(--c-gold);
+  color: var(--c-gold);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+}
+button:active {
+  transform: translateY(1px);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #333;
+  color: #666;
+}
+
+/* CONTROLS (Footer) */
+#controls {
+  padding: 10px;
+  border-top: 1px solid #333;
+  background: #0e0e0e;
+  height: 140px;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2x2 grid */
+  gap: 10px;
+  flex-shrink: 0;
+}
+#controls button {
+  font-size: 1rem;
+  letter-spacing: 1px;
+}
+
+/* LOGS */
+#log-container {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #333;
+  font-family: var(--font-pixel); /* Pixel font for logs fits well */
+  min-height: 120px;
+  max-height: 40%;
+  overflow-y: auto;
+  background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to bottom, transparent, black 10%); /* Fade top */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%);
+}
+.log {
+  padding: 4px 8px;
+  margin-bottom: 2px;
+  border-left: 2px solid transparent;
+  opacity: 0.9;
+}
+.log.combat { border-color: var(--c-red); color: #faa; }
+.log.item { border-color: var(--c-gold); color: #fe9; }
+.log.boss { border-color: var(--c-red); background: rgba(100,0,0,0.2); text-align: center; }
+.log.ai { border-left: 3px solid var(--c-cyan); color: var(--c-cyan); font-style: italic; background: rgba(0,255,255,0.05); }
+
+/* LIST ITEMS (Inventory etc) */
+.list-item, .card, .shop-item, .select-card {
+  background: var(--bg-card);
+  border: 1px solid #333;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+  border-radius: 4px; /* Slight roundness */
+}
+.list-item:hover, .card:hover {
+  border-color: var(--c-gold-dim);
+  background: #1a1a1a;
+  transform: translateX(2px);
+}
+
+/* RARITY COLORS */
+.rare-common { color: var(--rare-common); }
+.rare-rare { color: var(--rare-rare); }
+.rare-epic { color: var(--rare-epic); }
+.rare-legend { color: var(--rare-legend); text-shadow: 0 0 5px rgba(207, 170, 76, 0.4); }
+.rare-mythic { color: var(--rare-mythic); animation: pulseRed 2s infinite; }
+
+/* ANIMATIONS */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulseRed {
+  0% { text-shadow: 0 0 5px var(--c-red); }
+  50% { text-shadow: 0 0 15px var(--c-red); }
+  100% { text-shadow: 0 0 5px var(--c-red); }
+}
+@keyframes floatUp {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -150%) scale(1.2); opacity: 0; }
+}
+
+/* Damage Popups */
+/* Damage Popups (Moved to VfxLayer.vue) */
+/*
+.dmg-popup {
+  position: absolute;
+  font-family: var(--font-header);
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  pointer-events: none;
+  animation: floatUp 0.8s forwards;
+  z-index: 100;
+}
+.dmg-physical { color: #fff; }
+.dmg-critical { color: var(--c-gold); font-size: 2rem; }
+.dmg-heal { color: var(--c-green); }
+*/
+
+/* TOAST */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(10, 10, 10, 0.95);
+  border: 1px solid var(--c-gold-dim);
+  color: var(--c-gold);
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-family: var(--font-header);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+  opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none;
+  z-index: 2000;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* TOOLTIPS */
+[data-tooltip]:hover::after {
+  background: rgba(10, 10, 10, 0.98);
+  border: 1px solid var(--c-gold-dim);
+  font-family: var(--font-ui);
+  box-shadow: 0 5px 15px rgba(0,0,0,1);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 12px;
+}
+
+/* SPEECH BUBBLES (Gemini) */
+.speech-bubble {
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    color: #000;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    width: max-content;
+    max-width: 200px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    z-index: 50;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 8px solid transparent;
+    border-top-color: #fff;
+}
+@keyframes popIn {
+    from { transform: translateX(-50%) scale(0); opacity: 0; }
+    to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+/* LORE CARD (Gemini) */
+.lore-modal {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 400px;
+    background: #111;
+    border: 1px solid var(--c-gold);
+    padding: 20px;
+    z-index: 5000;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    font-family: var(--font-header);
+    text-align: center;
+}
+
+/* MOBILE OPTIMIZATION */
+@media (max-width: 480px) {
+  #app {
+    max-width: 100%;
+    height: 100vh;
+    border: none;
+    border-radius: 0;
+  }
+
+  header {
+    font-size: 0.9rem;
+    padding: 8px;
+    grid-template-columns: 1fr 1fr; 
+    /* Force 2 columns, maybe merge fl/name? */
+  }
+  
+  /* Hide 'FL' or make it smaller if needed, or adjust grid */
+  header .col-c { grid-column: 1 / -1; order: -1; text-align: center; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; }
+  header #audio-btn { font-size: 0.8rem; }
+  
+  /* Bigger Buttons for Touch */
+  button {
+    padding: 15px;
+    font-size: 1rem;
+  }
+  
+  /* Larger Lists */
+  .list-item, .card, .shop-item {
+    padding: 15px;
+  }
+  
+  /* Controls: Make them taller */
+  #controls {
+    height: 160px;
+  }
+
+  /* Logs: Smaller font or less height? */
+  #log-container {
+    font-size: 0.9rem;
+    min-height: 100px;
+  }
+
+  /* Panels: Fullscreen feel */
+  #main-view {
+    padding: 10px;
+  }
+}

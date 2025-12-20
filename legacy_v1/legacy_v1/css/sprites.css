@@ -1,0 +1,122 @@
+/* =========================================
+   PIXEL SPRITE STYLES
+   ========================================= */
+
+/* Base pixel sprite styling */
+.pixel-sprite {
+  font-family: monospace;
+  line-height: 1;
+  letter-spacing: 0;
+  display: inline-block;
+  white-space: pre;
+  font-size: 14px;
+  text-shadow: 0 0 2px currentColor;
+}
+
+/* Sprite animation */
+.sprite-pulse {
+  animation: spritePulse 0.3s ease-in-out;
+}
+
+@keyframes spritePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Enemy-specific colors */
+.sprite-rat {
+  color: #888;
+}
+
+.sprite-rat-hurt {
+  color: #f44;
+}
+
+.sprite-ghoul {
+  color: #6b8e23;
+}
+
+.sprite-ghoul-hurt {
+  color: #ff6b6b;
+}
+
+.sprite-skeleton {
+  color: #ddd;
+}
+
+.sprite-skeleton-hurt {
+  color: #f88;
+}
+
+/* Boss sprites - larger and more vibrant */
+.sprite-boss-goblin {
+  color: #8b4513;
+  font-size: 16px;
+  text-shadow: 0 0 4px #ff0;
+}
+
+.sprite-boss-goblin-hurt {
+  color: #ff4444;
+  font-size: 16px;
+}
+
+.sprite-boss-hero {
+  color: #4da6ff;
+  font-size: 16px;
+  text-shadow: 0 0 8px #fff;
+}
+
+.sprite-boss-hero-hurt {
+  color: #ff6b6b;
+  font-size: 16px;
+}
+
+/* Idle breathing animation for sprites */
+.sprite-breathing {
+  animation: breathe 2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+/* Attack flash effect */
+.sprite-attack-flash {
+  animation: attackFlash 0.4s ease-out;
+}
+
+@keyframes attackFlash {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(2) drop-shadow(0 0 10px currentColor); }
+  100% { filter: brightness(1); }
+}
+
+/* v27.0 New Class Sprites */
+.sprite-class-dark-knight {
+  color: #8b0000; /* Dark Red */
+  text-shadow: 0 0 5px #ff0000;
+}
+
+.sprite-class-necro-priest {
+  color: #4b0082; /* Indigo */
+  text-shadow: 0 0 5px #8a2be2;
+}
+
+.sprite-class-shadow-assassin {
+  color: #2f4f4f; /* Dark Slate Gray */
+  text-shadow: 0 0 5px #000;
+}
+
+/* v27.0 Crystal Caverns Enemies */
+.sprite-golem { color: #00ced1; text-shadow: 0 0 3px #fff; } /* Dark Turquoise */
+.sprite-golem-hurt { color: #f08080; }
+.sprite-wisp { color: #e0ffff; text-shadow: 0 0 5px #0ff; animation: spritePulse 1s infinite; }
+.sprite-wisp-hurt { color: #ffb6c1; }
+
+.sprite-boss-prism { 
+  color: #fff; 
+  text-shadow: 0 0 10px #0ff, 0 0 20px #f0f;
+  animation: spritePulse 2s infinite;
+}
+.sprite-boss-prism-hurt { color: #ff00ff; }

@@ -1,0 +1,14 @@
+# Secrets
+js/config/secrets.js
+
+# Dependencies
+node_modules/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

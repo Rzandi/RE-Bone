@@ -1,0 +1,104 @@
+<script setup>
+import { computed } from "vue";
+import { gameStore } from "../game/store.js";
+
+const emit = defineEmits(["action"]);
+
+const s = gameStore.state;
+
+// Define buttons based on activePanel
+const buttons = computed(() => {
+  // 1. Dynamic Overrides (e.g. Sanctuary, Manual Explore)
+  if (s.buttons && s.buttons.length > 0) {
+      return s.buttons.map(b => {
+          if (!b) return null; // Spacer
+          return {
+              label: b.txt,
+              action: "dynamic", // Special action type
+              fn: b.fn,          // Direct function reference
+              color: b.col
+          };
+      });
+  }
+
+  // 2. Default Panel Logic
+  const panel = s.activePanel || "menu-view";
+
+  if (panel === "menu-view") {
+    return [
+      { label: "🔍 EXPLORE", action: "explore", color: "var(--c-gold)" },
+      { label: "👤 STATUS", action: "status" },
+      { label: "💤 REST", action: "rest", color: "#fa0" }, 
+      { label: "🎒 ITEM", action: "item" }, 
+    ];
+  }
+  
+  if (panel === "combat") {
+    return [
+      { label: "⚔️ ATTACK", action: "attack", color: "#f55" },
+      { label: "⚡ SKILL", action: "skill", color: "var(--c-blue)" },
+      { label: "🎒 ITEM", action: "item" },
+      { label: "🏃 FLEE", action: "flee" },
+    ];
+  }
+
+  if (panel === "inventory") {
+    return [{ label: "🔙 BACK", action: "back" }, null, null, null];
+  }
+
+  return [{ label: "MENU", action: "menu" }, null, null, null];
+});
+
+const handleClick = (btn) => {
+  if (btn) {
+      if (btn.fn && typeof btn.fn === 'function') {
+          btn.fn(); // Execute direct function
+      } else if (btn.action) {
+          emit("action", btn.action);
+      }
+  }
+};
+</script>
+
+<template>
+  <div id="controls">
+    <template v-for="(btn, idx) in buttons" :key="idx">
+      <button
+        v-if="btn"
+        @click.stop.prevent="handleClick(btn)"
+        :style="{
+          color: btn.color || 'var(--c-text)',
+          borderColor: btn.color ? btn.color : 'var(--c-border)',
+        }"
+      >
+        {{ btn.label }}
+      </button>
+      <div v-else class="empty-btn"></div>
+    </template>
+  </div>
+</template>
+
+<style scoped>
+/* Grid layout is handled by global #controls in style.css for responsive support */
+button {
+  background: #111;
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+  font-family: inherit;
+  font-size: 0.95rem; /* Reduced from 1.1rem */
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.1s;
+  border-radius: 4px;
+  padding: 8px 4px; /* Explicit padding */
+  min-height: 40px; /* Ensure touch target */
+}
+button:active {
+  background: #333;
+  transform: translateY(2px);
+}
+.empty-btn {
+  visibility: hidden;
+}
+</style>

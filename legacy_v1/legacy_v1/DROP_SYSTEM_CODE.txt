@@ -1,0 +1,63 @@
+  // Loot Drop System
+  dropLoot(enemy) {
+    let dropChance = 0.3; // 30% base drop rate
+    
+    // Boss guaranteed legendary drop
+    if (enemy.isBoss) {
+      dropChance = 1.0;
+      let legendaryItems = this.getLegendaryItems();
+      if (legendaryItems.length > 0) {
+        let item = legendaryItems[Math.floor(Math.random() * legendaryItems.length)];
+        Player.addItem(item);
+        UI.log(`💎 Legendary Drop: ${DB.ITEMS[item].name}!`, "log boss");
+      }
+      return;
+    }
+    
+    if (Math.random() < dropChance) {
+      let rarity = this.getRarityRoll();
+      let item = this.getRandomItemByRarity(rarity);
+      
+      if (item) {
+        Player.addItem(item);
+      }
+    }
+  },
+  
+  getRarityRoll() {
+    let roll = Math.random();
+    let floorBonus = (100 - this.floor) / 100 * 0.1; // Up to 10% better at floor 1
+    
+    if (roll < 0.02 + floorBonus) return "legend";
+    if (roll < 0.10 + floorBonus) return "epic";
+    if (roll < 0.40) return "rare";
+    return "common";
+  },
+  
+  getRandomItemByRarity(rarity) {
+    let items = [];
+    for (let id in DB.ITEMS) {
+      let item = DB.ITEMS[id];
+      if (item.rarity === rarity && item.slot !== "con") {
+        items.push(id);
+      }
+    }
+    
+    if (items.length > 0) {
+      return items[Math.floor(Math.random() * items.length)];
+    }
+    
+    // Fallback to common consumable
+    return "rotten_meat";
+  },
+  
+  getLegendaryItems() {
+    let items = [];
+    for (let id in DB.ITEMS) {
+      if (DB.ITEMS[id].rarity === "legend") {
+        items.push(id);
+      }
+    }
+    return items;
+  },
+  

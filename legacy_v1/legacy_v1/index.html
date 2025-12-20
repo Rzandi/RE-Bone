@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#050505" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Re:BONE" />
+    <title>Re:BONE</title>
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/sprites.css" />
+    <link rel="stylesheet" href="css/vfx.css" />
+    <link rel="stylesheet" href="css/biomes.css" />
+    <link rel="stylesheet" href="css/items.css" />
+    <link rel="stylesheet" href="css/mobile.css" />
+  </head>
+  <body>
+    <div id="app" class="scanline">
+      <header>
+        <div id="audio-btn" onclick="window.SoundManager.toggle()">🔊 OFF</div>
+        <div>
+          <span style="color: var(--c-gold)"
+            >FL <span id="ui-floor">50</span></span
+          ><br /><small
+            ><span id="ui-class" onclick="UI.showPanel('skills')" style="cursor:pointer; text-decoration:underline">Skeleton</span> Lv.<span id="ui-lvl"
+              >1</span
+            ></small>
+          <br/><small style="color:#aaa; font-size:0.7rem;">EXP: <span id="ui-exp">0</span>/<span id="ui-next-exp">100</span></small>
+        </div>
+        <div class="col-c">
+          <span style="color: var(--c-red)"
+            >HP <span id="ui-hp">0</span>/<span id="ui-maxhp">0</span></span
+          ><br /><span style="color: var(--c-blue)"
+            >MP <span id="ui-mp">0</span>/<span id="ui-maxmp">0</span></span
+          >
+          <br /><span style="color: var(--c-gold); font-size: 0.9em;">Gold: <span id="ui-gold">0</span></span>
+        </div>
+        <div class="col-r" style="text-align: right; font-size: 0.8rem">
+          S:<span id="ui-str">0</span> V:<span id="ui-vit">0</span> I:<span
+            id="ui-int"
+            >0</span
+          ><br />
+          <div id="ui-status" class="status-row"></div>
+        </div>
+      </header>
+      <div id="progress-container" style="width:100%; height:4px; background:#222;">
+           <div id="ui-progress-bar" style="width:0%; height:100%; background:var(--c-gold); transition:width 0.3s;"></div>
+      </div>
+
+      <div id="main-view">
+        <div id="dmg-layer"></div>
+
+        <!-- PANELS -->
+        <div id="panel-menu" class="panel active">
+          <div style="text-align: center; margin-top: 50px">
+            <h1
+              style="
+                font-size: 3.5rem;
+                color: var(--c-red);
+                margin: 0;
+                text-shadow: 2px 2px #000;
+              "
+            >
+              Re:BONE
+            </h1>
+            <p style="color: #666">v31.0 mobile-ready</p>
+            <br />
+            <p class="blink" style="color: #fff">[ PRESS START ]</p>
+            <br /><small style="color: var(--c-cyan)"
+              >Powered by Gemini AI ✨</small
+            >
+            <br /><br />
+            <div style="display:flex; justify-content:center; gap:15px;">
+              <button class="menu-btn" onclick="UI.showLeaderboard()">🏆 Hall of Bones</button>
+              <button class="menu-btn" onclick="Game.startDaily()" style="color:var(--c-gold); border-color:var(--c-gold)">🌞 Daily Run</button>
+            </div>
+            <br />
+            <button
+              style="
+                background: none;
+                border: none;
+                color: #444;
+                text-decoration: underline;
+              "
+              onclick="window.Game.switchState('CHANGELOG')"
+            >
+              Patch Notes
+            </button>
+          </div>
+        </div>
+
+        <div id="panel-class" class="panel">
+          <h3
+            style="
+              text-align: center;
+              color: var(--c-gold);
+              border-bottom: 1px solid #444;
+            "
+          >
+            PILIH KELAS
+          </h3>
+          <div id="class-list"></div>
+        </div>
+
+        <div id="panel-combat" class="panel">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-end;
+            "
+          >
+            <span
+              style="color: var(--c-red); font-weight: bold; font-size: 1.2rem"
+              id="mob-name"
+              >TARGET</span
+            >
+            <span style="color: #888">RANK <span id="mob-rank">E</span></span>
+          </div>
+          <div
+            style="
+              width: 100%;
+              height: 10px;
+              background: #300;
+              margin: 5px 0;
+              border: 1px solid #555;
+            "
+          >
+            <div
+              id="mob-hp-bar"
+              style="
+                height: 100%;
+                width: 100%;
+                background: #f00;
+                transition: width 0.3s;
+              "
+            ></div>
+          </div>
+          <div
+            id="mob-status"
+            class="status-row"
+            style="justify-content: center"
+          ></div>
+          <div
+            style="
+              text-align: center;
+              margin: 20px 0;
+              height: 60px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <pre
+              id="mob-sprite"
+              style="font-size: 14px; color: #aaa; font-weight: bold"
+            >
+(o_o)</pre
+            >
+          </div>
+          <div
+            id="mob-passives"
+            style="
+              text-align: center;
+              font-size: 0.8rem;
+              color: #666;
+              margin-bottom: 5px;
+            "
+          ></div>
+          <div
+            style="
+              text-align: center;
+              font-size: 0.9rem;
+              color: #666;
+              border-top: 1px solid #333;
+              padding-top: 5px;
+            "
+          >
+            <span id="mob-desc">...</span>
+          </div>
+        </div>
+
+        <div id="panel-inventory" class="panel">
+          <h3 style="text-align: center; color: var(--c-gold)">EQUIPMENT</h3>
+          <div class="equip-grid">
+            <div class="slot" onclick="window.Player.unequip('weapon')">
+              <small>WEAPON</small><br /><span
+                id="eq-weapon"
+                style="color: #666"
+                >None</span
+              >
+            </div>
+            <div class="slot" onclick="window.Player.unequip('armor')">
+              <small>ARMOR</small><br /><span id="eq-armor" style="color: #666"
+                >None</span
+              >
+            </div>
+            <div class="slot" onclick="window.Player.unequip('accessory')">
+              <small>ACC</small><br /><span id="eq-acc" style="color: #666"
+                >None</span
+              >
+            </div>
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              border-bottom: 1px solid #444;
+              padding-bottom: 5px;
+            "
+          >
+            <h4 style="color: #aaa; margin: 0">TAS TULANG</h4>
+            <span
+              id="inv-mode-text"
+              style="font-size: 0.8rem; color: var(--c-cyan)"
+              >MODE: USE</span
+            >
+          </div>
+          <button onclick="UI.showPanel('skills'); Skills.render();" style="width:100%; margin-top:5px; background:#444; border:1px solid #666; color:#fff; cursor:pointer;">MANAGE SKILLS</button>
+          <div id="inv-list" style="margin-top: 5px"></div>
+        </div>
+
+        <div id="panel-list" class="panel">
+          <h3 id="list-title" style="text-align: center; color: var(--c-cyan)">
+            LIST
+          </h3>
+          <div id="list-content"></div>
+        </div>
+        <div id="panel-event" class="panel" style="text-align: center">
+          <h2 id="evt-title" style="color: var(--c-gold)">EVENT</h2>
+          <p id="evt-desc" style="font-size: 1.2rem; margin-bottom: 20px">
+            ...
+          </p>
+          <div style="font-size: 3rem">❓</div>
+        </div>
+        <div id="panel-shop" class="panel">
+          <h2 style="color: var(--c-cyan); text-align: center">SOUL SHOP</h2>
+          <p style="text-align: center">
+            Shards: <span id="shop-shards" style="color: #fff">0</span>
+          </p>
+          <div id="shop-content"></div>
+        </div>
+        
+        <!-- CRAFTING PANEL (v28.0) -->
+        <div id="panel-crafting" class="panel">
+          <header>
+            <h2>CRAFTING</h2>
+            <button class="btn-close" onclick="UI.showPanel('inventory-panel')">X</button>
+          </header>
+          <div id="crafting-list" class="scrollable"></div>
+        </div>
+        
+        <!-- SKILLS PANEL (v28.0) -->
+        <div id="panel-skills" class="panel">
+          <header>
+             <h2 style="color:var(--c-gold)">ARCANE KNOWLEDGE</h2>
+             <button class="btn-close" onclick="UI.showPanel('combat-view')">X</button>
+          </header>
+          <div id="skills-content" class="scrollable"></div>
+        </div>
+
+        <div id="panel-evo" class="panel">
+          <h2
+            style="text-align: center; color: var(--c-green); margin-top: 20px"
+          >
+            EVOLUSI JIWA
+          </h2>
+          <div id="evo-list" style="margin-top: 20px"></div>
+        </div>
+        <div id="panel-levelup" class="panel">
+          <h2 style="text-align: center; color: var(--text-highlight)">
+            LEVEL UP
+          </h2>
+          <p style="text-align: center">Pilih statistik untuk ditingkatkan.</p>
+        </div>
+        <div id="panel-victory" class="panel" style="text-align: center">
+          <h1 style="color: gold; font-size: 3rem; margin-top: 50px">
+            VICTORY
+          </h1>
+          <h3 style="color: var(--c-red)">THE CYCLE ENDS</h3>
+        </div>
+        
+        <!-- SOUL FORGE (v30.0) -->
+        <div id="panel-shop-ascension" class="panel">
+          <header>
+            <h2 style="color: #a8dadc">SOUL FORGE</h2>
+            <div style="font-size:0.9rem; color:#aaa;">SOULS: <span id="soul-shards-display" style="color:#a8dadc">0</span></div>
+            <button class="btn-close" onclick="UI.showPanel('menu-view')">X</button>
+          </header>
+          <div id="soul-forge-list" class="scrollable"></div>
+        </div>
+
+        <!-- LEADERBOARD PANEL (v29.0) -->
+        <div id="panel-leaderboard" class="panel">
+          <header>
+             <h2 style="color:var(--c-gold)">HALL OF BONES</h2>
+             <button class="btn-close" onclick="UI.showPanel('menu-view')">X</button>
+          </header>
+          <div style="margin-top:20px; text-align:center;">
+             <table id="score-table" style="width:100%; text-align:left; font-size:0.9rem; border-collapse:collapse;">
+                <thead>
+                   <tr style="border-bottom:1px solid #555; color:#aaa;">
+                      <th style="padding:5px;">#</th>
+                      <th style="padding:5px;">CLS</th>
+                      <th style="padding:5px;">LV</th>
+                      <th style="padding:5px;">FL</th>
+                      <th style="padding:5px; text-align:right;">SCORE</th>
+                   </tr>
+                </thead>
+                <tbody id="score-list"></tbody>
+             </table>
+          </div>
+        </div>
+
+        <div style="position:relative;">
+             <button id="btn-log-toggle" onclick="UI.toggleLog()" style="position:absolute; right:5px; top:-25px; z-index:9000; width:24px; height:24px; padding:0; background:#222; border:1px solid #555; color:var(--c-gold); font-weight:bold; border-radius:4px;">_</button>
+             <div id="log-container"></div>
+        </div>
+      </div>
+
+      <div id="controls">
+        <button id="btn-1">-</button><button id="btn-2">-</button
+        ><button id="btn-3">-</button><button id="btn-4">-</button>
+      </div>
+    </div>
+
+    <!-- Load JavaScript modules in dependency order -->
+    <script src="js/config/constants.js"></script>
+    <script src="js/config/legendary_items.js"></script>
+    <script src="js/config/recipes.js"></script>
+    <script src="js/config/skill_trees.js"></script> <!-- v28.0 -->
+    <script src="js/config/items.js"></script>
+    <script src="js/config/skills.js"></script>
+    <script src="js/config/classes.js"></script>
+    <script src="js/config/enemies.js"></script>
+    <script src="js/config/database.js"></script>
+    <script src="js/config/evolution.js"></script> <!-- v30.0 -->
+    <script src="js/config/biomes.js"></script>
+    <script src="js/config/secrets.js"></script>
+    <script src="js/managers/gemini.js"></script>
+    <script src="js/managers/sound.js"></script>
+    <script src="js/managers/achievements.js"></script>
+    <script src="js/core/events.js"></script>
+    <script src="js/managers/social.js"></script> <!-- v29.0 -->
+    <script src="js/managers/ascension.js"></script> <!-- v30.0 -->
+    <script src="js/managers/ui.js"></script>
+    <script src="js/managers/crafting.js"></script> <!-- v28.0 -->
+    <script src="js/managers/skills.js"></script> <!-- v28.0 -->
+    <script src="js/managers/sprite.js"></script>
+    <script src="js/managers/vfx.js"></script>
+    <script src="js/managers/mobile.js"></script>
+    <script src="js/core/combat.js"></script>
+    <script src="js/core/player.js"></script>
+    <script src="js/managers/merchant.js"></script>
+    <script src="js/managers/loot.js"></script>
+    <script src="js/managers/progression.js"></script>
+    <script src="js/core/game.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/core/loader.js"></script> <!-- v31.0 Startup Loader -->
+  </body>
+</html>

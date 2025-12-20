@@ -1,0 +1,127 @@
+/* =========================================
+   BIOME VISUAL THEMES
+   ========================================= */
+
+/* Base biome transition */
+#main-view {
+  transition: background 1s ease-in-out;
+}
+
+/* The Abyss (Floors 81-100) - Deep Purple/Void */
+.biome-abyss {
+  background: radial-gradient(circle at center, #1a0033, #000000);
+}
+
+.biome-abyss #panel-combat {
+  border-color: #663399;
+}
+
+.biome-abyss .log.system {
+  color: #9966cc;
+}
+
+/* Ancient Crypt (Floors 61-80) - Dark Gold/Tomb */
+.biome-crypt {
+  background: radial-gradient(circle at center, #1a1100, #0a0505);
+}
+
+.biome-crypt #panel-combat {
+  border-color: #8b7355;
+}
+
+.biome-crypt .log.system {
+  color: #c9a961;
+}
+
+/* Crystal Caverns (Floors 55-75) - Cyan/Reflective */
+.biome-crystal {
+  background: radial-gradient(circle at center, #001a1a, #000505);
+  box-shadow: inset 0 0 100px #00ffff10;
+}
+
+.biome-crystal #panel-combat {
+  border-color: #008b8b;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+}
+
+.biome-crystal .log.system {
+  color: #00ced1;
+  text-shadow: 0 0 2px #00ced1;
+}
+
+/* Dark Dungeon (Floors 41-60) - Dark Green/Toxic */
+.biome-dungeon {
+  background: radial-gradient(circle at center, #0a1a0a, #000500);
+}
+
+.biome-dungeon #panel-combat {
+  border-color: #4a6b4a;
+}
+
+.biome-dungeon .log.system {
+  color: #7a9a7a;
+}
+
+/* Deep Caverns (Floors 21-40) - Dark Red/Earth */
+.biome-cavern {
+  background: radial-gradient(circle at center, #1a0a0a, #050000);
+}
+
+.biome-cavern #panel-combat {
+  border-color: #8b4545;
+}
+
+.biome-cavern .log.system {
+  color: #c97a7a;
+}
+
+/* Surface Ruins (Floors 1-20) - Neutral/Gray */
+.biome-surface {
+  background: radial-gradient(circle at center, #0a0a0a, #000000);
+}
+
+.biome-surface #panel-combat {
+  border-color: #4a4a4a;
+}
+
+.biome-surface .log.system {
+  color: #a8a8a8;
+}
+
+/* Biome indicator in header */
+.biome-indicator {
+  font-size: 0.7rem;
+  color: #666;
+  text-align: center;
+  padding: 2px 0;
+  border-top: 1px solid #333;
+  margin-top: 5px;
+}
+
+.biome-abyss .biome-indicator { color: #9966cc; }
+.biome-crypt .biome-indicator { color: #c9a961; }
+.biome-crystal .biome-indicator { color: #00ced1; } /* v27.0 */
+.biome-dungeon .biome-indicator { color: #7a9a7a; }
+.biome-cavern .biome-indicator { color: #c97a7a; }
+.biome-surface .biome-indicator { color: #888; }
+
+/* Biome-specific glow effects */
+.biome-abyss header {
+  box-shadow: 0 2px 10px rgba(102, 51, 153, 0.3);
+}
+
+.biome-crypt header {
+  box-shadow: 0 2px 10px rgba(139, 115, 85, 0.3);
+}
+
+.biome-crystal header {
+  box-shadow: 0 2px 15px rgba(0, 255, 255, 0.2);
+}
+
+.biome-dungeon header {
+  box-shadow: 0 2px 10px rgba(74, 107, 74, 0.3);
+}
+
+.biome-cavern header {
+  box-shadow: 0 2px 10px rgba(139, 69, 69, 0.3);
+}
