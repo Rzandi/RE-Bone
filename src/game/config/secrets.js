@@ -6,5 +6,6 @@
 */
 
 window.SECRETS = {
-  GEMINI_API_KEY: "AIzaSyAgsyBW-kl1XGFpsfIiapUCgXQnZtkwgyQ"
+  GEMINI_API_KEY: "
+"
 };
