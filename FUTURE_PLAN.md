@@ -10,7 +10,7 @@ This document outlines the strategic vision for the next major updates of **RE:B
 
 **Core Loop**: Reach Floor 100 -> Unlock World Map -> Hunt 5 Traitors.
 
-- [ ] **1. World Map (The Crossroads)**
+- [x] **1. World Map (The Crossroads)**
 
   - Select one of 5 Realms to invade.
   - **The 5 Realms**:
@@ -20,13 +20,13 @@ This document outlines the strategic vision for the next major updates of **RE:B
     4.  **Nature's Den** (Druid's Forest)
     5.  **Iron Fortress** (Warrior's Citadel)
 
-- [ ] **2. The Fractal Biomes (5x5 System)**
+- [x] **2. The Fractal Biomes (5x5 System)**
 
   - Each Realm contains **5 Unique Sub-Biomes** (Total: 25 Biomes).
   - _Example (Nature's Den)_: `Swamp`, `Deep Forest`, `Fungal Cave`, `Riverbank`, `Elf Village`.
   - Each Biome has unique **Environmental Effects** (Buffs/Debuffs).
 
-- [ ] **3. The Army of Vengeance (Enemy Randomizer)**
+- [x] **3. The Army of Vengeance (Enemy Randomizer)**
 
   - To ensure variety, **Every Biome** has a massive pool:
     - **5 Trash Mobs** (Common fodder)
@@ -35,7 +35,7 @@ This document outlines the strategic vision for the next major updates of **RE:B
     - **5 Bosses** (Pool of major threats)
   - **Total**: 500+ Unique Enemies planned across the expansion.
 
-- [ ] **4. Procedural Infiltration**
+- [x] **4. Procedural Infiltration**
   - Use the Node Map system to traverse these biomes randomly.
   - Fight through the army to reach the **Traitor** at the end of the Realm.
 
