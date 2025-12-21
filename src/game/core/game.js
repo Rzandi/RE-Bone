@@ -660,11 +660,18 @@ const Game = {
   },
 
   saveGame() {
+    // v34.0: Save World State
+    let worldData = {};
+    if(window.GameStore) {
+        worldData = JSON.parse(JSON.stringify(window.GameStore.state.world));
+    }
+
     localStorage.setItem(
       CONSTANTS.SAVE_KEY,
       JSON.stringify({
         p: Player,
         w: { floor: this.state.floor, prog: this.state.progress },
+        v34: worldData // specific v34 data
       })
     );
     Events.emit("log_item", "Saved.");
@@ -679,8 +686,22 @@ const Game = {
           this.state.floor = data.w.floor || 1;
           this.state.progress = data.w.prog || 0;
           
+          // v34.0: Restore World
+          if(data.v34 && window.GameStore) {
+               Object.assign(window.GameStore.state.world, data.v34);
+          }
+
           if(Player.recalc) Player.recalc();
-          this.exploreState();
+
+          // v34.0: Intelligent Resume
+          if (window.GameStore && window.GameStore.state.world.activeRealm) {
+              // We are in a realm, go to Node Map
+              this.stopLoops();
+              this.currAction = "node_map"; // internal state sync
+              setTimeout(() => UI.showPanel("node_map"), 100);
+          } else {
+              this.exploreState();
+          }
         }
     } catch(e) {
         console.error("Save Corrupt", e);
