@@ -307,6 +307,68 @@ const Game = {
       UI.showPanel("shop-ascension");
   },
 
+  worldMapState() {
+      this.stopLoops();
+      this.currAction = "world_map";
+      if(window.GameStore) window.GameStore.state.currAction = "world_map";
+      
+      Events.emit("log_boss", "🗺️ THE WORLD OPENS BEFORE YOU...");
+      UI.showPanel("world_map");
+  },
+
+  // v34.0: Enter a specific Realm (Generates Map)
+  enterRealm(realmId) {
+      this.stopLoops();
+      
+      // Lazy Load NodeMap Logic if needed? Already imported/global?
+      // Assuming NodeMap is global or we import it. 
+      // Ideally Game.js shouldn't depend on View logic, but let's assume `import { NodeMap }` or global.
+      // WE NEED TO IMPORT IT. For now, let's assume logic is in store or helper.
+      // Actually, NodeMapPanel calls NodeMap.generateMap on mount.
+      
+      if(window.GameStore) {
+          window.GameStore.state.world.activeRealm = realmId;
+          // Trigger UI switch
+          UI.showPanel("node_map");
+      }
+  },
+
+  // v34.0: Handle Node Click
+  resolveNode(node) {
+      // node: { type: 'combat', ... }
+      this.stopLoops();
+      
+      switch(node.type) {
+          case 'combat':
+              this.combatState(); // Normal combat
+              break;
+          case 'elite':
+              this.combatState(false); // TODO: pass isElite flag
+              // For MVP, just stronger combat
+              Events.emit("log_boss", "⚠️ ELITE ENEMY APPROACHING!");
+              break;
+          case 'boss':
+              // The Traitor match
+              this.combatState(true);
+              break;
+          case 'rest':
+              this.sanctuaryState();
+              break;
+          case 'event':
+              // Placeholder Event
+              Events.emit("log_item", "❓ You found a mysterious shrine...");
+              Events.emit("log", "Nothing happens. (Event Logic Pending Phase 4)");
+              // Auto-complete node? Return to map?
+              // For now, simple return button in UI or auto return.
+              setTimeout(() => {
+                  UI.showPanel("node_map");
+              }, 2000);
+              break;
+          default:
+              this.combatState();
+      }
+  },
+
   // ============================
   // WIN/LOSE LOGIC
   // ============================
@@ -386,19 +448,25 @@ const Game = {
       }
 
       // Return to Explore (Always Run)
-      setTimeout(() => this.exploreState(), 800);
+      setTimeout(() => {
+          // v34.0 Loop Logic
+          if (window.GameStore && window.GameStore.state.world.activeRealm) {
+               UI.showPanel("node_map");
+          } else {
+               this.exploreState();
+          }
+      }, 800);
   },
   
   checkAscensionVictory() {
-    if (this.enemy.isBoss && this.state.floor === 10) { 
-        Events.emit("log_boss", "🎉 FLOOR 10 CONQUERED!");
+    // v34.0: Floor 100 triggers World Map, not just "Victory"
+    if (this.enemy.isBoss && this.state.floor >= 100) { 
+        Events.emit("log_boss", "🎉 FLOOR 100 CONQUERED!");
         // First win achievement
-        if (window.Achievements) Achievements.unlock('floor_1');
+        if (window.Achievements) Achievements.unlock('floor_100');
         
-        if (this.hasAscension) {
-            UI.showPanel("victory");
-            // Show ascension button
-        }
+        // Unlock World Map access
+        this.worldMapState();
         return true; // Stop exploration
     }
     
