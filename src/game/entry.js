@@ -6,6 +6,7 @@ import './config/enemies.js';
 import './config/skills.js';
 import './config/classes.js';
 import './config/biomes.js';
+import './config/realms.js'; // v34.0 Realms
 import './config/secrets.js';
 import './config/evolution.js';
 import './config/recipes.js';
@@ -30,6 +31,7 @@ import { MobileHandler } from './managers/mobile.js';
 import { Combat as CombatLogic } from './logic/Combat.js'; // NEW LOGIC
 // import './core/player.js'; // LEGACY PLAYER DISABLED
 import { Player as PlayerLogic } from './logic/Player.js'; // NEW LOGIC
+import { EventManager } from './logic/EventManager.js'; // v34.0 Event Logic
 import './core/game.js';
 
 import { gameStore } from './store.js';

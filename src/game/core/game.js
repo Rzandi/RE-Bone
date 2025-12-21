@@ -355,18 +355,24 @@ const Game = {
               this.sanctuaryState();
               break;
           case 'event':
-              // Placeholder Event
-              Events.emit("log_item", "❓ You found a mysterious shrine...");
-              Events.emit("log", "Nothing happens. (Event Logic Pending Phase 4)");
-              // Auto-complete node? Return to map?
-              // For now, simple return button in UI or auto return.
-              setTimeout(() => {
-                  UI.showPanel("node_map");
-              }, 2000);
+              if (window.EventManager) {
+                  window.EventManager.triggerEvent(node);
+              } else {
+                  // Fallback
+                  Events.emit("log_item", "❓ Event System not ready.");
+                  setTimeout(() => UI.showPanel("node_map"), 1000);
+              }
               break;
           default:
               this.combatState();
       }
+  },
+
+  // v34.0: Helper for EventManager to return
+  returnToMap() {
+      // Clear event state? Not strictly needed if overwritten
+      if(window.GameStore) window.GameStore.state.event = null;
+      UI.showPanel("node_map");
   },
 
   // ============================

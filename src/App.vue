@@ -21,6 +21,9 @@ import LoreCard from "./components/LoreCard.vue";
 import VFXLayer from "./components/VFXLayer.vue";
 import StartScreen from "./components/StartScreen.vue";
 import SettingsPanel from "./components/SettingsPanel.vue";
+import WorldMapPanel from "./components/WorldMapPanel.vue";
+import NodeMapPanel from "./components/NodeMapPanel.vue";
+import EventPanel from "./components/EventPanel.vue";
 
 const s = gameStore.state;
 
@@ -168,6 +171,9 @@ const handleAction = (action) => {
         <SoulForgePanel v-if="s.activePanel === 'shop-ascension'" />
         <AchievementsPanel v-if="s.activePanel === 'achievements'" />
         <SettingsPanel v-if="s.activePanel === 'settings'" /> <!-- NEW -->
+        <WorldMapPanel v-if="s.activePanel === 'world_map'" />
+        <NodeMapPanel v-if="s.activePanel === 'node_map'" />
+        <EventPanel v-if="s.activePanel === 'event'" />
 
         <!-- CONTROLS -->
         <ControlPanel @action="handleAction" />

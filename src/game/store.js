@@ -32,6 +32,9 @@ export const gameState = reactive({
     salvageMode: false,
     lore: { active: false, title: "", text: "" }, // NEW
     
+    // v34.0 Event System
+    event: null, // { title, text, choices: [] }
+
     // Skills & Passives
     skills: [],
     passives: [],
@@ -66,6 +69,14 @@ export const gameState = reactive({
         souls: 0,
         unlockedClasses: ['skeleton'],
         maxFloor: 1, // Track max floor for unlocks
+    },
+    
+    // v34.0 World Map State
+    world: {
+        unlockedRealms: [],     // ['nature', 'shadow', etc.]
+        activeRealm: null,      // Current realm ID
+        nodeMap: [],            // The Slay-the-Spire tree
+        currentNode: null       // { layer: 0, index: 0 }
     },
     
     // User Settings (v32.3)
