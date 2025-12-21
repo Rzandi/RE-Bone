@@ -74,66 +74,11 @@ const Merchant = {
     },
 
     render() {
-        // Safe check for Vue container or existing legacy container
-        let p = document.getElementById("panel-merchant");
-        const container = document.getElementById("game-container") || document.getElementById("app");
-        
-        if(!p && container) {
-            // Create panel if missing (Plan fallback)
-            p = document.createElement("div");
-            p.id = "panel-merchant";
-            p.className = "panel";
-            p.style.display = "none";
-            p.style.cssText = "position:absolute; top:200px; left:0; right:0; margin:auto; width:90%; background:black; border:2px solid gold; z-index:100; padding:20px;";
-            container.appendChild(p);
-        }
-        
-        if(p) {
-            UI.showPanel("merchant");
-            
-            let html = `
-                <h2 style="color:gold; text-align:center; margin-bottom:10px;">MERCHANT</h2>
-                <div style="text-align:center; margin-bottom:20px; color:#aaa;">
-                    "Got some rare things on sale, stranger..."<br>
-                    <span style="color:gold">Gold: ${Player.gold}</span>
-                </div>
-                <div id="merchant-list" style="height:400px; overflow-y:auto; border:1px solid #444; padding:10px;">
-            `;
-            
-            this.stock.forEach(key => {
-                const item = DB.ITEMS[key];
-                if(!item) return;
-                
-                const canAfford = Player.gold >= item.price;
-                const col = canAfford ? "#fff" : "#777";
-                const btnCol = canAfford ? "gold" : "#555";
-                
-                html += `
-                    <div class="shop-item" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding:10px;">
-                        <div>
-                            <strong style="color:${CONSTANTS.RARITY_COLORS[item.rarity] || '#fff'}">${item.name}</strong>
-                            <div style="font-size:0.8rem; color:#aaa;">${item.desc}</div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="color:gold; margin-bottom:5px;">${item.price} G</div>
-                            <button onclick="Merchant.buy('${key}')" 
-                                    style="border:1px solid ${btnCol}; color:${col}; padding:5px 10px; background:none; cursor:${canAfford?'pointer':'default'}">
-                                BUY
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            html += `</div>`;
-            
-            p.innerHTML = html;
-        }
-        
-        UI.setButtons([
-            null, null, null,
-            { txt: "LEAVE", fn: () => Game.exploreState() }
-        ]);
+        // DOM Render removed in favor of MerchantPanel.vue
+        // Just Update Buttons for legacy fallback or hybrid mode/
+        // Actually, Game.js handles buttons for Merchant State?
+        // UI.showPanel("shop") is called by Game.js. 
+        // We just need to ensure stock is in store.
     },
     
     buy(key) {

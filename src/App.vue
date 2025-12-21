@@ -20,6 +20,7 @@ import MobileTooltip from "./components/MobileTooltip.vue";
 import LoreCard from "./components/LoreCard.vue";
 import VFXLayer from "./components/VFXLayer.vue";
 import StartScreen from "./components/StartScreen.vue";
+import SettingsPanel from "./components/SettingsPanel.vue";
 
 const s = gameStore.state;
 
@@ -27,10 +28,7 @@ const s = gameStore.state;
 const hpPct = computed(() => (s.hp / s.maxHp) * 100);
 const mpPct = computed(() => (s.mp / s.maxMp) * 100);
 
-// Actions
-const toggleAudio = () => {
-  if (window.SoundManager) window.SoundManager.toggle();
-};
+
 
 const expPct = computed(() => {
   if (!s.nextExp || s.nextExp === 0) return 0;
@@ -75,6 +73,9 @@ const handleAction = (action) => {
       // Todo: Status Panel
       gameStore.state.activePanel = "status";
       break;
+    case "settings":
+      gameStore.state.activePanel = "settings";
+      break;
     case "back":
       if (window.Game) window.Game.menuState();
       break;
@@ -83,7 +84,7 @@ const handleAction = (action) => {
 </script>
 
 <template>
-  <div id="app" class="scanline">
+  <div id="app" :class="{ scanline: s.settings ? s.settings.crt : true }">
     <!-- OVERLAYS -->
     <MobileTooltip />
     <LoreCard />
@@ -96,7 +97,6 @@ const handleAction = (action) => {
     <template v-else>
       <!-- HEADER -->
       <header>
-        <div id="audio-btn" @click="toggleAudio">🔊 OFF</div>
         <div class="col-c">
           <span style="color: var(--c-gold)">FL {{ s.floor }}</span>
           <small style="color: #888"> ({{ s.progress }}%)</small><br />
@@ -155,15 +155,14 @@ const handleAction = (action) => {
         <MerchantPanel v-if="s.activePanel === 'shop'" />
         <StatsPanel v-if="s.activePanel === 'status'" />
         <EvolutionPanel v-if="s.activePanel === 'evolution'" />
-        <EvolutionPanel v-if="s.activePanel === 'evolution'" />
         <SkillsPanel v-if="s.activePanel === 'skills'" /> 
-        <CombatSkillSelector v-if="s.activePanel === 'combat_skills'" /> <!-- NEW -->
+        <CombatSkillSelector v-if="s.activePanel === 'combat_skills'" />
         <CraftingPanel v-if="s.activePanel === 'crafting'" />
-        <CraftingPanel v-if="s.activePanel === 'crafting'" /> <!-- NEW -->
-        <LeaderboardPanel v-if="s.activePanel === 'leaderboard'" /> <!-- NEW -->
-        <ClassSelectionPanel v-if="s.activePanel === 'class'" /> <!-- NEW -->
-        <SoulForgePanel v-if="s.activePanel === 'shop-ascension'" /> <!-- NEW -->
-        <AchievementsPanel v-if="s.activePanel === 'achievements'" /> <!-- NEW -->
+        <LeaderboardPanel v-if="s.activePanel === 'leaderboard'" />
+        <ClassSelectionPanel v-if="s.activePanel === 'class'" />
+        <SoulForgePanel v-if="s.activePanel === 'shop-ascension'" />
+        <AchievementsPanel v-if="s.activePanel === 'achievements'" />
+        <SettingsPanel v-if="s.activePanel === 'settings'" /> <!-- NEW -->
 
         <!-- CONTROLS -->
         <ControlPanel @action="handleAction" />

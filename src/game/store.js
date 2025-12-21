@@ -65,6 +65,14 @@ export const gameState = reactive({
         souls: 0,
         unlockedClasses: ['skeleton'],
         maxFloor: 1, // Track max floor for unlocks
+    },
+    
+    // User Settings (v32.3)
+    settings: {
+        audio: true, // Master Switch
+        volume: 0.5, // 0.0 to 1.0
+        crt: true, // Scanline toggle
+        textSpeed: 1 // 1=Normal, 0=Instant
     }
 });
 

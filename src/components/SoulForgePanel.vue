@@ -6,25 +6,20 @@ import { SaveManager } from "../game/managers/SaveManager.js";
 
 const s = gameStore.state;
 const items = computed(() => window.Ascension ? Ascension.SHOP_ITEMS : []);
-const upgrades = computed(() => window.Ascension ? Ascension.upgrades : {});
+const upgrades = computed(() => s.meta ? s.meta.upgrades : {});
 const souls = computed(() => s.meta ? s.meta.souls : 0);
-// const souls = computed(() => window.Ascension ? Ascension.shards : 0); // Replaced with persistent meta souls? 
-// Wait, if I use meta.souls, I must ensure Ascension.js uses it too?
-// For now, let's assume 'souls' in this panel refers to the new persistent currency.
-// But Ascension might have its own 'shards'.
-// I should verify if user wants separate currencies. "Soul Shop" implies the same.
-// I will sync them. `meta.souls` IS the currency.
 
-const activeTab = ref('classes'); // 'classes' | 'upgrades' | 'perks'
+const activeTab = ref('classes');
 
 // --- CLASS SHOP LOGIC ---
 const unlockedClasses = computed(() => s.meta ? s.meta.unlockedClasses : []);
 
-// Safely access Ascension globals
+// Safely access Ascension logic (Actions only)
 const ascensionShopItems = computed(() => window.Ascension ? window.Ascension.SHOP_ITEMS : []);
-const ascensionUpgrades = computed(() => window.Ascension ? window.Ascension.upgrades : {});
-const ascensionShopStock = computed(() => window.Ascension ? window.Ascension.shopStock : []);
-const ascensionRefreshCount = computed(() => window.Ascension ? window.Ascension.refreshCount : 0);
+// Bind directly to meta for sync
+const ascensionUpgrades = computed(() => s.meta ? s.meta.upgrades : {});
+const ascensionShopStock = computed(() => s.meta ? s.meta.shopStock : []);
+const ascensionRefreshCount = computed(() => s.meta ? s.meta.refreshCount : 0);
 
 // Currency: Sync with Meta Souls
 // Duplicate removed

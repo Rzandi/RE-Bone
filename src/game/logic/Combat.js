@@ -120,6 +120,13 @@ export const Combat = {
         const e = this.enemy;
         if (!e || e.hp <= 0) return;
         
+        // 1. Process Enemy Status (Start of Turn)
+        this.processStatusEffects(e, false);
+        if (e.hp <= 0) {
+            this.handleVictory();
+            return;
+        }
+        
         let dmg = e.atk || 5;
         
         // AI Logic stub
@@ -131,12 +138,20 @@ export const Combat = {
         PlayerLogic.takeDamage(dmg);
         gameStore.triggerVfx({ type: 'damage', val: dmg, target: 'player' });
         
-        if (this.state.hp <= 0) {
-            // Player Death handled by PlayerLogic/Game
+        if (this.state.combat.turn === 'enemy') { // Check if combat still active
+            // Return turn to player
+            
+            // 2. Process Player Status (Start of Player Turn)
+            this.processStatusEffects(PlayerLogic.state, true);
+            
+            // Check Death after DOT
+            if (PlayerLogic.state.hp <= 0) {
+                 // Game.handleDefeat() called by takeDamage or similar logic
+                 return;
+            }
+            
+            this.state.combat.turn = 'player';
         }
-        
-        // Return turn to player
-        this.state.combat.turn = 'player';
     },
     
     handleVictory() {
@@ -168,8 +183,44 @@ export const Combat = {
         }, 1000);
     },
     
+    processStatusEffects(target, isPlayer) {
+        if (!target || !target.status) return;
+        
+        // Filter out expired status
+        // Each status: { id, duration, val }
+        const activeStatus = [];
+        
+        target.status.forEach(s => {
+            // Apply DOT
+            if (['burn', 'poison'].includes(s.id)) {
+                let dmg = Math.floor(target.maxHp * 0.05); // 5% Max HP
+                if (dmg < 1) dmg = 1;
+                
+                target.hp -= dmg;
+                gameStore.log(`${isPlayer?'You':'Enemy'} took ${dmg} damage from ${s.id}!`, "damage");
+                gameStore.triggerVfx({ type: 'damage', val: dmg, target: isPlayer ? 'player' : 'enemy' });
+            }
+            
+            // Decrement duration
+            s.duration--;
+            if (s.duration > 0) activeStatus.push(s);
+            else gameStore.log(`${s.id} wore off.`, "buff");
+        });
+        
+        target.status = activeStatus;
+    },
+
     getDamageBonus() {
-        return 0; // Placeholder
+        let bonus = 0;
+        const p = PlayerLogic.state;
+        
+        if (p.status) {
+            p.status.forEach(s => {
+                if (s.id === 'strength') bonus += 5;
+                if (s.id === 'weakness') bonus -= 5;
+            });
+        }
+        return bonus;
     },
 
     executeSkill(skill) {
@@ -216,7 +267,7 @@ export const Combat = {
              }
         }
         else if (skill.type === 'debuff') {
-             if(skill.status && this.enemy.now) {
+             if(skill.status && this.enemy) {
                  this.enemy.status.push(skill.status); // Assuming enemy has status array
                  gameStore.log(`Applied ${skill.status.id} to enemy`, "debuff");
              }

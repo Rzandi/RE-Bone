@@ -25,6 +25,12 @@ const unlock = (node) => {
     }
 };
 
+const canUnlock = (node) => {
+    if (s.sp < node.cost) return false;
+    if (node.req && !s.unlockedSkills.includes(node.req)) return false;
+    return true;
+};
+
 const close = () => {
     // Return to previous safe panel (usually Menu)
     gameStore.state.activePanel = "menu-view"; 

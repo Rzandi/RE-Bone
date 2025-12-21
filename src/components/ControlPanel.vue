@@ -28,8 +28,8 @@ const buttons = computed(() => {
     return [
       { label: "🔍 EXPLORE", action: "explore", color: "var(--c-gold)" },
       { label: "👤 STATUS", action: "status" },
-      { label: "💤 REST", action: "rest", color: "#fa0" }, 
       { label: "🎒 ITEM", action: "item" }, 
+      { label: "⚙️ OPT", action: "settings" },
     ];
   }
   

@@ -24,9 +24,20 @@
   
   header {
     padding: 6px;
-    font-size: 0.9rem;
-    grid-template-columns: 1fr 1fr 1.2fr;
-    gap: 3px;
+    font-size: 0.85rem;
+    display: flex; /* Flex instead of Grid for auto-wrap */
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 5px;
+  }
+  
+  header .col-c {
+      width: 100%;
+      text-align: center;
+      order: -1;
+      border-bottom: 1px solid #222;
+      padding-bottom: 4px;
+      margin-bottom: 4px;
   }
   
   #main-view {
@@ -34,7 +45,8 @@
   }
   
   #controls {
-    height: 120px;
+    height: auto;
+    min-height: 120px;
     gap: 6px;
     padding: 8px;
   }
@@ -91,7 +103,8 @@
   }
   
   #controls {
-    height: 130px;
+    height: auto;
+    min-height: 140px;
     padding: 10px;
     gap: 8px;
   }
@@ -134,7 +147,8 @@
   }
   
   #controls {
-    height: 150px;
+    height: auto; /* Let it grow */
+    min-height: 150px;
   }
 }
 

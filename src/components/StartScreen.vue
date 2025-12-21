@@ -77,7 +77,7 @@ const togglePatchNotes = () => {
   <div class="start-screen scanline">
     <div class="title-container">
       <h1>RE:BONE</h1>
-      <p class="version-text">v32.2 RE:INVENTED</p>
+      <p class="version-text">v32.4 RE:INVENTED</p>
     </div>
 
     <!-- MAIN MENU -->

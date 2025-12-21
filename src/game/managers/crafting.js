@@ -46,49 +46,16 @@ export const Crafting = {
         Player.addItem(recipe.output);
       }
       
-      UI.log(`Crafted ${recipe.name}!`, "log system");
-      SoundManager.play("loot"); // Reuse loot sound for now
-      this.render(); // Refresh UI
+      if(window.gameStore) gameStore.log(`Crafted ${recipe.name}!`, "item");
+      if(window.SoundManager) SoundManager.play("loot");
+      
+      // UI update is reactive via Player.inventory mutation
     } else {
-      UI.toast("Not enough materials!");
+        if(window.gameStore) gameStore.log("Not enough materials!", "error");
     }
   },
 
-  // Render Crafting Panel
-  render() {
-    const list = document.getElementById('crafting-list');
-    if (!list) return;
-    
-    list.innerHTML = "";
-    
-    Object.entries(RECIPES).forEach(([id, recipe]) => {
-      const can = this.canCraft(id);
-      const el = document.createElement('div');
-      el.className = `recipe-item ${can ? '' : 'disabled'}`;
-      
-      // Build material requirement string
-      let reqStr = "";
-      for (const [matId, count] of Object.entries(recipe.inputs)) {
-        const has = this.countMaterial(matId);
-        const name = DB.ITEMS[matId]?.name || matId;
-        const color = has >= count ? '#4f4' : '#f44';
-        reqStr += `<span style="color:${color}">${has}/${count} ${name}</span>, `;
-      }
-      reqStr = reqStr.slice(0, -2); // Remove trailing comma
-
-      el.innerHTML = `
-        <div class="recipe-icon">🔨</div>
-        <div class="recipe-info">
-          <h4>${recipe.name}</h4>
-          <small>${reqStr}</small>
-        </div>
-        <button class="btn-craft" onclick="Crafting.craft('${id}')" ${can ? '' : 'disabled'}>
-          Craft
-        </button>
-      `;
-      list.appendChild(el);
-    });
-  },
+  // DOM Render removed in favor of CraftingPanel.vue
   
   // Salvage Logic (Break item -> get mats)
   salvage(idx) {
@@ -97,7 +64,7 @@ export const Crafting = {
     
     // Check locked status
     if (Player.isLocked(item)) {
-       UI.toast("Item is Locked! Cannot Salvage.", "error");
+       if(window.gameStore) gameStore.log("Item is Locked! Cannot Salvage.", "error");
        return;
     }
 
@@ -131,8 +98,8 @@ export const Crafting = {
       // Chance for Fragment (NEW v28.0)
       if (Math.random() < 0.10) { // 10% chance
         const frag = Math.random() < 0.5 ? CONSTANTS.MATERIALS.FRAG_DRAGON : CONSTANTS.MATERIALS.FRAG_VOID;
-        Player.addItem(frag); // Direct add for simplicity
-        UI.log(`✨ LUCKY! Salvaged Legendary Fragment: ${DB.ITEMS[frag].name}`, "log rare");
+        Player.addItem(frag); 
+        if(window.gameStore) gameStore.log(`✨ LUCKY! Salvager found ${DB.ITEMS[frag].name}`, "rare");
       }
     }
     
@@ -147,10 +114,8 @@ export const Crafting = {
        for(let i=0; i<extraCount; i++) Player.addItem(extraMat);
     }
     
-    UI.log(`Salvaged ${item.name} -> ${count}x ${DB.ITEMS[baseMat].name}`, "log system");
-    if (extraMat) UI.log(`+ ${extraCount}x ${DB.ITEMS[extraMat].name}`, "log system");
-
-    UI.renderInv(); // Refresh inventory
+    if(window.gameStore) gameStore.log(`Salvaged ${item.name} -> Materials`, "item");
+    if(window.SoundManager) SoundManager.play("ui");
   }
 };
 

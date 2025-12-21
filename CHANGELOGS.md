@@ -1,4 +1,15 @@
-# 📜 Change Logs
+## v32.4 (2024-12-21) - RE:INVENTED
+
+**Logic & Strategy Update**
+
+- **Combat Depth**:
+  - **Status Effects**: Implemented Dot (Damage Over Time) for `Burn`, `Poison`.
+  - **Buffs/Debuffs**: `Strength` and `Weakness` correctly modify damage output.
+- **Refactoring**:
+  - **Modernization**: `Crafting.js` and `Merchant.js` refactored to remove legacy DOM code, ensuring strict Vue reactivity.
+  - **Stability**: Fixed skill tree crash in `SkillsPanel`.
+- **System**:
+  - **Version Sync**: Unified version number across all documentation.
 
 ## v32.2 (2024-12-21) - RE:INVENTED
 
