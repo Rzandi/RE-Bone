@@ -1,6 +1,6 @@
 # 🎮 Re:BONE - Vue Edition
 
-**Version**: v32.4 RE:INVENTED  
+**Version**: v33.1 POLISHED 🧃  
 **Genre**: Pixel Art Dungeon Crawler  
 **Platform**: Web Browser (Desktop + Mobile PWA) 📱  
 **Status**: Production Ready ✅

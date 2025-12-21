@@ -98,11 +98,62 @@ export const SoundManager = {
     if (this.isMuted) return;
     this.init(); // Ensure context exists
     
+    // SFX Library
     if (t === "ui") this.playTone(400, "square", 0.05, 0.05);
-    if (t === "click") this.playTone(600, "sine", 0.05, 0.05); // New click sound
+    if (t === "click") this.playTone(600, "sine", 0.05, 0.05);
     if (t === "hit") this.playTone(100, "sawtooth", 0.1, 0.1);
     if (t === "loot") this.playTone(1000, "sine", 0.3, 0.05);
     if (t === "evo") this.playTone(200, "triangle", 1.5, 0.1);
     if (t === "hazard") this.playTone(50, "sawtooth", 0.2, 0.1);
+    
+    // Complex Sounds
+    if (t === "level_up") {
+        // Arpeggio
+        let now = this.ctx.currentTime;
+        [440, 554, 659, 880].forEach((f, i) => { // A Major
+            this.playToneAt(f, "triangle", 0.2, 0.1, now + i * 0.1);
+        });
+    }
+    
+    if (t === "victory") {
+        let now = this.ctx.currentTime;
+        [523, 523, 523, 659, 783].forEach((f, i) => { // C C C E G
+             let t = (i < 3) ? 0.1 : 0.4;
+             let dur = (i < 3) ? 0.1 : 0.3;
+             this.playToneAt(f, "square", dur, 0.1, now + i * 0.15);
+        });
+    }
+
+    if (t === "ascend") {
+        let now = this.ctx.currentTime;
+        // Deep Rumble Sweep
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = "sawtooth";
+        o.frequency.setValueAtTime(50, now);
+        o.frequency.exponentialRampToValueAtTime(10, now + 3);
+        g.gain.setValueAtTime(0.2 * this.volume, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 3);
+        o.connect(g);
+        g.connect(this.ctx.destination);
+        o.start();
+        o.stop(now + 3);
+    }
+  },
+
+  // Helper for scheduled tones
+  playToneAt(freq, type, dur, vol, time) {
+    const masterVol = this.volume;
+    const finalVol = vol * masterVol;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, time);
+    g.gain.setValueAtTime(finalVol, time);
+    g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+    o.connect(g);
+    g.connect(this.ctx.destination);
+    o.start(time);
+    o.stop(time + dur);
   },
 };

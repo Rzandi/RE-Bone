@@ -6,10 +6,37 @@
   - **Status Effects**: Implemented Dot (Damage Over Time) for `Burn`, `Poison`.
   - **Buffs/Debuffs**: `Strength` and `Weakness` correctly modify damage output.
 - **Refactoring**:
+
   - **Modernization**: `Crafting.js` and `Merchant.js` refactored to remove legacy DOM code, ensuring strict Vue reactivity.
   - **Stability**: Fixed skill tree crash in `SkillsPanel`.
+
 - **System**:
   - **Version Sync**: Unified version number across all documentation.
+
+## v33.1 (2024-12-21) - POLISH & JUICE 🧃
+
+**Visuals & Audio Update**
+
+- **Audio Engine 2.0**:
+  - Added synthesized **Level Up** jingle (Arpeggio).
+  - Added **Ascension** rumble effect.
+  - Added **Victory** fanfare.
+- **VFX Juice**:
+  - **Screen Shake**: Dynamic camera shake on Critical Hits, Level Up, and taking Damage.
+  - **Particles**: Blood particles spawn when hitting enemies.
+- **Code Hygiene**:
+  - Removed all legacy Vanilla JS files (`core/player.js`, `core/combat.js`).
+  - Optimized `store.js` state management.
+
+## v33.0 (2024-12-21) - THE ENDLESS CYCLE ♾️
+
+**New Game+ Update**
+
+- **Ascension System**:
+  - **Scaling Difficulty**: Enemies gain **+20% Stats and EXP** per Ascension Cycle.
+  - **Endless Progression**: No limit to how high you can climb. Multipliers stack indefinitely.
+  - **Soft Reset**: Prestiging now instantly resets your Character and World (Floor 1) while keeping your Meta-Progression (Souls, Upgrades, Unlocks), without reloading the page.
+  - **Visuals**: Start Screen now proudly displays your current **Death Cycle**. Enemies in NG+ have a skull 💀 indicator next to their name.
 
 ## v32.2 (2024-12-21) - RE:INVENTED
 

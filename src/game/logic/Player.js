@@ -208,6 +208,12 @@ export const Player = {
         
         s.hp = Math.max(0, s.hp - amount);
         
+        // VISUAL FEEDBACK
+        if(amount > 0) {
+            gameStore.triggerShake("small");
+            gameStore.triggerVfx({ type: 'damage', val: `-${amount}`, target: 'player' });
+        }
+        
         if (s.hp <= 0) {
              // Handle Death via Game Logic (circular dep? use event?)
              // Ideally Player just dies, and Game observes it.
@@ -226,7 +232,9 @@ export const Player = {
             s.exp -= s.nextExp; // Overflow
             s.nextExp = Math.floor(s.nextExp * 1.5);
             
-            gameStore.log(`Level Up! Lv.${s.level}`, "system");
+            gameStore.log(`Level Up! Lv.${s.level}`, "buff");
+            if(window.SoundManager) window.SoundManager.play("level_up");
+            gameStore.triggerShake("medium");
             this.recalc();
             s.hp = s.maxHp;
             s.mp = s.maxMp;

@@ -77,7 +77,8 @@ export const Combat = {
         if (isCrit) dmg = Math.floor(dmg * 1.5);
 
         // DEBUG LOGGING
-        console.log(`[Combat] Attack: Dmg=${dmg}, EnemyHP=${e.hp} -> ${e.hp - dmg}`);
+        // Debug log removed
+        // gameStore.log(`[Combat] Attack: Dmg=${dmg}`, "combat");
 
         e.hp -= dmg;
         gameStore.log(`You hit for ${dmg} damage!${isCrit ? ' (CRIT!)' : ''}`, isCrit ? "crit" : "damage");
@@ -132,11 +133,17 @@ export const Combat = {
         // AI Logic stub
         gameStore.log(`${e.name} attacks for ${dmg}!`, "damage");
         
-        // SOUND HOOK
-        if(window.SoundManager) window.SoundManager.play('hit');
+        // Hit Sfx
+        // Enemy attacks don't crit, so no isCrit check needed here.
+        if(window.SoundManager) window.SoundManager.play("hit");
+        if(window.gameStore) window.gameStore.triggerShake("medium");
+        
+        // VFX
+        gameStore.triggerVfx({ type: 'damage', val: dmg, target: 'player' });
+        // Blood Particles
+        for(let i=0; i<3; i++) gameStore.triggerVfx({ type: 'particle-blood', target: 'player' });
         
         PlayerLogic.takeDamage(dmg);
-        gameStore.triggerVfx({ type: 'damage', val: dmg, target: 'player' });
         
         if (this.state.combat.turn === 'enemy') { // Check if combat still active
             // Return turn to player

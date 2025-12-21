@@ -556,10 +556,24 @@ const Game = {
       enemy.name = `[${rank}] ${enemy.name} (${rarity})`;
       enemy.rank = rank;
       enemy.rarity = rarity;
-      enemy.maxHp = Math.floor((enemy.maxHp || enemy.hp) * rankMult * rarMult);
+      
+      // ASCENSION SCALING (New v33.0)
+      let ascMult = 1.0;
+      if (window.gameStore && window.gameStore.state.meta.ascensionLevel) {
+          ascMult += (window.gameStore.state.meta.ascensionLevel * 0.2); // +20% per cycle
+      }
+      
+      const totalMult = rankMult * rarMult * ascMult;
+      
+      enemy.maxHp = Math.floor((enemy.maxHp || enemy.hp) * totalMult);
       enemy.hp = enemy.maxHp;
-      enemy.atk = Math.floor(enemy.atk * rankMult * rarMult);
-      enemy.exp = Math.floor(enemy.exp * rankMult * rarMult);
+      enemy.atk = Math.floor(enemy.atk * totalMult);
+      enemy.exp = Math.floor(enemy.exp * totalMult); // More Risk = More Reward
+      
+      if(ascMult > 1.0) {
+          // Visual Indicator of Ascension
+          enemy.name = `💀${window.gameStore.state.meta.ascensionLevel} ${enemy.name}`; 
+      }
       
       return enemy;
   },

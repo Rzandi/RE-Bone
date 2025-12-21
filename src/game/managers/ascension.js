@@ -58,19 +58,46 @@ export const Ascension = {
     // Add Shards (Souls)
     this.meta.souls = (this.meta.souls || 0) + reward;
     
-    // Increment NG+ Level (stored where? floor? or meta.ascensionLevel?)
+    // INCREMENT CYCLE
     this.meta.ascensionLevel = (this.meta.ascensionLevel || 0) + 1;
     
     // Reset Shop
     this.meta.refreshCount = 3;
     this.generateStock();
     
-    this.save();
-    
-    // Reset Player
-    // ... Player reset logic should be separate?
-    // For now, reload serves as reset
-    location.reload();
+    // SOFT RESET LOGIC (v33.0)
+    if (window.Player && window.Game) {
+        // 1. Reset Player (Use init to fully wipe state)
+        // Default to skeleton or keep current class name if we want them to stick with it?
+        // Usually Rogue-likes reset to base class or character select.
+        // Let's reset to "skeleton" and let them choose class if we have a select screen?
+        // Or keep className.
+        // Safest: Player.init(Player.className) but they should probably re-pick class.
+        // Let's reset to 'skeleton'.
+        Player.init("skeleton");
+        
+        // 2. Reset World
+        Game.state.floor = 1;
+        Game.state.progress = 0;
+        gameStore.state.logs = [];
+        
+        // 3. Save & Redirect
+        this.save(); // Save Meta Upgrade
+        Game.saveGame(); // Save Reset Player State
+        
+        // 4. UI Feedback
+        gameStore.state.activePanel = 'title'; // Go to title to re-select class
+        
+        gameStore.triggerVfx({ type: 'critical', val: "ASCENSION!", target: 'player' });
+        if(window.SoundManager) window.SoundManager.play("ascend");
+        setTimeout(() => {
+             alert(`ASCENSION SUCCESSFUL!\n\nNew Cycle: ${this.meta.ascensionLevel}\nEnemies are stronger.\nYou have gained ${reward} Souls.`);
+        }, 500);
+    } else {
+        // Fallback
+        location.reload();
+    }
+
     return reward;
   },
 

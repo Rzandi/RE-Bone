@@ -84,7 +84,12 @@ const handleAction = (action) => {
 </script>
 
 <template>
-  <div id="app" :class="{ scanline: s.settings ? s.settings.crt : true }">
+  <div id="app" :class="{ 
+      scanline: s.settings ? s.settings.crt : true,
+      'shake-sm': s.shake === 'small',
+      'shake-md': s.shake === 'medium',
+      'shake-hv': s.shake === 'heavy'
+  }">
     <!-- OVERLAYS -->
     <MobileTooltip />
     <LoreCard />
@@ -184,5 +189,31 @@ const handleAction = (action) => {
   height: 4px;
   background: #222;
   margin-bottom: 10px;
+}
+
+/* Shake Animations */
+.shake-sm { animation: shake-sm 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+.shake-md { animation: shake-md 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+.shake-hv { animation: shake-hv 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+
+@keyframes shake-sm {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-2px, 0, 0); }
+  40%, 60% { transform: translate3d(2px, 0, 0); }
+}
+
+@keyframes shake-md {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+@keyframes shake-hv {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-10px, 0, 0); }
+  40%, 60% { transform: translate3d(10px, 0, 0); }
 }
 </style>

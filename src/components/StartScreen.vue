@@ -62,22 +62,31 @@ const showAchievements = () => {
 const showPatchModal = ref(false);
 
 const patchNotes = [
-    { ver: "v32.2", date: "2024-12-21", changes: ["Inventory Overhaul: Item Details & Safe Use", "Loot Upgrade: Gold Drops & Consolidated Logs", "UI Fixes: Auto-Scroll Logs, Boss Button Fix","Minor Bugs Fixed"] },
-    { ver: "v32.1", date: "2024-12-19", changes: ["Roguelike Mode: Permadeath & Sanctuary Saving", "New Content: God-Tier Passives", "UI Polish: Start Screen Remaster"] },
-    { ver: "v32.0", date: "2024-12-18", changes: ["Vue 3 Migration Complete", "Performance Optimization", "Mobile Controls"] },
-    { ver: "v31.0", date: "2024-12-10", changes: ["Boss Rush Mode Added", "New Classes: Dark Knight, Necro Priest", "Balance Changes"] }
+    { ver: "v33.1", date: "2024-12-21", changes: ["Audio Expansion: Level Up, Victory, Ascend Sounds", "VFX Juice: Screen Shake & Blood Particles", "Optimized Codebase"] },
+    { ver: "v33.0", date: "2024-12-21", changes: ["New Game+: Endless Ascension Cycles", "Soft Reset: Keep Souls & Unlocks", "Difficulty Scaling (+20% per Cycle)"] },
+    { ver: "v32.2", date: "2025-12-21", changes: ["Inventory Overhaul: Item Details & Safe Use", "Loot Upgrade: Gold Drops & Consolidated Logs", "UI Fixes: Auto-Scroll Logs, Boss Button Fix","Minor Bugs Fixed"] },
+    { ver: "v32.1", date: "2025-12-19", changes: ["Roguelike Mode: Permadeath & Sanctuary Saving", "New Content: God-Tier Passives", "UI Polish: Start Screen Remaster"] },
+    { ver: "v32.0", date: "2025-12-18", changes: ["Vue 3 Migration Complete", "Performance Optimization", "Mobile Controls"] },
+    { ver: "v31.0", date: "2025-12-10", changes: ["Boss Rush Mode Added", "New Classes: Dark Knight, Necro Priest", "Balance Changes"] }
 ];
 
 const togglePatchNotes = () => {
     showPatchModal.value = !showPatchModal.value;
 };
+
+const ascension = computed(() => {
+    return gameStore.state.meta?.ascensionLevel || 0;
+});
 </script>
 
 <template>
   <div class="start-screen scanline">
     <div class="title-container">
       <h1>RE:BONE</h1>
-      <p class="version-text">v32.4 RE:INVENTED</p>
+      <p class="version-text">v33.1 POLISHED</p>
+      <div v-if="ascension > 0" class="cycle-display">
+          ☠️ CYCLE {{ ascension }} ☠️
+      </div>
     </div>
 
     <!-- MAIN MENU -->
@@ -326,5 +335,13 @@ h1 {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.cycle-display {
+    color: #f00;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin-top: 5px;
+    animation: pulse 2s infinite;
 }
 </style>

@@ -42,10 +42,10 @@ window.UI = {
     
     updateProgress: (val) => { gameStore.state.progress = val; }, 
     fxDmg: (val, type) => { /* Emit event for Vue to catch? */ },
-    showLoreCard: (t, text) => { console.log("LORE:", t, text) }, 
-    showSpeechBubble: (t) => { console.log("SPEECH:", t) },
+    showLoreCard: (t, text) => { /* console.log("LORE:", t, text) */ }, 
+    showSpeechBubble: (t) => { /* console.log("SPEECH:", t) */ },
     
-    init: () => { console.log("UI Init stub called"); },
+    init: () => { /* console.log("UI Init stub called"); */ },
     setButtons: (btns) => { 
         gameStore.state.buttons = btns; 
     },
@@ -60,7 +60,7 @@ window.UI = {
         gameStore.state.buttons = [];
     },
     toggleLog: () => {},
-    toast: (msg) => console.log("TOAST:", msg),
+    toast: (msg) => { /* console.log("TOAST:", msg) */ },
     showLevelUpEffect: (lvl) => { 
         gameStore.log(`LEVEL UP! You are now Level ${lvl}`, "buff"); 
         gameStore.triggerVfx({ type: 'heal', val: "LEVEL UP!", target: 'player' });

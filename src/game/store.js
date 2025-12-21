@@ -59,6 +59,7 @@ export const gameState = reactive({
     multipliers: { str: 1, vit: 1, int: 1, hp: 1, mp: 1, def: 1, dmg: 1 },
     bonuses: { dodge: 0, lifesteal: 0, crit: 0 },
     baseStats: { STR: 0, VIT: 0, INT: 0 },
+    shake: null, // 'small', 'medium', 'heavy'
     
     // Meta Progression (Saved separately)
     meta: {
@@ -97,6 +98,17 @@ export const gameStore = {
         
         // Auto-cleanup happens in VFXLayer or via timer, but let's keep array small just in case
         if(this.state.vfx.length > 20) this.state.vfx.shift();
+
+    },
+
+    triggerShake(intensity = "medium") {
+        // intensity: 'small', 'medium', 'heavy'
+        // We push a special vfx event that App.vue listens to, OR we set a transient state
+        // Let's use a specialized state for simplicity
+        this.state.shake = intensity;
+        setTimeout(() => {
+            if(this.state.shake === intensity) this.state.shake = null;
+        }, 500); // 500ms shake
     }
 };
 
