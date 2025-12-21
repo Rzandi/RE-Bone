@@ -156,4 +156,55 @@ export const SoundManager = {
     o.start(time);
     o.stop(time + dur);
   },
+
+  playAmbience(realmId) {
+      if (this.isMuted) return;
+      this.init();
+      
+      // Stop old BGM
+      this.stopBGM();
+      
+      // Select base freq based on Realm
+      // Nature = Low, Shadow = Weird, Light = High
+      let baseFreq = 50;
+      let type = 'sine';
+      
+      if(realmId === 'nature_den') { baseFreq = 55; type = 'triangle'; } // Low warm
+      if(realmId === 'shadow_guild') { baseFreq = 40; type = 'sawtooth'; } // Low gritty
+      if(realmId === 'light_castle') { baseFreq = 110; type = 'sine'; } // Ethereal
+      if(realmId === 'arcane_tower') { baseFreq = 220; type = 'square'; } // Digital/Magic??
+      if(realmId === 'iron_fort') { baseFreq = 30; type = 'square'; } // Industrial
+      
+      // Create a drone loop
+      const drone = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      
+      drone.frequency.value = baseFreq;
+      drone.type = type;
+      
+      // LFO for movement
+      const lfo = this.ctx.createOscillator();
+      lfo.frequency.value = 0.1; // Slow pulse
+      const lfoGain = this.ctx.createGain();
+      lfoGain.gain.value = 5; 
+      lfo.connect(lfoGain);
+      lfoGain.connect(drone.frequency);
+      
+      g.gain.value = 0.05 * this.volume;
+      
+      // Filter for atmosphere
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.value = 200;
+      
+      drone.connect(filter);
+      filter.connect(g);
+      g.connect(this.ctx.destination);
+      
+      drone.start();
+      lfo.start();
+      
+      this.bgmOsc.push(drone);
+      this.bgmOsc.push(lfo); 
+  },
 };

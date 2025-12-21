@@ -146,6 +146,109 @@ export const EventManager = {
             }];
         }
 
+        // Shadow Guild (Sewers/Rooftops)
+        if (['sewers', 'rooftops', 'market'].includes(biomeId)) {
+            return [{
+                title: "Shady Informant",
+                text: "A figure in the shadows offers secrets for coin.",
+                choices: [
+                    { 
+                        txt: "Buy Map Info (30g)", 
+                        req: { type: 'gold', val: 30 },
+                        resultText: "He reveals a hidden localized cache.",
+                        effect: () => { 
+                             gameStore.state.gold -= 30;
+                             // TODO: Reveal map? For now, XP reward
+                             gameStore.state.exp += 50; 
+                             gameStore.log("Gained +50 XP (Map Knowledge)", 'buff');
+                        }
+                    },
+                    { txt: "Mug Him", resultText: "He vanishes before you can strike.", effect: () => {} }
+                ]
+            }];
+        }
+
+        // Light Castle (Courtyard/Cathedral)
+        if (['courtyard', 'cathedral', 'barracks'].includes(biomeId)) {
+            return [{
+                title: "Broken Statue",
+                text: "A statue of a weeping angel stands before you.",
+                choices: [
+                    { 
+                        txt: "Pray (Heal)", 
+                        resultText: "A warm light envelops you.",
+                        effect: () => { 
+                             gameStore.state.hp = Math.min(gameStore.state.hp + 30, gameStore.state.maxHp);
+                             gameStore.triggerVfx({ type: 'heal', val: 30 });
+                        }
+                    },
+                    { 
+                        txt: "Desecrate (Steal Gem)", 
+                        resultText: "You pry the gem from its eye. It burns.",
+                        effect: () => { 
+                             gameStore.state.gold += 100;
+                             gameStore.state.hp -= 20;
+                             gameStore.triggerVfx({ type: 'damage', val: 20 });
+                        } 
+                    }
+                ]
+            }];
+        }
+
+        // Arcane Tower (Library/Lab)
+        if (['library_void', 'lab', 'observatory'].includes(biomeId)) {
+            return [{
+                title: "Unstable Rift",
+                text: "Raw magic crackles in the air.",
+                choices: [
+                    { 
+                        txt: "Absorb Energy (+MP)", 
+                        resultText: "Your mana reserves overflow!",
+                        effect: () => { 
+                             gameStore.state.maxMp += 10;
+                             gameStore.state.mp = gameStore.state.maxMp;
+                             gameStore.log("Max MP increased by 10!", "buff");
+                        }
+                    },
+                    { 
+                        txt: "Touch It (Risk)", 
+                        resultText: "It shocks you... but you feel smarter?",
+                        effect: () => { 
+                             // 50% chance of damage or INT
+                             if(Math.random() > 0.5) {
+                                 gameStore.state.int += 1;
+                                 gameStore.log("+1 INT!", "buff");
+                             } else {
+                                 gameStore.state.hp -= 15;
+                                 gameStore.triggerVfx({ type: 'damage', val: "ZAP!" });
+                             }
+                        } 
+                    }
+                ]
+            }];
+        }
+
+        // Iron Fortress (Forge/Mine)
+        if (['forge', 'mine', 'armory'].includes(biomeId)) {
+             return [{
+                title: "Abandoned Anvil",
+                text: "A hammer still rests on the hot iron.",
+                choices: [
+                    { 
+                        txt: "Refine Weapon (+Damage)", 
+                        resultText: "You sharpen your blade on the grindstone.",
+                        effect: () => { 
+                             // Global multiplier tweak or just temp buff?
+                             // Let's give flat STR for now
+                             gameStore.state.str += 1;
+                             gameStore.log("+1 STR (Sharpened)", "buff");
+                        }
+                    },
+                    { txt: "Leave it", resultText: "You walk past the heat." }
+                ]
+            }];
+        }
+
         return common;
     }
 };

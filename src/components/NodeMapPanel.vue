@@ -1,5 +1,4 @@
-<script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref, nextTick, onUnmounted } from 'vue';
 import { gameStore } from '../game/store';
 import { NodeMap } from '../game/logic/NodeMap';
 
@@ -8,6 +7,10 @@ const s = gameStore.state;
 // Computed
 const map = computed(() => s.world.nodeMap);
 const activeRealm = computed(() => s.world.activeRealm);
+
+// Lines State
+const connections = ref([]);
+const mapContainer = ref(null);
 
 // Actions
 const enterNode = (node) => {
@@ -46,60 +49,77 @@ const selectNode = (node) => {
    }, 300);
 };
 
+// SVG Line Logic
+const updateLines = () => {
+    if (!mapContainer.value) return;
+    
+    // Safety check just in case map isn't rendered
+    if (map.value.length === 0) return;
+
+    const newConnections = [];
+    const containerRect = mapContainer.value.getBoundingClientRect();
+    
+    // Loop through all nodes and find their DOM elements
+    // We only need to draw lines from Layer N to Layer N+1
+    for (let l = 0; l < map.value.length - 1; l++) {
+        const layerNodes = map.value[l];
+        // const nextLayerNodes = map.value[l+1]; // Not needed directly, just indices
+        
+        layerNodes.forEach(node => {
+            const startEl = document.getElementById(`node-${node.id}`);
+            if (!startEl) return;
+            
+            const startRect = startEl.getBoundingClientRect();
+            // Calculate center relative to container
+            const x1 = startRect.left + startRect.width/2 - containerRect.left;
+            const y1 = startRect.top + startRect.height/2 - containerRect.top;
+            
+            node.next.forEach(targetIndex => {
+                const targetId = `${l+1}-${targetIndex}`;
+                const endEl = document.getElementById(`node-${targetId}`);
+                if (endEl) {
+                    const endRect = endEl.getBoundingClientRect();
+                    const x2 = endRect.left + endRect.width/2 - containerRect.left;
+                    const y2 = endRect.top + endRect.height/2 - containerRect.top;
+                    
+                    // Determine if active path
+                   // const isActive = isPathActive(node, targetIndex); 
+                   const current = s.world.currentNode;
+                   let active = false;
+                   if (current && current.layer === l && current.index === node.index) {
+                       // We are at start node
+                       // Is this one of the valid next paths? Yes.
+                       // Highlight all valid next paths? Or just the one we took?
+                       // Actually, 'active' usually means the history.
+                       // For now, simple gray lines.
+                   }
+                   
+                    newConnections.push({ x1, y1, x2, y2, active: false });
+                }
+            });
+        });
+    }
+    
+    connections.value = newConnections;
+};
+
 // Generate Map if empty (Safety check)
 onMounted(() => {
     if ((!map.value || map.value.length === 0) && activeRealm.value) {
         console.log("Generating Map for", activeRealm.value);
         s.world.nodeMap = NodeMap.generateMap(activeRealm.value);
     }
+    
+    // Wait for DOM
+    nextTick(() => {
+        setTimeout(updateLines, 500); // Hacky delay for layout settle
+        window.addEventListener('resize', updateLines);
+    });
 });
 
-// Helper for connection lines (SVG)
-const getLines = () => {
-    const lines = [];
-    if (!map.value || map.value.length === 0) return [];
-
-    // Iterate layers
-    for (let l = 0; l < map.value.length - 1; l++) {
-        const layer = map.value[l];
-        const nextLayer = map.value[l+1];
-        
-        layer.forEach(node => {
-            node.next.forEach(targetIdx => {
-                const target = nextLayer.find(n => n.index === targetIdx);
-                if (target) {
-                    lines.push({
-                        id: `${node.id}-${target.id}`,
-                        x1: getX(node.layer),
-                        y1: getY(node.index, layer.length),
-                        x2: getX(target.layer),
-                        y2: getY(target.index, nextLayer.length),
-                        active: isPathActive(node, target)
-                    });
-                }
-            });
-        });
-    }
-    return lines;
-};
-
-// Layout Math (Horizontal Scroll?)
-// Let's do Vertical for Mobile? Or Horizontal?
-// Slay the Spire is Vertical (Bottom to Top).
-// Let's go Vertical: Layer 0 at Bottom.
-
-const getX = (layer) => {
-   // Center vertically? No, vertical stack.
-   // Wait, X is horizontal.
-   // Let's do X = Index spread, Y = Layer
-   // Actually, standard is scrolling UP.
-   return 0; // Handled by CSS Grid? No, need SVG coords.
-};
-
-// Let's use CSS Grid for nodes, SVG overlay might be tricky without fixed sizes.
-// SIMPLIFIED APPROACH: Just use CSS lines or basic logic.
-// For Mobile Polish (v36 is later), let's stick to a clean CSS Grid layout.
-// Layer Row (bottom up) -> Flex Nodes.
+onUnmounted(() => {
+    window.removeEventListener('resize', updateLines);
+});
 
 const isReachable = (node) => {
     const current = s.world.currentNode;
@@ -109,6 +129,7 @@ const isReachable = (node) => {
     
     // Check connection
     const prevNode = map.value[current.layer].find(n => n.index === current.index);
+    if (!prevNode) return false; // Safety
     return prevNode.next.includes(node.index);
 };
 
@@ -117,44 +138,52 @@ const isCurrent = (node) => {
            s.world.currentNode.layer === node.layer && 
            s.world.currentNode.index === node.index;
 };
-
 </script>
 
 <template>
   <div class="node-map-panel">
     <div class="map-header">
        <h3>🗺️ THE ATLAS</h3>
-       <button @click="$emit('back')">LEAVE (Debug)</button>
+       <button @click="$emit('back')">MENU</button>
     </div>
 
-    <div class="map-container">
+    <!-- SVG Layer for Lines -->
+    <svg class="map-lines">
+        <line 
+            v-for="(line, idx) in connections" 
+            :key="idx"
+            :x1="line.x1" :y1="line.y1" 
+            :x2="line.x2" :y2="line.y2"
+            :stroke="line.active ? '#fff' : '#444'"
+            stroke-width="2"
+            stroke-dasharray="5"
+        />
+    </svg>
+
+    <div class="map-container" ref="mapContainer">
         <!-- Render from Last Layer (Top) to First Layer (Bottom) -->
-        <!-- map is [layer0, layer1...] -->
-        <!-- We want to display index 14 at top, index 0 at bottom -->
         <div 
             v-for="(layer, lIndex) in [...map].reverse()" 
             :key="lIndex"
             class="map-layer"
+            :data-layer="layer[0].layer"
         >
-            <!-- Real Layer Index calculation -->
             <div 
                 v-for="node in layer"
                 :key="node.id"
                 class="map-node"
+                :id="`node-${node.id}`"
                 :class="{ 
                     'reachable': isReachable(node),
                     'current': isCurrent(node),
                     'boss': node.type === 'boss',
+                     'completed': node.status === 'completed',
                     'locked': !isReachable(node) && !isCurrent(node) && node.layer > (s.world.currentNode?.layer || -1)
                 }"
                 :style="{ borderColor: node.color, color: node.color }"
                 @click="enterNode(node)"
             >
                 <span class="icon">{{ node.icon }}</span>
-                <span class="dev-lines" v-if="false">
-                    <!-- Debug connections -->
-                    {{ node.next }}
-                </span>
             </div>
         </div>
     </div>
@@ -169,7 +198,22 @@ const isCurrent = (node) => {
   background: #050505;
   color: #fff;
   overflow: hidden;
+  position: relative; 
 }
+
+/* SVG Overlay */
+.map-lines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1; /* Behind text but above BG? Actually needs to be on top of BG */
+}
+/* Nodes need z-index 2 */
+.map-node { z-index: 2; }
+.map-container { z-index: 2; background: transparent; }
 
 .map-header {
     padding: 10px;
@@ -177,6 +221,8 @@ const isCurrent = (node) => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    z-index: 10;
+    background: #050505;
 }
 
 .map-container {
@@ -186,18 +232,16 @@ const isCurrent = (node) => {
     flex-direction: column;
     padding: 20px;
     gap: 30px;
-    /* Reverse scrolling start from bottom? */
+    align-items: center; 
 }
 
 .map-layer {
     display: flex;
     justify-content: center;
-    gap: 40px; /* Spacing between nodes */
+    gap: 40px; 
     position: relative;
+    width: 100%;
 }
-
-/* Optional: Draw lines with pseudo elements? Hard without SVG. */
-/* For MVP, just trust the adjacency. */
 
 .map-node {
     width: 60px;
@@ -232,6 +276,14 @@ const isCurrent = (node) => {
     color: #000 !important;
     opacity: 1;
     transform: scale(1.1);
+    box-shadow: 0 0 20px var(--c-gold);
+}
+
+/* Completed nodes dim out but stay visible */
+.map-node.completed {
+    opacity: 0.3;
+    border-color: #888 !important;
+    color: #888 !important;
 }
 
 .map-node.boss {

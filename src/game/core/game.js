@@ -328,6 +328,11 @@ const Game = {
       
       if(window.GameStore) {
           window.GameStore.state.world.activeRealm = realmId;
+          
+          // Polish: Play Sound / Ambience
+          // if(window.SoundManager) window.SoundManager.playAmbience(realmId);
+          Events.emit("log_boss", `You step into the ${realmId.replace('_', ' ').toUpperCase()}...`);
+          
           // Trigger UI switch
           UI.showPanel("node_map");
       }
