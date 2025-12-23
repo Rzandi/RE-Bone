@@ -76,6 +76,11 @@ const showAchievements = () => {
 const showPatchModal = ref(false);
 
 const patchNotes = [
+    { ver: "v36.9.0", date: "2025-12-23", changes: ["📱 MOBILE OPTIMIZATION COMPLETE!", "Touch Controls: 44px+ tap targets, swipe gestures, FAB button", "Responsive Layouts: Vertical stacking, bottom sheets, full-screen details", "Performance: 300ms debounced search, memory leak fixes, optimized repaints", "Edge Cases: Long names truncation, keyboard handling, landscape mode", "15+ mobile-specific features, PWA-ready"] },
+    { ver: "v36.8.0", date: "2025-12-23", changes: ["🎨 UI/UX POLISH!", "Status Icons: Emoji icons (🔥☠️⚡) replace text", "Upgrade Badges: ⚡X shows skill investment", "Preview Tooltips: Hover for before/after stats", "Animations: Cooldown ticks, SP pulse, panel transitions", "Advanced: Skill comparison, confirmation modals, search & filter", "Keyboard Shortcuts: ESC, U, 1-5"] },
+    { ver: "v36.7.0", date: "2025-12-23", changes: ["🔮 SKILL MANAGEMENT SYSTEM!", "Equip Up to 5 Skills for Combat", "Upgrade Skills with SP (Skill Points)", "Gain +2 SP per Level Up", "SP Cost Scaling: base 3 * 1.5^level", "Upgrade Paths: Power, Cooldown, Ailment boosts", "New Panel: Full skill management UI"] },
+    { ver: "v36.6.0", date: "2025-12-23", changes: ["⏱️ SKILL COOLDOWN SYSTEM!", "Per-Skill Cooldown Tracking", "Cooldown Calculation: Upgrades reduce base CD first", "CDR Cap: Maximum 50% reduction", "Minimum CD: Always ≥ 1 turn", "Haste Passive: -20% all cooldowns", "Upgrade foundation for skill progression"] },
+    { ver: "v36.5.0", date: "2025-12-23", changes: ["🤖 ENEMY AI REVOLUTION!", "Enemies use SKILLS intelligently (Heal, Buff, Attack)", "MP System: Enemies manage resources (+5 MP/turn)", "Cooldowns: Skills have 1-4 turn cooldowns", "UI: Enemy MP bar in combat", "Logs: Enhanced skill detection (🔮 icon)", "7 Bug Fixes: Floor progress, Combat nav, Flee %, Item turns, Rest button, Pause menu, Import save"] },
     { ver: "v36.4.2", date: "2025-12-23", changes: ["CRITICAL FIX: Soul Forge Crash (Shop Init)", "CRITICAL FIX: Mobile Clipboard (Export Save)", "UI: Class Selector Grid & Scroll Padding", "UI: Patch Notes Pagination (Readable!)"] },
     { ver: "v36.4.1", date: "2025-12-23", changes: ["MOBILE LAYOUT FIXED 📱", "Fixed 'Cut Off' UI Buttons on Mobile Browsers", "Implemented Dynamic Viewport (100dvh)", "Added Safe Area Padding for iPhone/Android Gestures"] },
     { ver: "v36.4", date: "2025-12-23", changes: ["UI OPTIMIZATION 🎨", "Mobile Layout & Buttons (Retro 3D)", "New Class Icons in Status Panel (🧙‍♂️/🛡️)", "Inventory Visuals: Item Icons & Badges", "Combat: Floating Enemy & HP Animation", "Polished Log Panel (Text & Contrast)"] },
@@ -115,6 +120,23 @@ const prevPage = () => {
     if (currentPage.value > 0) currentPage.value--;
 };
 
+const onImportSave = () => {
+  const saveString = prompt("📥 Paste your save string below:");
+  
+  if (!saveString) return; // User cancelled
+  
+  if (confirm("⚠️ This will overwrite your current save. Continue?")) {
+    const success = SaveManager.importSaveString(saveString);
+    
+    if (success) {
+      alert("✅ Save imported successfully! Click Continue to load."); 
+      hasSave.value = true; // Show Continue button
+    } else {
+      alert("❌ Import failed! Invalid save string.");
+    }
+  }
+};
+
 const ascension = computed(() => {
     return gameStore.state.meta?.ascensionLevel || 0;
 });
@@ -124,7 +146,7 @@ const ascension = computed(() => {
   <div class="start-screen scanline">
     <div class="title-container">
       <h1>RE:BONE</h1>
-      <p class="version-text">v36.4.2 HOTFIX</p>
+      <p class="version-text">v36.9.0 MOBILE COMPLETE 📱✨</p>
       <div v-if="ascension > 0" class="cycle-display">
           ☠️ CYCLE {{ ascension }} ☠️
       </div>
@@ -136,6 +158,7 @@ const ascension = computed(() => {
            <!-- Logic: If Save exists, show CONTINUE clearly. -->
            <button v-if="hasSave" class="btn-main btn-continue" @click="onContinue">[ CONTINUE ]</button>
            <button class="btn-main btn-start" @click="onNewGame">[ NEW GAME ]</button>
+           <button class="btn-main btn-import" @click="onImportSave">[ IMPORT SAVE ]</button>
       </div>
       
       <p class="powered-text">Powered by Gemini AI ✨</p>
@@ -253,6 +276,16 @@ h1 {
     color: var(--c-gold);
     text-shadow: 0 0 10px var(--c-gold);
     transform: scale(1.1);
+}
+
+.btn-import {
+    color: #5bf !important;
+    font-size: 1.2rem !important;
+}
+
+.btn-import:hover {
+    color: #8df !important;
+    text-shadow: 0 0 10px #5bf !important;
 }
 
 .powered-text {

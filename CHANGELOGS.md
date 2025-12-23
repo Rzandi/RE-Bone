@@ -1,4 +1,217 @@
-# RE:BONE - Version History
+# RE:BONE - CHANGELOGS
+
+All notable changes to this project will be documented in this file.
+
+---
+
+## [36.9.0] - 2025-12-23 - 📱 MOBILE OPTIMIZATION COMPLETE
+
+### Major Features
+
+- **Complete Mobile Support** - Touch optimization for all devices
+- **Responsive Design** - Adaptive layouts (phone/tablet/desktop)
+- **Performance Optimization** - Debounced search, memory leak fixes
+
+### Mobile Touch (Phase 1)
+
+- Viewport meta tags for PWA support
+- 44x44px minimum tap targets on all buttons
+- Touch feedback animations (scale + opacity)
+- iOS safe area support for notched devices
+- Overscroll bounce prevention
+- Double-tap zoom disabled
+
+### Responsive Layouts (Phase 2)
+
+- Vertical stacking on mobile (< 767px)
+- Bottom sheet modals with swipe handles
+- Full-screen detail views with back button
+- Single column grids on small screens
+- Landscape optimization (2-column layouts)
+- Mobile search bar stacking
+
+### Mobile Components (Phase 3)
+
+- Floating Action Button (FAB) for quick skill access
+- Swipe-down gesture to close panels
+- Window resize reactivity
+- Ripple effects on button taps
+
+### Performance & Polish (Phase 4-6)
+
+- 300ms debounced search (mobile only)
+- Event listener cleanup (memory leak fix)
+- Long skill name truncation
+- Keyboard-open state handling
+- Empty state improvements
+- Loading states with pulse
+- Network-aware animations
+
+### Bug Fixes
+
+- Fixed event listener memory leak
+- Fixed isMobile not reactive to resize
+- Fixed debounced search initial flash
+
+### Metrics
+
+- 15 mobile features, 34 CSS queries
+- 500+ lines of optimization
+- 99% production ready
+
+---
+
+## [36.8.0] - 2025-12-23 - 🎨 UI/UX POLISH
+
+### Phase 1: Quick Wins
+
+- **Enemy Status Icons** - Emoji icons (🔥☠️⚡) replace text
+- **Upgrade Badges** - Gold ⚡X badges show investment
+- **Upgrade Tooltips** - Hover for before/after stats
+- **Toast Notifications** - Auto-dismiss component
+- **Keyboard Shortcuts** - ESC, U, 1-5
+
+### Phase 2: Animations
+
+- **Cooldown Tick Animation** - Smooth bounce on turn change
+- **SP Pulse** - Gold glow on SP gain
+- **Panel Transitions** - Slide-in/out (0.3s)
+- **Search & Filter** - Real-time with 4 types
+
+### Phase 3: Advanced
+
+- **Skill Comparison** - Compare up to 3 skills
+- **Confirmation Modals** - Confirm ≥10 SP upgrades
+- **Equip Recommended** - Auto-equip top 5 skills
+- **Premium Styling** - Dark theme polish
+
+### Metrics
+
+- 10 polish features
+- 6 animation types
+- 2 new components
+
+---
+
+## [36.7.0] - 2025-12-23 - 🔮 SKILL MANAGEMENT SYSTEM
+
+### Core Features
+
+- **Skill Management Panel** - Complete UI (314 lines)
+- **Equip System** - Max 5 skills for combat
+- **Upgrade System** - Spend SP permanently
+- **SP Economy** - +2 SP per level
+
+### Implementation
+
+- New SkillManagementPanel.vue component
+- Real-time SP cost (base 3 \* 1.5^level)
+- Skill filtering by equipped/available
+- Detail view with upgrade paths
+
+### Integration
+
+- Navigation in ControlPanel
+- Combat filtering (equipped only)
+- State initialization in Player.js
+- Panel transitions
+
+### Bug Fixes
+
+- Fixed SP gain placement
+- Fixed panel routing
+- Fixed upgrade application
+
+### Metrics
+
+- 8 new features
+- 400+ lines of code
+
+---
+
+## [36.6.0] - 2025-12-23 - ⏱️ SKILL COOLDOWN SYSTEM
+
+### Features
+
+- **Cooldown Tracking** - Per-skill state
+- **Smart Calculation** - Upgrades → CDR → cap
+- **CDR Cap** - Max 50% reduction
+- **Minimum CD** - Always ≥ 1 turn
+
+### Implementation
+
+- skillCooldowns in store
+- Calculation in Combat.js
+- Haste passive (-20% CDR)
+- Upgrade path support
+
+### Verification
+
+- Cooldowns decrement correctly
+- Upgrades reduce base CD first
+- CDR applies after upgrades
+- Skills block on cooldown
+
+---
+
+## [36.5.0] - 2025-12-23 - 🤖 ENEMY AI REVOLUTION
+
+**"Enemies FIGHT BACK! Smart AI, Skills, and Resource Management."**
+
+### 🧠 Enemy AI System (MAJOR FEATURE)
+
+- **Smart Decision-Making**: Enemies now use skills intelligently based on:
+
+  - **HP < 30%**: Prioritize healing/defensive skills
+  - **Turn 1-2**: Use buff skills (Howl, etc.) for setup
+  - **Combat**: 50% skill usage, 50% basic attacks (balanced)
+  - **Low MP**: Falls back to basic attack when out of mana
+
+- **Skills Database**: 10+ enemy skills implemented:
+
+  - **Offensive**: Poison Spit, Backstab, Rend, Smash, Bite
+  - **Buffs**: Howl (ATK boost)
+  - **Healing**: Self-heal at low HP
+  - **Debuffs**: Entangle (stun), Blind (miss chance)
+
+- **MP System**:
+
+  - Enemies spawn with **50 MP + (10 × skill count)**
+  - **+5 MP regeneration** per turn
+  - Skills cost **5-20 MP** depending on power
+  - MP bar displayed below HP in combat UI (blue → orange → red)
+
+- **Cooldown System**:
+  - Skills have **1-4 turn cooldowns** to prevent spam
+  - Auto-tracked per enemy instance
+  - Smart availability checking
+
+### 🎨 UI Enhancements
+
+- **Combat Panel**: Added **MP bar** for enemies below HP bar
+  - Color-coded (blue when full, red when low)
+  - Shows current/max MP (e.g., "MP 45/70")
+- **Log Panel**: Enhanced skill detection with **🔮 icon** for enemy skills
+  - Purple color coding for skill usage
+  - Clear visual distinction from basic attacks
+
+### 🔧 Bug Fixes (v36.4.3)
+
+- **Item Turn Mechanics**: Using consumables during combat now properly triggers enemy turn (no more "free" heals!)
+- **Floor Progress**: Fixed floor reset bug after defeating enemies
+- **Combat Navigation**: Back button in Inventory now correctly returns to combat instead of menu
+- **Flee Display**: Flee button now shows success % (e.g., "🏃 FLEE (45%)")
+- **Rest Button**: Added to main menu controls (Explore, Rest, Item, Menu)
+- **Pause Menu**: New overlay with Status, Settings (Ops), and Back options
+- **Import Save**: Added to title screen for cross-device save transfers
+
+### ⚖️ Balance Changes
+
+- Enemy skill usage: **50/50 split** between skills and basic attacks
+- MP costs tuned for 3-5 skill uses per long fight
+- Cooldowns prevent overpowered skill spam
+
+---
 
 ## v36.4 - UI Polish & Optimization 🎨 (2025-12-23)
 

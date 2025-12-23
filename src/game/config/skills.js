@@ -131,6 +131,9 @@ const PASSIVES_DB = {
     blood_fueled: { name: "Blood Fueled", desc: "+1 ATK per 10% missing HP" },
     grim_harvest: { name: "Grim Harvest", desc: "+2 MP on Magic Dmg" },
     shadow_arts: { name: "Shadow Arts", desc: "+20% Crit Rate" },
+    
+    // v36.6.5 CDR Passive
+    haste: { name: "Haste", desc: "-20% Skill Cooldowns", stats: { cdr: 0.20 } },
 
     // God Tier Passives (restored)
     god_of_death: { name: "God of Death", desc: "Execute enemies under 20% HP", stats: { execute: 0.20 } },
@@ -144,6 +147,7 @@ const SKILLS_DB = {
     smash: {
       name: "Smash",
       cost: 2,
+      cooldown: 2,
       type: "phys",
       power: 1.5,
       desc: "Basic Dmg",
@@ -151,6 +155,7 @@ const SKILLS_DB = {
     bone_throw: {
       name: "Bone Throw",
       cost: 3,
+      cooldown: 2,
       type: "phys",
       power: 1.2,
       desc: "Ranged Dmg",
@@ -159,15 +164,23 @@ const SKILLS_DB = {
     shield_bash: {
       name: "Shield Bash",
       cost: 5,
+      cooldown: 3,
       type: "phys",
       power: 1.0,
       status: { id: "shock", turn: 1, val: 0 },
       desc: "Stun",
-      req: { vit: 5 } // v36.1: Lowered for Skeleton (Starts 5 VIT)
+      req: { vit: 5 },
+      upgradePath: [
+        { type: 'power', value: 0.15 },
+        { type: 'ailment', value: 1 },
+        { type: 'power', value: 0.15 },
+        { type: 'cd', value: -1 }
+      ] // v36.1: Lowered for Skeleton (Starts 5 VIT)
     },
     rend: {
       name: "Rend",
       cost: 4,
+      cooldown: 2,
       type: "phys",
       power: 1.2,
       status: { id: "bleed", turn: 3, val: 2 },
@@ -177,6 +190,7 @@ const SKILLS_DB = {
     cannibalize: {
       name: "Cannibalize",
       cost: 6,
+      cooldown: 4,
       type: "heal",
       power: 0.8,
       desc: "Big Heal",
@@ -185,6 +199,7 @@ const SKILLS_DB = {
     frenzy: {
       name: "Frenzy",
       cost: 5,
+      cooldown: 3,
       type: "buff",
       desc: "ATK UP, DEF DOWN",
       req: { str: 15 }
@@ -192,15 +207,37 @@ const SKILLS_DB = {
     fireball: {
       name: "Fireball",
       cost: 6,
+      cooldown: 3,
       type: "mag",
       power: 1.8,
       status: { id: "burn", turn: 3, val: 3 },
       desc: "Burn",
-      req: { int: 8 } // v36.1: Lowered for Phantom (Starts 8 INT)
+      req: { int: 8 },
+      upgradePath: [
+        { type: 'power', value: 0.2 },
+        { type: 'power', value: 0.2 },
+        { type: 'power', value: 0.2 },
+        { type: 'cd', value: -1 },
+        { type: 'ailment', value: 1 },
+        { type: 'power', value: 0.2 },
+        { type: 'power', value: 0.2 },
+        { type: 'cd', value: -1 }
+      ] // v36.1: Lowered for Phantom (Starts 8 INT)
+    },
+    blizzard: {
+      name: "Blizzard",
+      cost: 10,
+      cooldown: 4,
+      type: "mag",
+      power: 1.0,
+      hits: 3,
+      status: { id: "chill", turn: 2, val: 0 },
+      desc: "Slow",
     },
     ice_shard: {
       name: "Ice Shard",
       cost: 5,
+      cooldown: 2,
       type: "mag",
       power: 1.2,
       status: { id: "chill", turn: 3, val: 0 },
@@ -209,6 +246,7 @@ const SKILLS_DB = {
     terror: {
       name: "Terror",
       cost: 8,
+      cooldown: 3,
       type: "debuff",
       status: { id: "weak", turn: 3, val: 0 },
       desc: "Weaken",
@@ -216,14 +254,23 @@ const SKILLS_DB = {
     heal: {
       name: "Mend",
       cost: 5,
+      cooldown: 3,
       type: "heal",
       power: 0.5,
       desc: "Heal",
+      upgradePath: [
+        { type: 'power', value: 0.3 },
+        { type: 'power', value: 0.3 },
+        { type: 'cd', value: -1 },
+        { type: 'power', value: 0.3 },
+        { type: 'cd', value: -1 }
+      ]
     },
     // Vampire Skills
     blood_drain: {
       name: "Blood Drain",
       cost: 4,
+      cooldown: 2,
       type: "phys",
       power: 1.3,
       lifesteal: 0.5,  // 50% of damage healed
@@ -232,6 +279,7 @@ const SKILLS_DB = {
     bat_swarm: {
       name: "Bat Swarm",
       cost: 6,
+      cooldown: 3,
       type: "phys",
       power: 0.8,
       hits: 3,  // Multi-hit
@@ -241,6 +289,7 @@ const SKILLS_DB = {
     night_veil: {
       name: "Night Veil",
       cost: 8,
+      cooldown: 5,
       type: "heal",
       power: 1.0,
       invuln: 1,  // 1 turn invulnerability
@@ -250,20 +299,24 @@ const SKILLS_DB = {
     summon_skeleton: {
       name: "Summon Skeleton",
       cost: 7,
+      cooldown: 5,
       type: "summon",
       hp: 30,
-      desc: "Summon Tank",
+      desc: "Summon Aid",
     },
-    death_bolt: {
-      name: "Death Bolt",
+    death_coil: {
+      name: "Death Coil",
       cost: 8,
+      cooldown: 3,
       type: "mag",
-      power: 2.2,
+      power: 2.0,
+      lifesteal: 0.5,
       desc: "High Magic DMG",
     },
     soul_harvest: {
       name: "Soul Harvest",
       cost: 5,
+      cooldown: 4,
       type: "mag",
       power: 1.0,  // Scales with kills
       killBonus: 0.1,  // +10% per kill
@@ -273,6 +326,7 @@ const SKILLS_DB = {
     phase_strike: {
       name: "Phase Strike",
       cost: 6,
+      cooldown: 3,
       type: "phys",
       power: 1.5,
       ignoreDef: true,  // Ignore enemy DEF
@@ -281,6 +335,7 @@ const SKILLS_DB = {
     haunting: {
       name: "Haunting",
       cost: 5,
+      cooldown: 2,
       type: "debuff",
       status: { id: "fear", turn: 3, val: 0 },  // ATK debuff
       desc: "Fear (ATK Down)",
@@ -288,6 +343,7 @@ const SKILLS_DB = {
     possession: {
       name: "Possession",
       cost: 10,
+      cooldown: 5,
       type: "special",
       desc: "Control Enemy 1 Turn",
     },
@@ -297,6 +353,7 @@ const SKILLS_DB = {
       name: "Soul Cleave",
       cost: 15, // High MP cost
       hpCost: 10, // Cost HP as well (handled in effect)
+      cooldown: 4,
       type: "phys",
       power: 2.5,
       desc: "Cost 10 HP. Massive Dmg",
@@ -310,6 +367,7 @@ const SKILLS_DB = {
     plague_ward: { // Used by Necro Priest
       name: "Plague Ward",
       cost: 20,
+      cooldown: 5,
       type: "buff",
       status: { id: "plague_ward", turn: 3, val: 50 }, // Reflect 50%
       shield: 10,
@@ -319,6 +377,7 @@ const SKILLS_DB = {
     vanish: {
        name: "Vanish",
        cost: 10, // Cost Reduced 25 -> 10
+       cooldown: 4,
        type: "buff",
        status: { id: "stealth", turn: 2, val: 0 },
        nextHitCrit: true,
@@ -327,9 +386,20 @@ const SKILLS_DB = {
     },
     
     // v30.3 New Class Skills
+    arcane_missiles: {
+      name: "Arcane Missiles",
+      cost: 6,
+      cooldown: 2,
+      type: "mag",
+      power: 0.6,
+      hits: 4,
+      desc: "4-Hit Barrage",
+      req: { str: 4, int: 5 } // v36.1: Fixed for Shadow Assassin (Str 4)
+    },
     shadow_shuriken: {
        name: "Shadow Shuriken",
        cost: 4,
+       cooldown: 2,
        type: "phys",
        power: 1.0,
        hits: 2,
@@ -339,6 +409,7 @@ const SKILLS_DB = {
     backstab: {
        name: "Backstab",
        cost: 10,
+       cooldown: 3,
        type: "phys",
        power: 2.0,
        desc: "High dmg, ignored if frontal?", // Simplified logic
@@ -347,6 +418,7 @@ const SKILLS_DB = {
     hex: {
        name: "Hex",
        cost: 8,
+       cooldown: 3,
        type: "debuff",
        status: { id: "curse", turn: 4, val: 0 }, // Curse: Take more dmg
        desc: "Curse Target",
@@ -355,6 +427,7 @@ const SKILLS_DB = {
     cursed_mending: {
        name: "Cursed Mending",
        cost: 10,
+       cooldown: 4,
        type: "heal",
        power: 1.5,
        status: { id: "weak", turn: 2, val: 0 }, // Self-weaken or target weaken?
@@ -366,6 +439,7 @@ const SKILLS_DB = {
     void_slash: {
        name: "Void Slash",
        cost: 12,
+       cooldown: 3,
        type: "mag", // Magic slash
        power: 1.8,
        ignoreDef: true,
@@ -375,6 +449,7 @@ const SKILLS_DB = {
     abyssal_shield: {
        name: "Abyssal Shield",
        cost: 15,
+       cooldown: 5,
        type: "buff",
        shield: 30, // Big shield
        desc: "Gain 30 Shield",
@@ -389,6 +464,7 @@ const SKILLS_DB = {
     judgement: {
         name: "Judgement",
         cost: 6,
+        cooldown: 2,
         type: "phys", 
         power: 1.8,
         desc: "Holy Smash",
@@ -398,6 +474,7 @@ const SKILLS_DB = {
     divine_shield: {
         name: "Divine Shield",
         cost: 15,
+        cooldown: 5,
         type: "buff",
         invuln: 1, 
         desc: "Immune 1 Turn",
@@ -406,6 +483,7 @@ const SKILLS_DB = {
     consecrate: {
         name: "Consecrate",
         cost: 8,
+        cooldown: 3,
         type: "heal",
         power: 0.5,
         status: { id: "regen", turn: 3, val: 5 }, 
@@ -417,44 +495,56 @@ const SKILLS_DB = {
     thorn_whip: { 
         name: "Thorn Whip",
         cost: 2,
+        cooldown: 1,
         type: "mag", 
         power: 1.2,
         desc: "Nature Dmg",
         req: { int: 5 }
     },
+    lich_form: {
+      name: "Lich Form",
+      cost: 10,
+      cooldown: 6,
+      type: "buff",
+      desc: "Transform",
+    },
     bear_form: {
         name: "Bear Form",
         cost: 10,
+        cooldown: 4,
         type: "buff",
         status: { id: "bear_form", turn: 3, val: 20 }, 
         shield: 20,
         desc: "+20 DEF & Shield",
         req: { vit: 6 } // v36.1: Lowered for Druid (Starts 6 VIT)
     },
-    entangle: {
-        name: "Entangle",
-        cost: 6,
-        type: "debuff",
-        status: { id: "root", turn: 2, val: 0 }, 
+    rage: {
+        name: "Rage",
+        cost: 5,
+        cooldown: 3,
+        type: "buff",
+        status: { id: "rage", turn: 3, val: 10 }, 
         desc: "Root Enemy",
         req: { int: 8 }
     },
-    regrowth: {
-        name: "Regrowth",
-        cost: 5,
-        type: "heal",
-        power: 0.8,
-        desc: "Direct Heal",
+    energy_blast: {
+        name: "Energy Blast",
+        cost: 6,
+        cooldown: 2,
+        type: "mag",
+        power: 1.8,
+        desc: "Tech Dmg",
         req: { int: 5 }
     },
 
     // BERSERKER (Rage / Physical)
     whirlwind: {
         name: "Whirlwind",
-        cost: 6, 
+        cost: 10,
+        cooldown: 4,
         type: "phys",
-        power: 0.8,
-        hits: 3, 
+        power: 0.7,
+        hits: 5, 
         desc: "Spin to Win!",
         req: { str: 10 } // v36.1: Fixed req (was Str 15, Berserker has Str 10)
     },
@@ -467,11 +557,12 @@ const SKILLS_DB = {
         desc: "-20 HP, +50% ATK",
         effect: (user) => { user.takeTrueDamage(20); return { txt: "RAGE!", type: "buff" }; }
     },
-    executing_strike: {
+    execute: {
         name: "Execute",
-        cost: 10,
+        cost: 8,
+        cooldown: 3,
         type: "phys",
-        power: 2.5,
+        power: 3.0,
         desc: "High Dmg Finisher",
         req: { str: 20 }
     },
@@ -480,25 +571,28 @@ const SKILLS_DB = {
     deploy_turret: {
         name: "Deploy Turret",
         cost: 15,
+        cooldown: 6,
         type: "summon",
-        hp: 40,
-        desc: "Summon Gunner",
+        hp: 50,
+        desc: "Auto-Attack Turret",
         req: { int: 9 } // v36.1: Lowered for Mechanist (Starts 9 INT)
     },
-    overclock: {
-        name: "Overclock",
-        cost: 10,
+    overcharge: {
+        name: "Overcharge",
+        cost: 20,
+        cooldown: 5,
         type: "buff",
-        status: { id: "haste", turn: 3, val: 0 }, 
+        status: { id: "overcharge", turn: 2, val: 50 }, 
         desc: "Speed Boost",
         req: { int: 15 }
     },
-    rocket_salvo: {
-        name: "Rocket Salvo",
+    rejuvenation: {
+        name: "Rejuvenation",
         cost: 12,
-        type: "mag", 
-        power: 1.5,
-        status: { id: "burn", turn: 3, val: 5 },
+        cooldown: 4,
+        type: "heal",
+        power: 1.2,
+        status: { id: "regen", turn: 3, val: 3 },
         desc: "Explosive Dmg",
         req: { int: 9 } // v36.1: Fixed req (was Str 10, Mech has Str 4, Int 9)
     },

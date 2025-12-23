@@ -33,6 +33,10 @@ export const Player = {
         s.activeSkills = [...c.skills].slice(0, 4); // Auto-equip first 4
         s.learnedSkills = [...c.skills];
         
+        // v36.7: Initialize skill management
+        s.unlockedSkills = [...c.skills]; // Start with base skills unlocked
+        s.equippedSkills = [...c.skills].slice(0, 5); // Auto-equip first 5 for combat
+        
         // Equipment
         s.inventory = [];
         s.relics = []; // v35.0: Relic Inventory
@@ -282,6 +286,15 @@ export const Player = {
 
         s.inventory.splice(idx, 1);
         if(window.SoundManager) window.SoundManager.play("ui");
+        
+        // v36.4.3: If in combat, using item consumes turn (trigger enemy turn)
+        if (gameStore.state.activePanel === 'combat' && gameStore.state.combat?.enemy) {
+            if (window.CombatManager) {
+                setTimeout(() => {
+                    window.CombatManager.enemyTurn();
+                }, 800); // Small delay for player to see heal/buff effect
+            }
+        }
     },
 
     addStatus(buff) {
@@ -418,9 +431,9 @@ export const Player = {
             s.level++;
             s.exp -= s.nextExp; // Overflow
             s.nextExp = Math.floor(s.nextExp * 1.5);
-            s.sp = (s.sp || 0) + 1; // v36.1 Fix: Grant SP centrally
+            s.sp = (s.sp || 0) + 2; // v36.7: +2 SP per level
             
-            gameStore.log(`Level Up! Lv.${s.level}`, "buff");
+            gameStore.log(`Level Up! Lv.${s.level} (+2 SP)`, "buff");
             if(window.SoundManager) window.SoundManager.play("level_up");
             gameStore.triggerShake("medium");
             this.recalc();

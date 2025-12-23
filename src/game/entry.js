@@ -13,6 +13,7 @@ import './config/recipes.js';
 import './config/skill_trees.js';
 import './config/relics.js'; // v35.2 Relics
 import { EVENTS_DB } from './config/events.js'; // v36.0 Events
+import './config/enemy_skills.js'; // v36.4.3 Enemy Skills
 import './config/database.js'; // Must be last config
 
 // Import Logic

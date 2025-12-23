@@ -35,6 +35,18 @@ const close = () => {
     // Return to previous safe panel (usually Menu)
     gameStore.state.activePanel = "menu-view"; 
 };
+
+// v36.6: Get passive ability name
+const getPassiveName = (passiveId) => {
+    const passive = DB.PASSIVES ? DB.PASSIVES[passiveId] : null;
+    return passive ? passive.name : passiveId;
+};
+
+// v36.6: Get passive ability description
+const getPassiveDesc = (passiveId) => {
+    const passive = DB.PASSIVES ? DB.PASSIVES[passiveId] : null;
+    return passive ? passive.desc : 'Unknown passive ability';
+};
 </script>
 
 <template>
@@ -45,28 +57,53 @@ const close = () => {
       <button class="btn-close" @click="close">X</button>
     </div>
 
-    <div class="tree-container" v-if="tree">
-        <div v-for="node in nodes" :key="node.id" 
-             class="node-card" 
-             :class="{ unlocked: isUnlocked(node), locked: !isUnlocked(node) }">
-             
-            <div class="node-icon">{{ node.icon || '🔮' }}</div>
-            <div class="node-info">
-                <h3>{{ node.name }} <span v-if="isUnlocked(node)">✔️</span></h3>
-                <p>{{ node.desc }}</p>
-                <div class="cost" v-if="!isUnlocked(node)">Cost: {{ node.cost }} SP</div>
+    <!-- v36.6: 2-Column Layout -->
+    <div class="panel-container">
+        <!-- LEFT: Passive Skills -->
+        <div class="passives-section">
+            <h3>⚡ PASSIVE ABILITIES</h3>
+            <div class="passive-list">
+                <div v-for="passiveId in s.passives" :key="passiveId" class="passive-card">
+                    <div class="passive-icon">🛡️</div>
+                    <div class="passive-info">
+                        <h4>{{ getPassiveName(passiveId) }}</h4>
+                        <small>{{ getPassiveDesc(passiveId) }}</small>
+                    </div>
+                </div>
+                
+                <div v-if="s.passives.length === 0" class="empty-state">
+                    No passive abilities unlocked yet.
+                </div>
             </div>
-            
-            <button v-if="!isUnlocked(node)" 
-                    :disabled="!canUnlock(node)"
-                    @click="unlock(node)"
-                    class="btn-unlock">
-                {{ canUnlock(node) ? "UNLOCK" : "LOCKED" }}
-            </button>
         </div>
-    </div>
-    <div v-else class="empty-state">
-        No Skill Tree Data Found.
+
+        <!-- RIGHT: Active Skills (Skill Tree) -->
+        <div class="skills-section">
+            <h3>🔮 ACTIVE SKILLS</h3>
+            <div class="tree-container" v-if="tree">
+                <div v-for="node in nodes" :key="node.id" 
+                     class="node-card" 
+                     :class="{ unlocked: isUnlocked(node), locked: !isUnlocked(node) }">
+                     
+                    <div class="node-icon">{{ node.icon || '🔮' }}</div>
+                    <div class="node-info">
+                        <h3>{{ node.name }} <span v-if="isUnlocked(node)">✔️</span></h3>
+                        <p>{{ node.desc }}</p>
+                        <div class="cost" v-if="!isUnlocked(node)">Cost: {{ node.cost }} SP</div>
+                    </div>
+                    
+                    <button v-if="!isUnlocked(node)" 
+                            :disabled="!canUnlock(node)"
+                            @click="unlock(node)"
+                            class="btn-unlock">
+                        {{ canUnlock(node) ? "UNLOCK" : "LOCKED" }}
+                    </button>
+                </div>
+            </div>
+            <div v-else class="empty-state">
+                No Skill Tree Data Found.
+            </div>
+        </div>
     </div>
   </div>
 </template>
@@ -88,9 +125,100 @@ const close = () => {
 .header h2 { color: var(--c-gold); margin: 0; font-size: 1.2rem; }
 .sp-display { color: var(--c-blue); font-weight: bold; font-size: 1.2rem; }
 
+/* v36.6: 2-Column Layout */
+.panel-container {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 10px;
+    padding: 15px;
+    overflow: hidden;
+}
+
+/* LEFT: Passives Section */
+.passives-section {
+    display: flex;
+    flex-direction: column;
+    border-right: 2px solid #444;
+    padding-right: 15px;
+    overflow-y: auto;
+}
+
+.passives-section h3 {
+    color: #4af;
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
+.passive-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.passive-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #1a1a2a;
+    border: 1px solid #4a4a6a;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.passive-card:hover {
+    background: #252535;
+    border-color: #5a5a7a;
+}
+
+.passive-icon {
+    font-size: 1.5rem;
+    width: 35px;
+    text-align: center;
+}
+
+.passive-info {
+    flex: 1;
+}
+
+.passive-info h4 {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #aaf;
+}
+
+.passive-info small {
+    color: #888;
+    font-size: 0.7rem;
+    line-height: 1.2;
+}
+
+/* RIGHT: Skills Section */
+.skills-section {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding-left: 10px;
+}
+
+.skills-section h3 {
+    color: var(--c-gold);
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
 .tree-container {
-    flex: 1; padding: 20px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 15px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .node-card {

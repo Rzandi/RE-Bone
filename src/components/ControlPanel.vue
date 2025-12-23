@@ -6,6 +6,25 @@ const emit = defineEmits(["action"]);
 
 const s = gameStore.state;
 
+// Calculate flee chance for display
+const fleeChance = computed(() => {
+  if (!s.combat || !s.combat.enemy) return 0;
+  
+  // Formula: Base 50% + Stat Advantage - Floor Penalty
+  let base = 50;
+  let statBonus = (s.level * 3);
+  let floorPenalty = (s.floor * 2);
+  
+  // Adjust for Enemy Rank if exists
+  if (s.combat.enemy.rank) {
+    const rankPenalties = { 'E': 0, 'D': 5, 'C': 10, 'B': 20, 'A': 30, 'S': 50 };
+    floorPenalty += (rankPenalties[s.combat.enemy.rank] || 0);
+  }
+  
+  let chance = base + statBonus - floorPenalty;
+  return Math.max(0, Math.min(100, Math.floor(chance)));
+});
+
 // Define buttons based on activePanel
 const buttons = computed(() => {
   // 1. Dynamic Overrides (e.g. Sanctuary, Manual Explore)
@@ -27,18 +46,21 @@ const buttons = computed(() => {
   if (panel === "menu-view") {
     return [
       { label: "🔍 EXPLORE", action: "explore", color: "var(--c-gold)" },
-      { label: "👤 STATUS", action: "status" },
-      { label: "🎒 ITEM", action: "item" }, 
-      { label: "⚙️ OPT", action: "settings" },
+      { label: "⬇️ DESCEND", action: "descend", color: "var(--c-red)" },
+      { label: "🔮 SKILLS", fn: () => s.activePanel = 'skill-management', color: "var(--c-purple)" },
+      { label: "⚙️ MENU", fn: () => s.activePanel = 'pause-menu' },
     ];
   }
   
   if (panel === "combat") {
+    const fleeLabel = `🏃 FLEE (${fleeChance.value}%)`;
+    const fleeColor = fleeChance.value > 50 ? "#fff" : "#888";
+    
     return [
       { label: "⚔️ ATTACK", action: "attack", color: "#f55" },
       { label: "⚡ SKILL", action: "skill", color: "var(--c-blue)" },
       { label: "🎒 ITEM", action: "item" },
-      { label: "🏃 FLEE", action: "flee" },
+      { label: fleeLabel, action: "flee", color: fleeColor },
     ];
   }
 

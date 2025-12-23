@@ -24,6 +24,15 @@ onMounted(() => {
 const getLogStyle = (log) => {
   const text = log.text.toLowerCase();
   
+  // v36.4.3: Enemy Skill Detection (poison, backstab, heal, etc.)
+  if (text.includes('spits poison') || text.includes('backstabs') || 
+      text.includes('heals!') || text.includes('howls') ||
+      text.includes('smashes!') || text.includes('rends!') ||
+      text.includes('entangles') || text.includes('blinds you') ||
+      text.includes('uses ')) {
+    return { icon: '🔮', color: '#c084fc' }; // Purple for enemy skills
+  }
+  
   // Universal skill detection - "Used [anything]!" or "[skillname] hit for"
   if (text.includes('used ') || 
       (text.includes(' hit for') && !text.includes('you hit for'))) {

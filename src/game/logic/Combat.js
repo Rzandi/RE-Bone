@@ -29,6 +29,14 @@ export const Combat = {
             enemy.isElite = isElite;
             enemy.status = [];
             
+            // v36.4.3: Initialize MP system (base 50 MP, +10 per skill)
+            const skillCount = enemy.skills ? enemy.skills.length : 0;
+            enemy.maxMp = 50 + (skillCount * 10);
+            enemy.mp = enemy.maxMp;
+            
+            // v36.4.3: Initialize cooldown tracking
+            enemy.cooldowns = {}; // { skillId: turnsRemaining }
+            
             this.state.combat.enemy = enemy;
             this.state.combat.turn = 'player';
             
@@ -65,12 +73,23 @@ export const Combat = {
             this.handleVictory();
             return;
         }
+        
+        const p = PlayerLogic.state;
+        
+        // v36.6: Decrement player skill cooldowns at turn start
+        if (p.skillCooldowns && Object.keys(p.skillCooldowns).length > 0) {
+            Object.keys(p.skillCooldowns).forEach(skillId => {
+                p.skillCooldowns[skillId]--;
+                if (p.skillCooldowns[skillId] <= 0) {
+                    delete p.skillCooldowns[skillId];
+                }
+            });
+        }
 
         // Lock turn immediately to prevent double-clicks
         this.state.combat.turn = 'enemy_waiting';
 
         // 1. Calculate Damage
-        const p = PlayerLogic.state;
         let bonusDmg = this.getDamageBonus(); 
         if (p.passives.includes("undead_mastery")) {
              let floorsDescended = 100 - this.state.floor; 
@@ -219,10 +238,65 @@ export const Combat = {
              gameStore.log(`Zap: Enemy shocked for ${zapDmg} dmg.`, "damage");
         }
 
-        let dmg = e.atk || 5;
+        // v36.4.3: MP Regeneration (+5 MP per turn, capped at maxMp)
+        if (e.mp < e.maxMp) {
+            e.mp = Math.min(e.mp + 5, e.maxMp);
+        }
         
-        // AI Logic stub
-        gameStore.log(`${e.name} attacks for ${dmg}!`, "damage");
+        // v36.4.3: Decrement all skill cooldowns
+        if (e.cooldowns) {
+            Object.keys(e.cooldowns).forEach(skillId => {
+                e.cooldowns[skillId]--;
+                if (e.cooldowns[skillId] <= 0) delete e.cooldowns[skillId];
+            });
+        }
+        
+        // v36.4.3: SMART AI - Skill Selection
+        let usedSkill = false;
+        let dmg = 0;
+        
+        // Try to use a skill (50% chance, or prioritize based on situation)
+        if (e.skills && e.skills.length > 0 && Math.random() < 0.5) {
+            const selectedSkill = this.selectEnemySkill(e);
+            
+            if (selectedSkill) {
+                // Get skill definition
+                const skillDef = window.getEnemySkill(selectedSkill);
+                
+                // Check MP cost and cooldown
+                if (e.mp >= skillDef.mp && !e.cooldowns[selectedSkill]) {
+                    try {
+                        // Execute skill
+                        const result = skillDef.execute(e, PlayerLogic);
+                        
+                        // Deduct MP
+                        e.mp -= skillDef.mp;
+                        
+                        // Set cooldown
+                        if (skillDef.cooldown > 0) {
+                            e.cooldowns[selectedSkill] = skillDef.cooldown;
+                        }
+                        
+                        // Log result
+                        gameStore.log(result.log || `${e.name} uses ${skillDef.name}!`, "combat");
+                        
+                        if (result.damage) dmg = result.damage;
+                        usedSkill = true;
+                        
+                    } catch (err) {
+                        console.error("Skill execution error:", err);
+                        // Fall back to basic attack on error
+                        usedSkill = false;
+                    }
+                }
+            }
+        }
+        
+        // Fallback: Basic Attack (if no skill used or skill failed)
+        if (!usedSkill) {
+            dmg = e.atk || 5;
+            gameStore.log(`${e.name} attacks for ${dmg}!`, "damage");
+        }
         
         // v36.2: PASSIVE - Inner Rage (+ATK when hit)
         if (PlayerLogic.state.passives.includes('rage_meter')) {
@@ -233,14 +307,16 @@ export const Combat = {
             gameStore.log("Inner Rage: +ATK!", "buff");
         }
 
-        // Hit Sfx
-        if(window.SoundManager) window.SoundManager.play("hit");
-        if(window.gameStore) window.gameStore.triggerShake("medium");
-        
-        // VFX
-        // gameStore.triggerVfx({ type: 'damage', val: dmg, target: 'player' }); // Handled by Player.js now (integrity check)
-        // Blood Particles
-        for(let i=0; i<3; i++) gameStore.triggerVfx({ type: 'particle-blood', target: 'player' });
+        // Hit Sfx (only if damage was dealt)
+        if (dmg > 0) {
+            if(window.SoundManager) window.SoundManager.play("hit");
+            if(window.gameStore) window.gameStore.triggerShake("medium");
+            
+            // VFX
+            // gameStore.triggerVfx({ type: 'damage', val: dmg, target: 'player' }); // Handled by Player.js now (integrity check)
+            // Blood Particles
+            for(let i=0; i<3; i++) gameStore.triggerVfx({ type: 'particle-blood', target: 'player' });
+        }
         
         // Calculate Reflect
         if(dmg > 0 && PlayerLogic.state.bonuses.reflect) {
@@ -262,7 +338,10 @@ export const Combat = {
              }
         }
 
-        PlayerLogic.takeDamage(dmg);
+        // Apply damage to player (only if skill dealt damage or basic attack)
+        if (dmg > 0) {
+            PlayerLogic.takeDamage(dmg);
+        }
         
         if (this.state.combat.turn === 'enemy') { // Check if combat still active
             // Check if Enemy died from Reflect/Thorns
@@ -296,6 +375,70 @@ export const Combat = {
         }
     },
     
+    // v36.4.3: AI Skill Selection Logic
+    selectEnemySkill(enemy) {
+        if (!enemy.skills || enemy.skills.length === 0) return null;
+        
+        // Filter available skills (not on cooldown, enough MP)
+        const available = enemy.skills.filter(skillId => {
+            if (enemy.cooldowns && enemy.cooldowns[skillId]) return false; // On cooldown
+            const skillDef = window.getEnemySkill(skillId);
+            if (!skillDef || enemy.mp < skillDef.mp) return false; // Not enough MP
+            return true;
+        });
+        
+        if (available.length === 0) return null;
+        
+        // Calculate HP percentage
+        const hpPct = enemy.hp / enemy.maxHp;
+        
+        // Track turn count (approximate by checking cooldowns - lower = earlier turns)
+        const turnCount = Object.keys(enemy.cooldowns || {}).length + 1;
+        
+        // Priority-based selection
+        let healSkills = [];
+        let buffSkills = [];
+        let offensiveSkills = [];
+        
+        available.forEach(skillId => {
+            const skillDef = window.getEnemySkill(skillId);
+            switch (skillDef.priority) {
+                case 'self_low_hp':
+                    healSkills.push(skillId);
+                    break;
+                case 'opening':
+                    buffSkills.push(skillId);
+                    break;
+                case 'first_turn':
+                    if (turnCount <= 2) offensiveSkills.push(skillId);
+                    break;
+                case 'offensive':
+                default:
+                    offensiveSkills.push(skillId);
+                    break;
+            }
+        });
+        
+        // Decision Tree
+        // 1. Survival (HP < 30%)
+        if (hpPct < 0.3 && healSkills.length > 0) {
+            return healSkills[Math.floor(Math.random() * healSkills.length)];
+        }
+        
+        // 2. Opening (Turn 1-2)
+        if (turnCount <= 2 && buffSkills.length > 0) {
+            return buffSkills[Math.floor(Math.random() * buffSkills.length)];
+        }
+        
+        // 3. Offensive (default)
+        if (offensiveSkills.length > 0) {
+            return offensiveSkills[Math.floor(Math.random() * offensiveSkills.length)];
+        }
+        
+        // Fallback: random available skill
+        return available[Math.floor(Math.random() * available.length)];
+    },
+    
     handleVictory() {
         const e = this.enemy;
         if (!e) return;
@@ -309,6 +452,11 @@ export const Combat = {
         
         // **REWARDS CALCULATION**
         const p = PlayerLogic.state;
+        
+        // v36.6: Reset skill cooldowns on victory
+        if (p.skillCooldowns) {
+            p.skillCooldowns = {};
+        }
         
         // EXP
         let expGain = Math.floor((e.exp || 10) * (p.multipliers?.exp || 1));
@@ -392,6 +540,8 @@ export const Combat = {
         
         // FLOOR PROGRESSION
         gameStore.state.progress = Math.min(100, gameStore.state.progress + 20);
+        // CRITICAL FIX: Sync to Game.state for save persistence
+        if (window.Game) window.Game.state.progress = gameStore.state.progress;
         
         // CONSOLIDATED LOOT LOG with LUCKY DROP detection
         let lootLog = `💰 +${expGain} EXP, +${goldReward} Gold`;
@@ -521,14 +671,62 @@ export const Combat = {
         return bonus;
     },
 
-    executeSkill(skill) {
+    executeSkill(skillId, skill) {
         if (!this.enemy) return;
         
+        const p = PlayerLogic.state;
+        
+        // v36.6: Check if skill is on cooldown
+        if (p.skillCooldowns && p.skillCooldowns[skillId]) {
+            gameStore.log(`${skill.name} is on cooldown! (${p.skillCooldowns[skillId]} turns)`, "system");
+            return;
+        }
+        
         gameStore.log(`Used ${skill.name}!`, "combat");
+        
+        // v36.6.5: Calculate final cooldown with upgrades and CDR
+        let baseCooldown = skill.cooldown || 0;
+        
+        if (baseCooldown > 0) {
+            // 1. Apply permanent upgrades (reduce base cooldown)
+            if (p.skillUpgrades && p.skillUpgrades[skillId]) {
+                baseCooldown = Math.max(1, baseCooldown - p.skillUpgrades[skillId]);
+            }
+            
+            // 2. Apply CDR stat (percentage reduction, capped at 50%)
+            const cdr = Math.min(0.50, p.bonuses?.cdr || 0);
+            baseCooldown = Math.ceil(baseCooldown * (1 - cdr));
+            
+            // 3. Ensure minimum 1 turn
+            baseCooldown = Math.max(1, baseCooldown);
+        }
+        
+        // Set the final cooldown
+        if (baseCooldown > 0) {
+            if (!p.skillCooldowns) p.skillCooldowns = {};
+            p.skillCooldowns[skillId] = baseCooldown;
+        }
+
+        // v36.7: Apply skill upgrades to power and ailments
+        let skillPower = skill.power || 1;
+        let skillStatus = skill.status ? { ...skill.status } : null;
+        
+        const upgrades = p.skillUpgrades[skillId];
+        if (upgrades) {
+            // Apply power multiplier (capped at 3x)
+            if (upgrades.powerBonus) {
+                skillPower *= Math.min(3.0, 1 + upgrades.powerBonus);
+            }
+            
+            // Apply ailment duration bonus
+            if (skillStatus && skillStatus.turn && upgrades.ailmentBonus) {
+                skillStatus.turn += upgrades.ailmentBonus;
+            }
+        }
 
         // 1. Handle Effects
         if (skill.type === 'heal') {
-           const heal = Math.floor(skill.power * (PlayerLogic.state.int || 10) * 2); // Simple scaling
+           const heal = Math.floor(skillPower * (PlayerLogic.state.int || 10) * 2); // Use upgraded power
            PlayerLogic.state.hp = Math.min(PlayerLogic.state.hp + heal, PlayerLogic.state.maxHp);
            gameStore.log(`Healed for ${heal} HP.`, "item");
            gameStore.triggerVfx({ type: 'heal', val: `+${heal}`, target: 'player' });
@@ -540,7 +738,7 @@ export const Combat = {
                 ? (p.atk || p.str*2) 
                 : (p.int * 2);
                 
-            let dmg = Math.floor(base * skill.power);
+            let dmg = Math.floor(base * skillPower); // v36.7: Use upgraded power!
             
             // Apply Damage
             const isCrit = Math.random() < p.crit;
@@ -552,10 +750,10 @@ export const Combat = {
             gameStore.triggerVfx({ type: isCrit ? 'critical' : 'damage', val: dmg, target: 'enemy' });
             
             // **APPLY STATUS EFFECTS** (Stun, Bleed, Burn, Poison, etc.)
-            if (skill.status && this.enemy) {
+            if (skillStatus && this.enemy) {
                 if (!this.enemy.status) this.enemy.status = [];
-                this.enemy.status.push({ ...skill.status });
-                const statusName = skill.status.id.charAt(0).toUpperCase() + skill.status.id.slice(1);
+                this.enemy.status.push(skillStatus); // v36.7: Use upgraded status!
+                const statusName = skillStatus.id.charAt(0).toUpperCase() + skillStatus.id.slice(1);
                 gameStore.log(`💥 Applied ${statusName}!`, "debuff");
             }
             

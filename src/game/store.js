@@ -16,6 +16,7 @@ export const gameState = reactive({
     merchantStock: [],
     logs: [],
     buttons: [], // Dynamic Buttons from UI.setButtons
+    previousPanel: null, // Track previous panel for back navigation
     inventory: [],
     // Stats
     str: 0,
@@ -37,7 +38,12 @@ export const gameState = reactive({
 
     // Skills & Passives
     skills: [],
-    passives: [],
+    unlockedSkills: [], // v36.7: Skills available for use/equipping
+    skillCooldowns: {}, // v36.6: Per-skill cooldown tracking { skillId: turnsRemaining }
+    skillUpgrades: {}, // v36.6.5: Permanent skill upgrades { skillId: { level, powerBonus, cdReduction } }
+    equippedSkills: [], // v36.7: Equipped skills (max 5)
+    sp: 3, // v36.7: Skill Points (starting: 3, +2 per level)
+    passives: [], // Passive abilities (always-on)
     relics: [], // v35.2 Relic System (Permanent Passive Items)
     activeSkills: [],
     learnedSkills: [],

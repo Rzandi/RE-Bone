@@ -41,6 +41,54 @@ const spriteHtml = computed(() => {
   }
   return enemy.value.sprite || "👹";
 });
+
+// v36.4.3: MP display
+const mpColor = computed(() => {
+  if (!enemy.value || !enemy.value.maxMp) return "#5bf";
+  const pct = enemy.value.mp / enemy.value.maxMp;
+  if (pct > 0.5) return "#5bf"; // Blue
+  if (pct > 0.25) return "#fa0"; // Orange
+  return "#a55"; // Red (low MP)
+});
+
+const hasMp = computed(() => {
+  return enemy.value && enemy.value.maxMp > 0;
+});
+
+// v36.8: Status icon mapping
+const statusIcons = {
+  burn: '🔥',
+  poison: '☠️',
+  shock: '⚡',
+  bleed: '🩸',
+  weak: '💔',
+  chill: '❄️',
+  stun: '😵',
+  doom: '💀',
+  regen: '💚',
+  shield: '🛡️'
+};
+
+const statusNames = {
+  burn: 'Burning',
+  poison: 'Poisoned',
+  shock: 'Stunned',
+  bleed: 'Bleeding',
+  weak: 'Weakened',
+  chill: 'Chilled',
+  stun: 'Stunned',
+  doom: 'Doomed',
+  regen: 'Regenerating',
+  shield: 'Shielded'
+};
+
+const getStatusIcon = (statusId) => {
+  return statusIcons[statusId] || '❓';
+};
+
+const getStatusName = (statusId) => {
+  return statusNames[statusId] || statusId;
+};
 </script>
 
 <template>
@@ -74,15 +122,31 @@ const spriteHtml = computed(() => {
       </div>
     </div>
 
+    <!-- MP BAR (v36.4.3) -->
+    <div class="mp-container" v-if="hasMp">
+      <div class="mp-bar-bg">
+        <div
+          class="mp-bar-fill"
+          :style="{
+            width: Math.min(100, Math.max(0, (enemy.mp / enemy.maxMp) * 100)) + '%',
+            background: mpColor,
+          }"
+        ></div>
+      </div>
+      <div class="mp-text">
+        MP {{ Math.floor(enemy.mp) }} / {{ enemy.maxMp }}
+      </div>
+    </div>
+
     <!-- STATUS ICONS -->
     <div class="enemy-status" v-if="enemy.status && enemy.status.length">
       <span
         v-for="(st, i) in enemy.status"
         :key="i"
         class="status-badge"
-        :title="st.id"
+        :title="`${getStatusName(st.id)}: ${st.turn} turns`"
       >
-        {{ st.id.substring(0, 2) }}
+        {{ getStatusIcon(st.id) }}
       </span>
     </div>
   </div>
