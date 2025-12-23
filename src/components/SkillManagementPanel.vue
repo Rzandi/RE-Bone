@@ -83,18 +83,21 @@ const availableList = computed(() => unlockedSkills.value.filter(sk => !sk.isEqu
 // Select skill
 const selectSkill = (skill) => {
   selected.value = skill;
+  if (window.SoundManager) window.SoundManager.play('click');
 };
 
 // Equip skill
 const equipSkill = (skillId) => {
   if (s.equippedSkills.length >= MAX_SLOTS) {
     gameStore.log("All slots full! Unequip a skill first.", "error");
+    if (window.SoundManager) window.SoundManager.play('error');
     return;
   }
   
   if (!s.equippedSkills.includes(skillId)) {
     s.equippedSkills.push(skillId);
     gameStore.log(`Equipped ${DB.SKILLS[skillId].name}!`, "buff");
+    if (window.SoundManager) window.SoundManager.play('item_equip');
   }
 };
 
@@ -104,6 +107,7 @@ const unequipSkill = (skillId) => {
   if (idx !== -1) {
     s.equippedSkills.splice(idx, 1);
     gameStore.log(`Unequipped ${DB.SKILLS[skillId].name}.`, "system");
+    if (window.SoundManager) window.SoundManager.play('sell');
   }
 };
 
@@ -169,6 +173,7 @@ const performUpgrade = (skillId, cost, currentLevel) => {
   }
   
   gameStore.log(`Upgraded ${skill.name}! (Level ${s.skillUpgrades[skillId].level})`, "buff");
+  if (window.SoundManager) window.SoundManager.play('success');
   
   // Refresh selected
   if (selected.value && selected.value.id === skillId) {
@@ -306,7 +311,7 @@ const handleTouchEnd = (e) => {
 
 // v36.9 Phase 2: Mobile back button handler (FIXED: Proper cleanup)
 let clickHandler = null;
-let searchDebounceTimer = null; // Declare here if used in onUnmounted
+// searchDebounceTimer is already declared at line 27
 
 onMounted(() => {
   clickHandler = (e) => {
@@ -516,19 +521,45 @@ onUnmounted(() => {
 .skill-management {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(5, 0, 10, 0.98);
+  background: var(--glass-bg, rgba(5, 0, 10, 0.98));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex; flex-direction: column;
   z-index: 100;
 }
 
 .header {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 15px; background: #111; border-bottom: 2px solid var(--c-gold);
+  padding: 15px; 
+  background: linear-gradient(135deg, rgba(20, 15, 30, 0.9), rgba(10, 5, 15, 0.95));
+  border-bottom: 2px solid var(--c-gold, #cfaa4c);
 }
 
-.header h2 { margin: 0; color: var(--c-gold); font-size: 1.2rem; }
-.sp-display { color: var(--c-blue); font-weight: bold; font-size: 1.2rem; }
-.btn-close { background: #500; color: #fff; border: 1px solid #f00; width: 30px; height: 30px; cursor: pointer; }
+.header h2 { 
+  margin: 0; 
+  color: var(--c-gold, #cfaa4c); 
+  font-size: 1.2rem;
+  text-shadow: 0 0 10px rgba(207, 170, 76, 0.4);
+}
+.sp-display { 
+  color: var(--c-blue, #4d88ff); 
+  font-weight: bold; 
+  font-size: 1.2rem;
+  text-shadow: 0 0 8px rgba(77, 136, 255, 0.4);
+}
+.btn-close { 
+  background: linear-gradient(135deg, #500, #300); 
+  color: #fff; 
+  border: 1px solid rgba(255, 68, 68, 0.6); 
+  width: 30px; height: 30px; 
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+.btn-close:hover {
+  background: linear-gradient(135deg, #600, #400);
+  box-shadow: 0 0 10px rgba(255, 68, 68, 0.4);
+}
 
 /* v36.8 Phase 2: Search Bar */
 .search-bar {
@@ -649,34 +680,73 @@ onUnmounted(() => {
 
 .section h3 {
   color: #4af; margin: 0 0 10px 0; font-size: 0.9rem;
-  border-bottom: 1px solid #333; padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 5px;
+  text-shadow: 0 0 8px rgba(68, 170, 255, 0.3);
 }
 
 .skill-card {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px; background: #1a1a2a; border: 1px solid #333;
-  cursor: pointer; transition: all 0.2s;
+  padding: 12px; 
+  background: linear-gradient(135deg, rgba(26, 26, 42, 0.8), rgba(16, 16, 32, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer; 
+  transition: all 0.25s ease;
+  margin-bottom: 8px;
 }
 
-.skill-card:hover { background: #252535; border-color: #555; }
-.skill-card.selected { border-color: var(--c-gold); background: #2a2a3a; }
-.skill-card.equipped { border-color: #4a4; }
+.skill-card:hover { 
+  background: linear-gradient(135deg, rgba(37, 37, 53, 0.9), rgba(27, 27, 43, 0.95));
+  border-color: rgba(100, 130, 180, 0.4);
+  transform: translateX(3px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.skill-card.selected { 
+  border-color: var(--c-gold, #cfaa4c); 
+  background: linear-gradient(135deg, rgba(42, 42, 58, 0.95), rgba(32, 32, 48, 0.98));
+  box-shadow: 0 0 15px rgba(207, 170, 76, 0.2);
+}
+.skill-card.equipped { 
+  border-color: rgba(74, 180, 74, 0.6);
+  background: linear-gradient(135deg, rgba(20, 35, 20, 0.9), rgba(12, 25, 12, 0.95));
+}
 
-.skill-icon { font-size: 1.5rem; width: 40px; text-align: center; }
+.skill-icon { 
+  font-size: 1.5rem; 
+  width: 40px; 
+  text-align: center;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}
 .skill-info { flex: 1; }
 .skill-info h4 { margin: 0; font-size: 0.9rem; color: #fff; }
 .skill-info small { color: #888; font-size: 0.75rem; }
 
 .btn-equip, .btn-unequip {
-  padding: 5px 10px; font-size: 0.75rem; font-weight: bold;
+  padding: 6px 12px; font-size: 0.75rem; font-weight: bold;
   border: 1px solid; cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
-.btn-equip { background: #363; color: #afa; border-color: #5a5; }
-.btn-equip:hover { background: #474; }
+.btn-equip { 
+  background: linear-gradient(135deg, #366, #244); 
+  color: #afa; 
+  border-color: rgba(90, 180, 90, 0.5); 
+}
+.btn-equip:hover { 
+  background: linear-gradient(135deg, #477, #355); 
+  box-shadow: 0 0 8px rgba(90, 180, 90, 0.3);
+}
 .btn-equip:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.btn-unequip { background: #633; color: #faa; border-color: #a55; }
-.btn-unequip:hover { background: #744; }
+.btn-unequip { 
+  background: linear-gradient(135deg, #633, #422); 
+  color: #faa; 
+  border-color: rgba(180, 90, 90, 0.5); 
+}
+.btn-unequip:hover { 
+  background: linear-gradient(135deg, #744, #533); 
+  box-shadow: 0 0 8px rgba(180, 90, 90, 0.3);
+}
 
 /* RIGHT: Detail View */
 .detail-view {

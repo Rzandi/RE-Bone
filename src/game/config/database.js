@@ -10,6 +10,7 @@ import { CLASSES_DB } from './classes.js';
 import { ENEMIES_DB, BOSSES_DB, BIOME_ENEMIES } from './enemies.js';
 import { RECIPES } from './recipes.js';
 import { EVOLUTIONS, CLASS_TREES } from './evolution.js';
+import { GEMS, getGemTierInfo, generateSocketCount } from './gems.js'; // v37.0
 
 export const DB = {
   ITEMS: {
@@ -26,6 +27,7 @@ export const DB = {
   RECIPES: RECIPES,
   EVOLUTIONS: EVOLUTIONS,
   CLASS_TREES: CLASS_TREES,
+  GEMS: GEMS, // v37.0
   
   STATUS: {
     burn: { icon: "🔥", color: "#f55" },
@@ -37,6 +39,9 @@ export const DB = {
     hex: { icon: "🔮", color: "#f0f" },
   },
 };
+
+// v37.0 Socket Generation Helper (Export for use in loot)
+export { generateSocketCount, getGemTierInfo };
 
 // Legacy Compatibility (Optional, can be removed later)
 window.DB = DB;

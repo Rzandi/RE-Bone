@@ -99,18 +99,18 @@ After the massive content injection of v34/v35, the game will likely be unstable
 
 **Focus**: _Economy, Balancing, & Advanced Crafting_
 
-- [ ] **1. Socketing & Reforging**
+- [x] **1. Socketing & Reforging**
 
   - **Socketing**: Items spawn with "Slots" for Gems (Ruby=ATK, Sapphire=MP).
   - **Reforging**: Reroll random stats on Legendary Gear using Souls.
 
-- [ ] **2. The Black Market (Gambling System)**
+- [x] **2. The Black Market (Gambling System)**
 
   - A hidden shop that accepts **Souls** instead of Gold.
   - **Gacha Mechanics**: Buy "Mystery Boxes" with variable rarity chances.
   - **High Risk**: Chance to get "Cursed" items (High Stats, Fatal Debuffs).
 
-- [ ] **3. Dynamic Economy & Balancing**
+- [x] **3. Dynamic Economy & Balancing**
   - **Inflation**: Merchant prices increase by 10% per Realm cleared.
   - **Scarcity**: Potions become more expensive if you buy too many.
   - **Item Synthesis**: Combine 3 items of the same tier to create 1 item of higher rarity (Common -> Rare -> Epic).
@@ -136,8 +136,53 @@ After the massive content injection of v34/v35, the game will likely be unstable
   - _Pacifist_: Cannot use weapons (Skills only). (+100% Score)
 
 - [ ] **3. Dynamic In-Game Challenges**
+
   - Random "Cursed Altars" found in Event Nodes.
   - Accept a mid-run curse for a massive immediate reward (e.g., gain 1000 Gold, but lose 50% Max HP).
+
+- [ ] **4. Dungeon & Raid System**
+
+  - **Instanced Dungeons**: Time-limited challenges with unique bosses and exclusive loot.
+  - **Raid Bosses**: Massive multi-phase bosses requiring strategic preparation.
+  - **Weekly Reset**: Special dungeons that refresh weekly with different modifiers.
+
+- [ ] **5. Multiplayer & Leaderboards**
+
+  - **Global Leaderboards**: Compete for highest floor, fastest clear, most souls.
+  - **Daily/Weekly Rankings**: Time-limited competitions with exclusive rewards.
+  - **Ghost Runs**: Race against replays of top players.
+
+- [ ] **6. Guild System**
+
+  - **Create/Join Guilds**: Form alliances with other players.
+  - **Guild Raids**: Cooperative boss battles with shared rewards.
+  - **Guild Wars**: Competitive events between guilds.
+  - **Guild Perks**: Unlock permanent bonuses through guild progression.
+
+- [ ] **7. Pet & Companion System**
+
+  - **Summonable Pets**: Companions that fight alongside you.
+  - **Pet Evolution**: Level up and evolve pets into stronger forms.
+  - **Pet Abilities**: Unique skills (healing, damage, buffs).
+  - **Pet Fusion**: Combine pets for hybrid abilities.
+
+- [ ] **8. Endless Mode**
+
+  - **Infinite Scaling**: Floors beyond 100 with exponential difficulty.
+  - **Prestige System**: Reset with permanent stat bonuses.
+  - **Endless Leaderboard**: See who can climb highest.
+
+- [ ] **9. Daily Challenges**
+
+  - **Rotating Modifiers**: New challenge conditions every day.
+  - **Daily Rewards**: Exclusive items for completing daily runs.
+  - **Streak Bonuses**: Consecutive completion rewards.
+
+- [ ] **10. Seasonal Events**
+  - **Holiday Themes**: Special events for holidays (Halloween, Christmas, etc.).
+  - **Limited Items**: Exclusive cosmetics and gear only available during events.
+  - **Event Bosses**: Unique seasonal bosses with themed loot.
+  - **Event Shop**: Spend event currency on exclusive rewards.
 
 ---
 

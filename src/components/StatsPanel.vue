@@ -33,6 +33,34 @@ const derived = computed(() => {
 
 const equip = computed(() => s.equip || {});
 
+// v37.0 Phase 3: Active curse effects
+const curseEffects = computed(() => {
+  if (!s.curseEffects) return [];
+  const effects = [];
+  const ce = s.curseEffects;
+  
+  if (ce.maxHpMult < 1) effects.push({ label: 'MAX HP', val: `-${Math.round((1-ce.maxHpMult)*100)}%`, color: '#f44' });
+  if (ce.defMult < 1) effects.push({ label: 'DEF', val: `-${Math.round((1-ce.defMult)*100)}%`, color: '#f44' });
+  if (ce.missChance > 0) effects.push({ label: 'MISS', val: `+${Math.round(ce.missChance*100)}%`, color: '#f44' });
+  if (ce.noHealInCombat) effects.push({ label: 'NO HEAL', val: '⚠️', color: '#f44' });
+  if (ce.noFlee) effects.push({ label: 'NO FLEE', val: '⚠️', color: '#f44' });
+  
+  return effects;
+});
+
+const curseBuffs = computed(() => {
+  if (!s.cursedBuffs) return [];
+  const buffs = [];
+  const cb = s.cursedBuffs;
+  
+  if (cb.lifesteal > 0) buffs.push({ label: 'LIFESTEAL', val: `+${Math.round(cb.lifesteal*100)}%`, color: '#f55' });
+  if (cb.critDmgMult > 1) buffs.push({ label: 'CRIT DMG', val: `x${cb.critDmgMult.toFixed(1)}`, color: '#fa0' });
+  if (cb.dodge > 0) buffs.push({ label: 'DODGE', val: `+${Math.round(cb.dodge*100)}%`, color: '#4f4' });
+  if (cb.atkMult > 1) buffs.push({ label: 'ATK', val: `+${Math.round((cb.atkMult-1)*100)}%`, color: '#4f4' });
+  
+  return buffs;
+});
+
 const formatItem = (item) =>
   item ? `${item.name} (+${item.atk || 0} Atk)` : "Empty";
 
@@ -89,7 +117,8 @@ const allocate = (key) => {
       <div class="section avatar-section">
         <div class="pixel-art">
           <!-- Class Sprite -->
-          <span style="font-size: 40px">{{ getClassIcon(s.className) }}</span>
+          <div v-if="s.sprite" v-html="s.sprite" class="class-sprite-render"></div>
+          <span v-else style="font-size: 40px">❓</span>
         </div>
         <div class="info">
           <h3>{{ s.className }}</h3>
@@ -152,16 +181,31 @@ const allocate = (key) => {
           }}</span>
         </div>
       </div>
+      
+      <!-- v37.0 Phase 3: CURSE EFFECTS -->
+      <div class="section curses" v-if="curseEffects.length > 0 || curseBuffs.length > 0">
+        <h3 style="color: #a0a;">☠️ CURSE EFFECTS</h3>
+        <div v-for="effect in curseBuffs" :key="effect.label" class="stat-row">
+          <span class="label" style="color: #4f4;">{{ effect.label }}</span>
+          <span class="val" :style="{ color: effect.color }">{{ effect.val }}</span>
+        </div>
+        <div v-for="effect in curseEffects" :key="effect.label" class="stat-row">
+          <span class="label" style="color: #f44;">{{ effect.label }}</span>
+          <span class="val" :style="{ color: effect.color }">{{ effect.val }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .stats-panel {
-  background: rgba(10, 10, 12, 0.95);
+  background: var(--glass-bg, rgba(10, 10, 12, 0.95));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: #eee;
   padding: 15px;
-  border: 1px solid #444;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -169,26 +213,41 @@ const allocate = (key) => {
 
 .levelup-mode {
     border: 2px solid var(--c-gold, #fd0);
-    box-shadow: 0 0 20px var(--c-gold, #fd0);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.4), inset 0 0 20px rgba(255, 215, 0, 0.1);
+    animation: levelUpGlow 2s ease-in-out infinite;
+}
+
+@keyframes levelUpGlow {
+  0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.4), inset 0 0 20px rgba(255, 215, 0, 0.1); }
+  50% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.6), inset 0 0 30px rgba(255, 215, 0, 0.2); }
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid #333;
-  margin-bottom: 10px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
 }
 .header h2 {
   margin: 0;
-  color: var(--c-gold);
+  color: var(--c-gold, #cfaa4c);
   font-size: 1.2rem;
+  text-shadow: 0 0 10px rgba(207, 170, 76, 0.3);
 }
 .header button {
-  background: #300;
-  border: 1px solid #f00;
+  background: linear-gradient(135deg, #3a1515, #2a0a0a);
+  border: 1px solid rgba(255, 68, 68, 0.4);
   color: #fff;
   cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 4px);
+  transition: all 0.2s ease;
+}
+.header button:hover {
+  background: linear-gradient(135deg, #4a2020, #3a1515);
+  border-color: rgba(255, 68, 68, 0.6);
 }
 
 .content {
@@ -200,24 +259,42 @@ const allocate = (key) => {
   display: flex;
   gap: 15px;
   align-items: center;
+  padding: 10px;
+  background: rgba(30, 30, 35, 0.5);
+  border-radius: var(--radius-md, 8px);
+  margin-bottom: 12px;
 }
+
+.pixel-art span {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
 .bar-group {
   width: 100%;
   margin-top: 5px;
 }
 .bar {
-  height: 6px;
-  background: #333;
-  margin-bottom: 2px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  margin-bottom: 4px;
   position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 .bar.hp div {
-  background: var(--c-red);
+  background: linear-gradient(90deg, var(--c-red, #bb3333), #ff5555);
   height: 100%;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(187, 51, 51, 0.5);
+  transition: width 0.3s ease-out;
 }
 .bar.mp div {
-  background: var(--c-blue);
+  background: linear-gradient(90deg, var(--c-blue, #4d88ff), #66b3ff);
   height: 100%;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(77, 136, 255, 0.5);
+  transition: width 0.3s ease-out;
 }
 
 .stat-row {

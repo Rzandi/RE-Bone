@@ -60,6 +60,22 @@ export const SaveManager = {
             
             // --- STATE REPAIR ---
             
+            // v37.0: Repair Gems & Synthesis Data
+            if (!gameStore.state.gems) gameStore.state.gems = [];
+            if (!gameStore.state.synthesisFailures) gameStore.state.synthesisFailures = {};
+            if (typeof gameStore.state.souls !== 'number') gameStore.state.souls = 0;
+            if (typeof gameStore.state.essence !== 'number') gameStore.state.essence = 0;
+            if (!gameStore.state.merchantGemStock) gameStore.state.merchantGemStock = [];
+            
+            // v37.0: Ensure socket data structure exists on items
+            // Sockets should already be saved with inventory items, but verify
+            if (gameStore.state.inventory) {
+                gameStore.state.inventory.forEach(item => {
+                    // Items with sockets will have them preserved
+                    // No action needed, just log if needed
+                });
+            }
+            
             // 1. Repair Multipliers
             Player.recalc();
             
@@ -93,6 +109,36 @@ export const SaveManager = {
                     gameStore.state.combat.turn = 'player';
                     gameStore.log("Combat State Restored. Player Turn.", "system");
                 }
+            }
+            
+            // v37.0 Phase 3: Repair Black Market data
+            if (!gameStore.state.mysteryBoxPity) gameStore.state.mysteryBoxPity = {};
+            if (!gameStore.state.blackMarket) gameStore.state.blackMarket = { purchases: 0, lastRep: 0 };
+            if (!gameStore.state.cursedItemsOwned) gameStore.state.cursedItemsOwned = [];
+            if (!gameStore.state.triggeredCurseEvents) gameStore.state.triggeredCurseEvents = [];
+            if (!gameStore.state.curseModifiers) gameStore.state.curseModifiers = {};
+            
+            // v37.0 Phase 4: Repair Economy data
+            if (!gameStore.state.economy) {
+                gameStore.state.economy = {
+                    totalGoldSpent: 0,
+                    totalGoldEarned: 0,
+                    itemPurchases: {},
+                    itemStock: {},
+                    activeEvent: null,
+                    eventDuration: 0,
+                    merchantReputation: 0,
+                    eventsThisSession: 0,
+                    permanentDeflation: 0,
+                    inflation50Warned: false
+                };
+            } else {
+                // Repair corrupted data
+                const e = gameStore.state.economy;
+                if (typeof e.totalGoldSpent !== 'number') e.totalGoldSpent = 0;
+                if (typeof e.totalGoldEarned !== 'number') e.totalGoldEarned = 0;
+                if (!e.itemPurchases) e.itemPurchases = {};
+                if (!e.itemStock) e.itemStock = {};
             }
             
             gameStore.log("Game Loaded.", "system");

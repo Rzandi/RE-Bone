@@ -47,6 +47,14 @@ export const Player = {
         // Add Starter Item
         this.addItem("rotten_meat");
         
+        // v37.1: Init Sprite
+        if (c.sprite && c.sprite.idle) {
+            s.sprite = c.sprite.idle;
+        } else {
+            s.sprite = "❓";
+        }
+
+        
         this.recalc();
         // Heal to full
         s.hp = s.maxHp;
@@ -71,7 +79,8 @@ export const Player = {
         s.bonuses = {
             str: 0, vit: 0, int: 0,
             flatDef: 0, dodge: 0, crit: 0,
-            lifesteal: 0, block: 0, reflect: 0, reflectMagic: 0 // v35.3
+            lifesteal: 0, block: 0, reflect: 0, reflectMagic: 0, // v35.3
+            spellPower: 0, critDmg: 0, cooldownReduction: 0 // v37.0: Advanced gem stats
         };
 
         if(!isLegacy) {
@@ -194,14 +203,73 @@ export const Player = {
         // 5. Derived Stats (For UI & Combat)
         let calcAtk = Math.floor(s.str * s.multipliers.str * 1.5);
         for (let k in s.equip) if (s.equip[k]?.atk) calcAtk += s.equip[k].atk;
+        
+        // v37.0: Apply Socket Bonuses from Gems
+        if (window.SocketManager) {
+            for (let slot in s.equip) {
+                const item = s.equip[slot];
+                if (item && item.sockets) {
+                    const socketBonuses = window.SocketManager.getSocketBonuses(item);
+                    
+                    // Apply socket bonuses to player stats
+                    for (let stat in socketBonuses) {
+                        const value = socketBonuses[stat];
+                        
+                        // Flat combat stats
+                        if (stat === 'atk') calcAtk += value;
+                        if (stat === 'def') s.bonuses.flatDef = (s.bonuses.flatDef || 0) + value;
+                        if (stat === 'hp') s.maxHp += value;
+                        if (stat === 'mp') s.maxMp += value;
+                        if (stat === 'int') s.bonuses.int = (s.bonuses.int || 0) + value;
+                        
+                        // Percentage/special stats (lifesteal, crit, spellPower, etc)
+                        if (['lifesteal', 'crit', 'dodge', 'block', 'spellPower', 'critDmg', 'cooldownReduction', 'regen'].includes(stat)) {
+                            s.bonuses[stat] = (s.bonuses[stat] || 0) + value;
+                        }
+                    }
+                }
+            }
+            // Re-calculate s.int if gem bonuses affected it (since s.bonuses.int was modified)
+            s.int = Math.floor((s.baseStats.INT + levelBonus + (s.bonuses.int || 0)) * s.multipliers.int);
+        }
+        
+        // v37.0 Phase 3: Apply curse effects from equipped cursed items
+        if (window.BlackMarketManager) {
+            const equippedItems = Object.values(s.equip).filter(Boolean);
+            const curseEffects = window.BlackMarketManager.getCurseEffects(equippedItems);
+            const buffEffects = window.BlackMarketManager.getBuffEffects(equippedItems);
+            
+            // Apply curse multiplicative penalties
+            s.maxHp = Math.max(1, Math.floor(s.maxHp * curseEffects.maxHpMult));
+            s.maxMp = Math.max(0, Math.floor(s.maxMp * (curseEffects.maxMpMult || 1.0)));
+            
+            // Apply buff multipliers (ATK, DEF from cursed items)
+            calcAtk = Math.max(0, calcAtk * buffEffects.atkMult);
+            
+            // Store curse/buff data for combat use
+            s.curseEffects = curseEffects;
+            s.cursedBuffs = buffEffects;
+        }
+        
         s.atk = Math.floor(calcAtk * s.multipliers.dmg);
         
         s.def = s.bonuses.flatDef;
         for (let k in s.equip) if (s.equip[k]?.def) s.def += s.equip[k].def;
         s.def = Math.floor(s.def * s.multipliers.def); // Add armor mult from iron skin etc if exists
         
+        // v37.0 Phase 3: Apply curse DEF penalty after base DEF calc
+        if (s.curseEffects) {
+            s.def = Math.floor(s.def * s.curseEffects.defMult);
+        }
+        
         s.dodge = s.bonuses.dodge;
         s.crit = s.bonuses.crit;
+        
+        // v37.0 Phase 3: Apply dodge/crit bonuses from cursed items
+        if (s.cursedBuffs) {
+            s.dodge += s.cursedBuffs.dodge || 0;
+            s.crit += s.cursedBuffs.critRate || 0;
+        }
     },
     
     addItem(id) {
@@ -493,7 +561,7 @@ export const Player = {
             // It's a class change
             s.className = choice.name;
             s.baseStats = { ...choice.stats };
-            // s.sprite = choice.sprite; // Todo: Update sprite in store
+            if (choice.sprite) s.sprite = choice.sprite;
         }
         if (choice.skills) {
              // Add new skills
@@ -553,8 +621,9 @@ export const Player = {
             if (['strMult', 'vitMult', 'intMult', 'dmg', 'gold', 'exp'].includes(key)) {
                  s.multipliers[key.replace('Mult', '')] += val;
             }
-            // Flat Stats (Bonuses)
-            else if (['str', 'vit', 'int', 'lifesteal', 'dodge', 'crit', 'block', 'reflect'].includes(key)) {
+            // Flat Stats (Bonuses) - v37.0: Added spellPower, critDmg, cooldownReduction
+            else if (['str', 'vit', 'int', 'lifesteal', 'dodge', 'crit', 'block', 'reflect', 
+                      'spellPower', 'critDmg', 'cooldownReduction'].includes(key)) {
                  s.bonuses[key] = (s.bonuses[key] || 0) + val;
             }
             // Special/Boolean Flags

@@ -158,28 +158,36 @@ const getStatusName = (statusId) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px;
-  background: rgba(20, 10, 10, 0.8);
-  border: 1px solid #522;
+  padding: 15px;
+  background: var(--glass-bg, rgba(20, 10, 10, 0.9));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(80, 30, 30, 0.6);
   margin-bottom: 5px;
   position: relative;
-  border-radius: 4px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .enemy-header {
   text-align: center;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 .enemy-header h2 {
   margin: 0;
   font-size: 1.2rem;
   color: #fff;
-  text-shadow: 0 0 5px #f00;
+  text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
 }
 .enemy-header h2.boss {
   color: #f55;
   font-size: 1.5rem;
   letter-spacing: 2px;
+  animation: bossGlow 2s ease-in-out infinite;
+}
+@keyframes bossGlow {
+  0%, 100% { text-shadow: 0 0 10px rgba(255, 85, 85, 0.6), 0 0 20px rgba(255, 0, 0, 0.3); }
+  50% { text-shadow: 0 0 20px rgba(255, 85, 85, 0.9), 0 0 40px rgba(255, 0, 0, 0.5); }
 }
 .enemy-type {
   color: #aaa;
@@ -188,77 +196,131 @@ const getStatusName = (statusId) => {
 }
 
 .sprite-container {
-  height: 80px;
+  height: 90px;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   position: relative;
 }
 
 .mob-sprite {
-  font-size: 3rem;
-  filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.3));
+  font-size: 3.5rem;
+  filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.4));
   animation: float 3s ease-in-out infinite;
 }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  50% { transform: translateY(-8px); }
 }
 
 .hp-container {
   width: 100%;
-  max-width: 300px;
+  max-width: 320px;
   position: relative;
   margin-bottom: 10px;
-  background: #111; /* Darker bg for contrast */
-  border-radius: 4px; /* Consistent rounded */
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  padding: 2px;
 }
 .hp-bar-bg {
-  background: #222;
-  height: 18px; /* Slightly taller */
-  border: 1px solid #444;
-  border-radius: 4px;
-  overflow: hidden; /* Ensure fill respects radius */
+  background: linear-gradient(to bottom, rgba(30, 20, 20, 0.9), rgba(10, 5, 5, 0.95));
+  height: 22px;
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
 }
 .hp-bar-fill {
   height: 100%;
-  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother */
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2) inset; /* Gloss */
+  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 0 15px rgba(255, 100, 100, 0.4) inset, 0 -2px 6px rgba(255, 255, 255, 0.15) inset;
+  border-radius: 4px;
 }
 .hp-text {
   position: absolute;
   top: 0;
   width: 100%;
   text-align: center;
-  font-size: 11px;
-  line-height: 18px; /* Vertically center */
+  font-size: 12px;
+  line-height: 22px;
   color: #fff;
-  text-shadow: 1px 1px 1px #000;
+  text-shadow: 1px 1px 2px #000, 0 0 5px rgba(0, 0, 0, 0.8);
   font-weight: 700;
-  font-family: 'Courier New', monospace; /* Tech feel */
+  font-family: 'Courier New', monospace;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+}
+
+/* MP Bar Styling */
+.mp-container {
+  width: 100%;
+  max-width: 320px;
+  position: relative;
+  margin-bottom: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  padding: 2px;
+}
+.mp-bar-bg {
+  background: linear-gradient(to bottom, rgba(20, 20, 40, 0.9), rgba(5, 5, 20, 0.95));
+  height: 16px;
+  border: 1px solid rgba(77, 136, 255, 0.3);
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+}
+.mp-bar-fill {
+  height: 100%;
+  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 0 15px rgba(100, 150, 255, 0.4) inset, 0 -2px 6px rgba(255, 255, 255, 0.15) inset;
+  border-radius: 4px;
+}
+.mp-text {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  line-height: 16px;
+  color: #fff;
+  text-shadow: 1px 1px 2px #000, 0 0 5px rgba(0, 0, 0, 0.8);
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
   pointer-events: none;
 }
 
 .enemy-status {
   display: flex;
   justify-content: center;
-  gap: 4px;
-  margin-top: 5px;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 .status-badge {
-  background: #222;
+  background: linear-gradient(135deg, rgba(40, 40, 50, 0.9), rgba(25, 25, 35, 0.95));
   color: #eee;
-  padding: 2px 6px;
-  font-size: 10px;
-  border: 1px solid #555;
-  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
   text-transform: uppercase;
   font-weight: bold;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease;
+  cursor: help;
 }
-/* Dynamic Status Colors could be done via :style in template, 
-   but simplistic CSS classes would be cleaner if status IDs matched. 
-   For now, generic styling looks cleaner. */
+.status-badge:hover {
+  transform: scale(1.1);
+}
+
+.combat-empty {
+  padding: 30px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  background: var(--glass-bg, rgba(20, 10, 10, 0.8));
+  border-radius: 8px;
+}
 </style>

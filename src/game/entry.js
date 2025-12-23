@@ -14,6 +14,7 @@ import './config/skill_trees.js';
 import './config/relics.js'; // v35.2 Relics
 import { EVENTS_DB } from './config/events.js'; // v36.0 Events
 import './config/enemy_skills.js'; // v36.4.3 Enemy Skills
+import './config/gems.js'; // v37.0 Gems
 import './config/database.js'; // Must be last config
 
 // Import Logic
@@ -29,6 +30,13 @@ import { Social } from './managers/social.js';
 import { VFX } from './managers/vfx.js'; 
 import { SpriteManager } from './managers/sprite.js'; 
 import { MobileHandler } from './managers/mobile.js';
+import './managers/SocketManager.js'; // v37.0 Socket System
+import './managers/SynthesisManager.js'; // v37.0 Synthesis System
+import './managers/ReforgeManager.js'; // v37.0 Reforging System
+import './managers/BlackMarketManager.js'; // v37.0 Black Market System
+import './config/cursed_items.js'; // v37.0 Cursed Items
+import './config/black_market_event.js'; // v37.0 Black Market Events
+import './managers/EconomyManager.js'; // v37.0 Dynamic Economy
 
 // import './core/combat.js'; // LEGACY COMBAT DISABLED
 import { Combat as CombatLogic } from './logic/Combat.js'; // NEW LOGIC

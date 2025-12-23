@@ -117,9 +117,12 @@ export const Combat = {
         }
 
         // 2. Apply Damage (Critical Hit Logic)
-        // Redifining isCrit logic to avoid duplication
         let isCrit = Math.random() < (p.crit || 0); 
-        if (isCrit) dmg = Math.floor(dmg * 1.5);
+        if (isCrit) {
+            // v37.0: Use critDmg bonus from gems (default 1.5x if no bonus)
+            const critMultiplier = 1.5 + (p.bonuses.critDmg || 0);
+            dmg = Math.floor(dmg * critMultiplier);
+        }
         
         // DEBUG LOGGING
         // gameStore.log(`[Combat] Attack: Dmg=${dmg}`, "combat");
@@ -516,6 +519,12 @@ export const Combat = {
                 if (!['mat', 'con', 'skill_book'].includes(loot1.slot)) {
                     loot1.dropFloor = gameStore.state.floor;
                 }
+                
+                // v37.0: Add sockets to equipment
+                if (window.SocketManager) {
+                    window.SocketManager.addSocketsToItem(loot1);
+                }
+                
                 window.Player.addItem(loot1);
                 lootDrops.push(loot1);
             }
@@ -531,6 +540,12 @@ export const Combat = {
                     if (!['mat', 'con', 'skill_book'].includes(loot2.slot)) {
                         loot2.dropFloor = gameStore.state.floor;
                     }
+                    
+                    // v37.0: Add sockets to equipment
+                    if (window.SocketManager) {
+                        window.SocketManager.addSocketsToItem(loot2);
+                    }
+                    
                     window.Player.addItem(loot2);
                     lootDrops.push(loot2);
                     gameStore.log(`💎 LUCKY! Double drop! (Luck: ${Math.round(doubleDropChance * 100)}%)`, "buff");
@@ -581,6 +596,14 @@ export const Combat = {
         }
         
         gameStore.log(lootLog, "item");
+        
+        // v37.0: Gem drops
+        if (window.SocketManager) {
+            const gemDrop = window.SocketManager.generateGemDrop(gameStore.state.floor);
+            if (gemDrop) {
+                window.SocketManager.addGem(gemDrop);
+            }
+        }
         
         // Check level up
         if (p.level > (this._lastLevel || p.level)) {
@@ -693,8 +716,8 @@ export const Combat = {
                 baseCooldown = Math.max(1, baseCooldown - p.skillUpgrades[skillId]);
             }
             
-            // 2. Apply CDR stat (percentage reduction, capped at 50%)
-            const cdr = Math.min(0.50, p.bonuses?.cdr || 0);
+            // 2. Apply CDR stat (percentage reduction, capped at 50%) - v37.0: Uses cooldownReduction from gems
+            const cdr = Math.min(0.50, p.bonuses?.cooldownReduction || 0);
             baseCooldown = Math.ceil(baseCooldown * (1 - cdr));
             
             // 3. Ensure minimum 1 turn
@@ -737,12 +760,20 @@ export const Combat = {
             let base = skill.type === 'phys' 
                 ? (p.atk || p.str*2) 
                 : (p.int * 2);
-                
+            
             let dmg = Math.floor(base * skillPower); // v36.7: Use upgraded power!
             
-            // Apply Damage
+            // v37.0: Apply spellPower bonus for magic skills
+            if (skill.type === 'mag' && p.bonuses.spellPower) {
+                dmg = Math.floor(dmg * (1 + p.bonuses.spellPower));
+            }
+            
+            // v37.0: Apply critical damage with critDmg bonus
             const isCrit = Math.random() < p.crit;
-            if (isCrit) dmg = Math.floor(dmg * 1.5);
+            if (isCrit) {
+                const critMultiplier = 1.5 + (p.bonuses.critDmg || 0);
+                dmg = Math.floor(dmg * critMultiplier);
+            }
             
             this.enemy.hp -= dmg;
             

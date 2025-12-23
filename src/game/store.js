@@ -3,7 +3,9 @@ import { reactive } from 'vue';
 export const gameState = reactive({
     floor: 1,
     progress: 0,
-    gold: 0,
+    gold: 100,
+    souls: 0, // v37.0: Soul currency for enhanced synthesis & black market
+    essence: 0, // v37.0: Rare currency for high-tier synthesis
     hp: 1,
     maxHp: 1,
     mp: 1,
@@ -14,6 +16,7 @@ export const gameState = reactive({
     className: "Novice",
     activePanel: 'combat',
     merchantStock: [],
+    merchantGemStock: [], // v37.0: Gem stock in merchant
     logs: [],
     buttons: [], // Dynamic Buttons from UI.setButtons
     previousPanel: null, // Track previous panel for back navigation
@@ -48,6 +51,30 @@ export const gameState = reactive({
     activeSkills: [],
     learnedSkills: [],
     
+    // v37.0 Socketing & Crafting System
+    gems: [], // Collected gems { id, gemType, quantity }
+    socketedItems: {}, // Track socketed gems per item { itemId: [gemType, gemType, null] }
+    synthesisFailures: {}, // v37.0: Track synthesis failures for pity system { rarity: failCount }
+    
+    // v37.0 Phase 3: Black Market System
+    mysteryBoxPity: {}, // Track pity for mystery boxes { boxType_boxSize: count }
+    blackMarket: { purchases: 0, lastRep: 0 }, // Dealer reputation tracking
+    cursedItemsOwned: [], // IDs of cursed items ever owned (for achievements)
+    
+    // v37.0 Phase 4: Dynamic Economy
+    economy: {
+      totalGoldSpent: 0,
+      totalGoldEarned: 0,
+      itemPurchases: {},
+      itemStock: {},
+      activeEvent: null,
+      eventDuration: 0,
+      merchantReputation: 0,
+      eventsThisSession: 0,
+      permanentDeflation: 0,
+      inflation50Warned: false
+    },
+    
     // Evolution
     evolutionOptions: [], // Array of options for current evo
     
@@ -67,7 +94,7 @@ export const gameState = reactive({
     
     // Internal calcs
     multipliers: { str: 1, vit: 1, int: 1, hp: 1, mp: 1, def: 1, dmg: 1 },
-    bonuses: { dodge: 0, lifesteal: 0, crit: 0 },
+    bonuses: { dodge: 0, lifesteal: 0, crit: 0, block: 0, spellPower: 0, critDmg: 0, cooldownReduction: 0 },
     baseStats: { STR: 0, VIT: 0, INT: 0 },
     shake: null, // 'small', 'medium', 'heavy'
     

@@ -602,6 +602,11 @@ const Game = {
       
       Events.emit("log_boss", `Welcome to Floor ${this.state.floor}...`);
       
+      // v37.0 Phase 4: Update economy on floor change
+      if (window.EconomyManager) {
+        window.EconomyManager.onFloorChange();
+      }
+      
       // ROGUELIKE: No auto-save on floor change. Must find Sanctuary.
       // this.saveGame();
   },

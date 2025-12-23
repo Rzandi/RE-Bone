@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { gameStore } from "./game/store";
 import LogPanel from "./components/LogPanel.vue";
 import ControlPanel from "./components/ControlPanel.vue";
@@ -26,6 +26,8 @@ import NodeMapPanel from "./components/NodeMapPanel.vue";
 import EventPanel from "./components/EventPanel.vue";
 import PauseMenuPanel from "./components/PauseMenuPanel.vue";
 import SkillManagementPanel from "./components/SkillManagementPanel.vue";
+import ReforgePanel from "./components/ReforgePanel.vue"; // v37.0 Phase 2
+import BlackMarketPanel from "./components/BlackMarketPanel.vue"; // v37.0 Phase 3
 import { REALMS } from "./game/config/realms";
 
 const s = gameStore.state;
@@ -60,15 +62,54 @@ onMounted(() => {
 const isMobile = computed(() => windowWidth.value <= 767);
 
 // Computed for bars
-const hpPct = computed(() => (s.hp / s.maxHp) * 100);
-const mpPct = computed(() => (s.mp / s.maxMp) * 100);
-
-
+const hpPct = computed(() => Math.min(100, Math.max(0, (s.hp / s.maxHp) * 100)));
+const mpPct = computed(() => Math.min(100, Math.max(0, (s.mp / s.maxMp) * 100)));
 
 const expPct = computed(() => {
   if (!s.nextExp || s.nextExp === 0) return 0;
-  return (s.exp / s.nextExp) * 100;
+  return Math.min(100, (s.exp / s.nextExp) * 100);
 });
+
+// v37.1: Stat flash animations
+const soulFlash = ref(false);
+const goldFlash = ref(false);
+const expGain = ref(false);
+
+let lastSouls = s.souls || 0;
+let lastGold = s.gold || 0;
+let lastExp = s.exp || 0;
+
+watch(() => s.souls, (newSouls) => {
+  if (newSouls > lastSouls) {
+    soulFlash.value = true;
+    setTimeout(() => soulFlash.value = false, 500);
+  }
+  lastSouls = newSouls;
+});
+
+watch(() => s.gold, (newGold) => {
+  if (newGold > lastGold) {
+    goldFlash.value = true;
+    setTimeout(() => goldFlash.value = false, 500);
+  }
+  lastGold = newGold;
+});
+
+watch(() => s.exp, (newExp) => {
+  if (newExp > lastExp) {
+    expGain.value = true;
+    setTimeout(() => expGain.value = false, 1000);
+  }
+  lastExp = newExp;
+});
+
+// v37.1: Format large numbers with abbreviations
+const formatNumber = (num) => {
+  if (num === null || num === undefined) return '0';
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+};
 
 // Handle Control Panel Clicks
 const handleAction = (action) => {
@@ -181,50 +222,75 @@ if (typeof window !== 'undefined') {
 
     <!-- GAME UI -->
     <template v-else>
-      <!-- HEADER -->
-      <header>
-        <div class="stat-block">
-        <span class="stat-label">💀</span>
-        <span class="stat-val">{{ s.souls || 0 }}</span>
-      </div>
-      <div class="stat-block" :class="{ 'sp-pulse': spPulse }">
-        <span class="stat-label">⚡</span>
-        <span class="stat-val">{{ s.sp || 0 }}</span>
-      </div>
-        <div class="col-c">
-          <span style="color: var(--c-gold)">
-              <span v-if="s.world && s.world.activeRealm && realmsConfig[s.world.activeRealm]">
-                  {{ realmsConfig[s.world.activeRealm].icon }} 
-              </span>
-              FL {{ s.floor }}
-          </span>
-          <small style="color: #888"> ({{ s.progress }}%)</small><br />
-          <span style="font-size: 0.8rem"
-            >{{ s.className }} Lv.{{ s.level }}</span
-          >
+      <!-- HEADER v37.1 Enhanced -->
+      <header class="game-header">
+        <!-- Left: Resources -->
+        <div class="header-resources">
+          <div class="stat-block glass-block" :class="{ 'stat-flash': soulFlash }">
+            <span class="stat-icon wobble-hover">💀</span>
+            <span class="stat-val">{{ formatNumber(s.souls || 0) }}</span>
+          </div>
+          <div class="stat-block glass-block" :class="{ 'sp-pulse': spPulse }">
+            <span class="stat-icon">⚡</span>
+            <span class="stat-val">{{ s.sp || 0 }}</span>
+          </div>
         </div>
-        <div class="col-r" style="text-align: right">
-          <div style="color: var(--c-red)">
-            HP {{ Math.floor(s.hp) }}/{{ s.maxHp }}
+        
+        <!-- Center: Floor & Class -->
+        <div class="header-center">
+          <div class="floor-display">
+            <span v-if="s.world && s.world.activeRealm && realmsConfig[s.world.activeRealm]" class="realm-icon">
+              {{ realmsConfig[s.world.activeRealm].icon }}
+            </span>
+            <span class="floor-text">FL {{ s.floor }}</span>
+            <span class="progress-badge">({{ s.progress }}%)</span>
           </div>
-          <div style="color: var(--c-blue)">
-            MP {{ Math.floor(s.mp) }}/{{ s.maxMp }}
+          <div class="class-display">{{ s.className }} Lv.{{ s.level }}</div>
+        </div>
+        
+        <!-- Right: Stats -->
+        <div class="header-stats">
+          <!-- HP Bar -->
+          <div class="stat-bar-container">
+            <div class="stat-bar-label">
+              <span class="bar-icon">❤️</span>
+              <span>{{ Math.floor(s.hp) }}/{{ s.maxHp }}</span>
+            </div>
+            <div class="stat-bar hp-bar">
+              <div class="stat-bar-fill" :style="{ width: hpPct + '%' }" :class="{ 'bar-low': hpPct < 25, 'bar-critical': hpPct < 10 }"></div>
+            </div>
           </div>
-          <div style="color: var(--c-gold)">{{ s.gold }} G</div>
+          
+          <!-- MP Bar -->
+          <div class="stat-bar-container">
+            <div class="stat-bar-label">
+              <span class="bar-icon">💧</span>
+              <span>{{ Math.floor(s.mp) }}/{{ s.maxMp }}</span>
+            </div>
+            <div class="stat-bar mp-bar">
+              <div class="stat-bar-fill" :style="{ width: mpPct + '%' }"></div>
+            </div>
+          </div>
+          
+          <!-- Gold -->
+          <div class="gold-display" :class="{ 'gold-flash': goldFlash }">
+            <span class="gold-icon">💰</span>
+            <span class="gold-val">{{ formatNumber(s.gold) }}</span>
+          </div>
         </div>
       </header>
 
-      <!-- EXP BAR (Was Progress) -->
-      <div id="progress-container">
+      <!-- EXP BAR Enhanced -->
+      <div id="progress-container" class="exp-bar-container">
         <div
           id="ui-progress-bar"
+          class="exp-bar-fill"
+          :class="{ 'exp-glow': expGain }"
           :style="{
             width: expPct + '%',
-            background: 'var(--c-purple, #9370db)',
-            height: '100%',
-            transition: 'width 0.3s',
           }"
         ></div>
+        <span class="exp-text">EXP {{ s.exp }}/{{ s.nextExp }}</span>
       </div>
 
       <!-- MAIN VIEW -->
@@ -286,6 +352,8 @@ if (typeof window !== 'undefined') {
         <NodeMapPanel v-if="s.activePanel === 'node_map'" />
         <PauseMenuPanel v-if="s.activePanel === 'pause-menu'" />
         <EventPanel v-if="s.activePanel === 'event'" />
+        <ReforgePanel v-if="s.activePanel === 'reforge'" /> <!-- v37.0 Phase 2 -->
+        <BlackMarketPanel v-if="s.activePanel === 'black_market'" /> <!-- v37.0 Phase 3 -->
 
         <!-- CONTROLS -->
         <ControlPanel @action="handleAction" />
@@ -304,10 +372,272 @@ if (typeof window !== 'undefined') {
   box-sizing: border-box;
 }
 /* Header handled by global style.css for responsive grid */
-#progress-container {
-  height: 4px;
-  background: #222;
-  margin-bottom: 10px;
+
+/* ============================================
+   v37.1 ENHANCED HEADER STYLES
+   ============================================ */
+
+.game-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--glass-bg, rgba(20, 20, 25, 0.85));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  align-items: center;
+}
+
+.header-resources {
+  display: flex;
+  gap: 8px;
+}
+
+.stat-block.glass-block {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(30, 30, 35, 0.6);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.stat-block.glass-block:hover {
+  background: rgba(40, 40, 50, 0.7);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.stat-icon {
+  font-size: 1.1rem;
+}
+
+.stat-icon.wobble-hover:hover {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
+.stat-flash {
+  animation: statFlash 0.5s ease-out;
+}
+
+@keyframes statFlash {
+  0%, 100% { 
+    background: rgba(30, 30, 35, 0.6); 
+    box-shadow: none;
+  }
+  50% { 
+    background: rgba(207, 170, 76, 0.3); 
+    box-shadow: 0 0 15px rgba(207, 170, 76, 0.4);
+  }
+}
+
+.gold-flash {
+  animation: goldFlashAnim 0.5s ease-out;
+}
+
+@keyframes goldFlashAnim {
+  0%, 100% { transform: scale(1); }
+  50% { 
+    transform: scale(1.1); 
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+  }
+}
+
+/* Center: Floor & Class */
+.header-center {
+  text-align: center;
+}
+
+.floor-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--c-gold, #cfaa4c);
+  font-weight: bold;
+}
+
+.realm-icon {
+  font-size: 1.2rem;
+}
+
+.floor-text {
+  font-size: 1rem;
+}
+
+.progress-badge {
+  font-size: 0.75rem;
+  color: var(--text-muted, #666);
+  font-weight: normal;
+}
+
+.class-display {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #a0a0a0);
+  margin-top: 2px;
+}
+
+/* Right: Stats */
+.header-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.stat-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--text-secondary, #a0a0a0);
+}
+
+.bar-icon {
+  font-size: 0.65rem;
+}
+
+.stat-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease-out;
+  border-radius: 3px;
+}
+
+.hp-bar .stat-bar-fill {
+  background: linear-gradient(90deg, var(--c-red, #bb3333), #ff5555);
+  box-shadow: 0 0 6px rgba(187, 51, 51, 0.4);
+}
+
+.hp-bar .stat-bar-fill.bar-low {
+  animation: barPulse 1s ease-in-out infinite;
+}
+
+.hp-bar .stat-bar-fill.bar-critical {
+  animation: barPulseCritical 0.5s ease-in-out infinite;
+}
+
+@keyframes barPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes barPulseCritical {
+  0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(255, 0, 0, 0.6); }
+  50% { opacity: 0.5; box-shadow: 0 0 5px rgba(255, 0, 0, 0.3); }
+}
+
+.mp-bar .stat-bar-fill {
+  background: linear-gradient(90deg, var(--c-blue, #4d88ff), #66b3ff);
+  box-shadow: 0 0 6px rgba(77, 136, 255, 0.4);
+}
+
+.gold-display {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--c-gold, #cfaa4c);
+  margin-top: 2px;
+}
+
+.gold-icon {
+  font-size: 0.9rem;
+}
+
+/* EXP Bar */
+.exp-bar-container {
+  height: 8px;
+  background: rgba(30, 30, 35, 0.8);
+  margin-bottom: 8px;
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.exp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-purple, #9b59b6), #bb77dd);
+  transition: width 0.4s ease-out;
+  box-shadow: 0 0 8px rgba(155, 89, 182, 0.4);
+}
+
+.exp-bar-fill.exp-glow {
+  animation: expGlowAnim 1s ease-out;
+}
+
+@keyframes expGlowAnim {
+  0% { box-shadow: 0 0 8px rgba(155, 89, 182, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(155, 89, 182, 0.8), 0 0 30px rgba(155, 89, 182, 0.5); }
+  100% { box-shadow: 0 0 8px rgba(155, 89, 182, 0.4); }
+}
+
+.exp-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.55rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 0 2px #000;
+  pointer-events: none;
+}
+
+/* Mobile Header */
+@media (max-width: 767px) {
+  .game-header {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+    padding: 8px;
+  }
+  
+  .header-center {
+    order: -1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 6px;
+  }
+  
+  .header-resources {
+    justify-content: center;
+  }
+  
+  .header-stats {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    min-width: auto;
+  }
+  
+  .stat-bar-container {
+    flex: 1;
+    max-width: 100px;
+  }
+  
+  .gold-display {
+    margin-top: 0;
+  }
 }
 
 /* Shake Animations */

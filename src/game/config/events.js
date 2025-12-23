@@ -1132,4 +1132,13 @@ export const EVENTS_DB = {
     }
 };
 
+// v37.0: Import Blacksmith Event
+import { BLACKSMITH_EVENT } from './blacksmith_event.js';
+
+// Add blacksmith to general pool (repeatable special event)
+if (!EVENTS_DB.general) {
+    EVENTS_DB.general = [];
+}
+EVENTS_DB.general.push(BLACKSMITH_EVENT);
+
 window.EVENTS_DB = EVENTS_DB;

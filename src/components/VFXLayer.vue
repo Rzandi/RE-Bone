@@ -151,11 +151,11 @@ const getParticleColor = (t) => {
 
 .dmg-popup {
   position: absolute;
-  font-size: 24px;
+  font-size: 26px;
   font-weight: bold;
   color: #fff;
-  text-shadow: 2px 2px 0 #000;
-  animation: floatUp 0.8s ease-out forwards;
+  text-shadow: 2px 2px 0 #000, 0 0 10px rgba(255, 255, 255, 0.3);
+  animation: floatUp 0.9s ease-out forwards;
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -163,38 +163,146 @@ const getParticleColor = (t) => {
 }
 
 .dmg-popup .icon {
-  font-size: 28px;
-  filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
+  font-size: 30px;
+  filter: drop-shadow(0 0 5px rgba(255,255,255,0.6));
+  animation: iconPop 0.3s ease-out;
+}
+
+@keyframes iconPop {
+  0% { transform: scale(0.5); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 
 .dmg-popup .value {
-  font-size: 20px;
+  font-size: 22px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
 }
 
+/* Critical Hit - Larger, flashier */
 .dmg-popup.critical {
-  font-size: 36px;
-  color: #ff0;
-  text-shadow: 3px 3px 0 #f00;
+  font-size: 42px;
+  color: #ffd700;
+  text-shadow: 3px 3px 0 #f00, 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 100, 0, 0.5);
   z-index: 9001;
+  animation: criticalFloat 1s ease-out forwards;
 }
 
+.dmg-popup.critical .value {
+  font-size: 38px;
+}
+
+@keyframes criticalFloat {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3) rotate(-10deg);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(var(--tx), -30px) scale(1.5) rotate(5deg);
+  }
+  40% {
+    transform: translate(var(--tx), -50px) scale(1.3) rotate(-3deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(1) rotate(0deg);
+  }
+}
+
+/* Heal Effect */
 .dmg-popup.heal {
-  color: #4f4;
-  font-size: 20px;
+  color: #4eff4e;
+  font-size: 24px;
+  text-shadow: 2px 2px 0 #004400, 0 0 15px rgba(76, 255, 76, 0.6);
 }
 
+.dmg-popup.heal .value {
+  color: #6fff6f;
+}
+
+/* Buff Effect */
+.dmg-popup.buff {
+  color: #ffcc00;
+  font-size: 22px;
+  text-shadow: 2px 2px 0 #553300, 0 0 15px rgba(255, 204, 0, 0.6);
+  animation: buffFloat 1s ease-out forwards;
+}
+
+@keyframes buffFloat {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(var(--tx), -20px) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), -100px) scale(1);
+  }
+}
+
+/* Debuff Effect */
+.dmg-popup.debuff {
+  color: #ff66ff;
+  font-size: 22px;
+  text-shadow: 2px 2px 0 #330033, 0 0 15px rgba(255, 66, 255, 0.6);
+}
+
+/* Standard Damage */
 .dmg-popup.damage {
   color: #fff;
+  text-shadow: 2px 2px 0 #000, 0 0 8px rgba(255, 100, 100, 0.4);
 }
 
-/* Player took damage */
+/* Player took damage - Red and alarming */
 .dmg-popup.player-dmg {
-  color: #f44;
-  font-size: 28px;
-  border: 1px solid #000; /* Text stroke mock */
-  text-shadow: 0 0 5px #f00;
+  color: #ff4444;
+  font-size: 30px;
+  text-shadow: 0 0 8px #ff0000, 0 0 20px rgba(255, 0, 0, 0.6);
+  animation: playerDmgFloat 0.8s ease-out forwards;
 }
 
+@keyframes playerDmgFloat {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(1.5);
+    filter: blur(3px);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(var(--tx), -25px) scale(1.2);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0.9);
+  }
+}
+
+/* Particle Effects */
+.dmg-popup[class*="particle-"] {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: particleBurst 0.6s ease-out forwards;
+}
+
+@keyframes particleBurst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0.3);
+  }
+}
+
+/* Default Float Animation */
 @keyframes floatUp {
   0% {
     opacity: 0;
@@ -202,7 +310,7 @@ const getParticleColor = (t) => {
   }
   15% {
     opacity: 1;
-    transform: translate(var(--tx), -20px) scale(1.2);
+    transform: translate(var(--tx), -25px) scale(1.15);
   }
   100% {
     opacity: 0;

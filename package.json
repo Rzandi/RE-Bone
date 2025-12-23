@@ -1,7 +1,7 @@
 {
   "name": "re-bone",
   "private": true,
-  "version": "36.9.0",
+  "version": "37.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

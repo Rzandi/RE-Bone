@@ -96,6 +96,7 @@ const useSkill = (skill) => {
         } else {
             gameStore.log("Not enough MP!", "error");
         }
+        if (window.SoundManager) window.SoundManager.play('error');
         return;
     }
     
@@ -167,17 +168,38 @@ const close = () => {
 <style scoped>
 .skill-selector {
     position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
-    background: #111; border-top: 2px solid #444;
+    background: var(--glass-bg, rgba(17, 17, 20, 0.95));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 2px solid var(--c-gold, #cfaa4c);
     display: flex; flex-direction: column; z-index: 100;
-    box-shadow: 0 -5px 20px rgba(0,0,0,0.8);
+    box-shadow: 0 -5px 30px rgba(0,0,0,0.8);
 }
 
 .header {
-    padding: 10px; background: #222; border-bottom: 1px solid #444;
+    padding: 12px 15px; 
+    background: linear-gradient(135deg, rgba(30, 30, 35, 0.9), rgba(20, 20, 25, 0.95));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex; justify-content: space-between; align-items: center;
 }
-.header h2 { margin: 0; font-size: 1rem; color: #aaa; }
-.btn-close { background: #500; color: #fff; border: none; width: 25px; height: 25px; cursor: pointer; }
+.header h2 { 
+    margin: 0; font-size: 1rem; 
+    color: var(--c-gold, #cfaa4c);
+    text-shadow: 0 0 10px rgba(207, 170, 76, 0.3);
+}
+.btn-close { 
+    background: linear-gradient(135deg, #500, #300); 
+    color: #fff; 
+    border: 1px solid rgba(255, 68, 68, 0.4); 
+    width: 28px; height: 28px; 
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+.btn-close:hover {
+    background: linear-gradient(135deg, #600, #400);
+    box-shadow: 0 0 8px rgba(255, 68, 68, 0.3);
+}
 
 .skill-list {
     flex: 1; overflow-y: auto; padding: 10px;
@@ -185,11 +207,20 @@ const close = () => {
 }
 
 .skill-card {
-    display: flex; align-items: center; gap: 10px;
-    background: #222; border: 1px solid #444; padding: 10px;
-    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 12px;
+    background: linear-gradient(135deg, rgba(30, 30, 38, 0.8), rgba(20, 20, 28, 0.9));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer; 
+    transition: all 0.25s ease;
 }
-.skill-card:hover { background: #333; border-color: #666; }
+.skill-card:hover { 
+    background: linear-gradient(135deg, rgba(45, 45, 55, 0.9), rgba(35, 35, 45, 0.95));
+    border-color: var(--c-gold, #cfaa4c);
+    box-shadow: 0 0 15px rgba(207, 170, 76, 0.2);
+    transform: translateX(3px);
+}
 
 /* v36.6: On cooldown state */
 .skill-card.on-cooldown {
@@ -332,4 +363,3 @@ const close = () => {
   }
 }
 </style>
-```

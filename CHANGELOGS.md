@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [37.1.0] - 2025-12-24 - 🎨 COMPLETE POLISH UPDATE
+
+### 🚀 Major Features
+
+- **Reforge Undo:** Safe "UNDO" button to revert bad rolls.
+- **Save Preview:** Continue button previews Class, Level, and Floor.
+- **Audio Engine 2.0:** 25+ new SFX with smart spam-prevention.
+- **Glassmorphism UI:** Visual overhaul with gradients, glows, and dynamic sprites.
+
+### 🎨 Visual & Audio
+
+- **Dynamic Sprites:** Fixed pixel art logic for classes/evolutions.
+- **VFX:** Floating ember particles on Start Screen.
+- **Haptics:** Vibration feedback for mobile devices.
+- **Reduced Motion:** Accessibility support.
+
+### ⚖️ Balance & Economy
+
+- **Black Market:** Mystery Box inflation capped at 5.0x.
+- **Curse Cleansing:** Added safe "Can Afford" checks.
+
+### 🐞 Bug Fixes
+
+- **Critical:** Fixed data structure mismatch in `enemies.js`.
+- **Critical:** Fixed CSS variables in `SkillManagementPanel`.
+- **Safety:** Added global Error Boundary.
+
 ## [36.9.0] - 2025-12-23 - 📱 MOBILE OPTIMIZATION COMPLETE
 
 ### Major Features

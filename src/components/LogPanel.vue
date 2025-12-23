@@ -24,6 +24,27 @@ onMounted(() => {
 const getLogStyle = (log) => {
   const text = log.text.toLowerCase();
   
+  // v37.0: Gem & Socket Detection
+  if (text.includes('💎') || text.includes('gem') || text.includes('ruby') || 
+      text.includes('sapphire') || text.includes('emerald') || 
+      text.includes('topaz') || text.includes('amethyst') || 
+      text.includes('diamond') || text.includes('bloodstone')) {
+    return { icon: '💎', color: '#a78bfa' }; // Purple for gems
+  }
+  
+  if (text.includes('socketed') || text.includes('socket')) {
+    return { icon: '🔨', color: '#fbbf24' }; // Gold for socketing
+  }
+  
+  if (text.includes('⚗️') || text.includes('synthesized') || text.includes('synthesis')) {
+    return { icon: '⚗️', color: '#34d399' }; // Green for synthesis
+  }
+  
+  // Loot messages
+  if (log.type === 'loot' || text.includes('found') || text.includes('obtained') || text.includes('bought')) {
+    return { icon: '📦', color: '#fbbf24' }; // Gold for loot
+  }
+  
   // v36.4.3: Enemy Skill Detection (poison, backstab, heal, etc.)
   if (text.includes('spits poison') || text.includes('backstabs') || 
       text.includes('heals!') || text.includes('howls') ||

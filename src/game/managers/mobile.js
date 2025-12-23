@@ -1,6 +1,7 @@
 /**
  * Mobile Touch Handler
  * Adds touch gesture support and mobile-specific interactions
+ * v37.1: Enhanced with performance modes and expanded haptics
  */
 
 export const MobileHandler = {
@@ -8,6 +9,24 @@ export const MobileHandler = {
   touchStartX: 0,
   touchStartY: 0,
   isTouch: false,
+  isLowPowerMode: false,
+  isBackgrounded: false,
+  
+  // v37.1: Haptic pattern presets
+  hapticPatterns: {
+    tap: 10,
+    click: 20,
+    success: 50,
+    error: [50, 30, 50],
+    warning: [30, 20, 30],
+    hit_light: 30,
+    hit_heavy: 80,
+    hit_critical: [100, 50, 100],
+    level_up: [100, 50, 100, 50, 200],
+    loot: [50, 30, 50],
+    death: [200, 100, 200],
+    boss_appear: [50, 50, 50, 200]
+  },
   
   /**
    * Initialize mobile touch handlers
@@ -20,6 +39,62 @@ export const MobileHandler = {
       this.enableTouchOptimizations();
       this.addSwipeGestures();
       this.preventDoubleTapZoom();
+    }
+    
+    // v37.1: Add visibility change handler
+    this.addVisibilityHandler();
+    
+    // v37.1: Check battery status
+    this.checkBatteryMode();
+  },
+  
+  /**
+   * v37.1: Handle visibility changes (pause when backgrounded)
+   */
+  addVisibilityHandler() {
+    document.addEventListener('visibilitychange', () => {
+      this.isBackgrounded = document.hidden;
+      
+      if (document.hidden) {
+        // Pause animations and audio when hidden
+        document.body.classList.add('app-hidden');
+        if (window.SoundManager && window.SoundManager.bgm) {
+          window.SoundManager.bgm.suspend?.();
+        }
+      } else {
+        document.body.classList.remove('app-hidden');
+        if (window.SoundManager && window.SoundManager.bgm) {
+          window.SoundManager.bgm.resume?.();
+        }
+      }
+    });
+  },
+  
+  /**
+   * v37.1: Check for low power mode / battery saver
+   */
+  async checkBatteryMode() {
+    if ('getBattery' in navigator) {
+      try {
+        const battery = await navigator.getBattery();
+        
+        const updatePowerMode = () => {
+          // Low power if charging is false and level < 20%
+          this.isLowPowerMode = !battery.charging && battery.level < 0.2;
+          
+          if (this.isLowPowerMode) {
+            document.body.classList.add('low-power-mode');
+          } else {
+            document.body.classList.remove('low-power-mode');
+          }
+        };
+        
+        updatePowerMode();
+        battery.addEventListener('levelchange', updatePowerMode);
+        battery.addEventListener('chargingchange', updatePowerMode);
+      } catch (e) {
+        // Battery API not available
+      }
     }
   },
   
@@ -64,7 +139,7 @@ export const MobileHandler = {
       const diffX = touchEndX - this.touchStartX;
       const diffY = touchEndY - this.touchStartY;
       
-      // Only trigger if quick swipe (< 300ms) and significant distance (> 50px)
+      // Only trigger if quick swipe (<300ms) and significant distance (>50px)
       if (touchDuration < 300 && Math.abs(diffX) > 50 && Math.abs(diffY) < 30) {
         // Horizontal swipe detected (future feature: swipe between panels)
         // Currently disabled to avoid conflicts
@@ -139,6 +214,7 @@ export const MobileHandler = {
       setTimeout(() => toast.remove(), 300);
     }, 2000);
   },
+  
   /**
    * Add long press listener to an element
    * @param {HTMLElement} el - Target element
@@ -173,17 +249,38 @@ export const MobileHandler = {
   },
 
   /**
-   * Trigger Haptic Feedback
-   * @param {number|number[]} pattern - Vibration pattern
+   * Trigger Haptic Feedback (v37.1 Enhanced)
+   * @param {number|number[]|string} pattern - Vibration pattern or preset name
    */
   vibrate(pattern) {
+      // Don't vibrate if backgrounded
+      if (this.isBackgrounded) return;
+      
+      // Don't vibrate in low power mode
+      if (this.isLowPowerMode) return;
+      
       if ('vibrate' in navigator) {
           // Check Settings if available
           if (window.gameStore && window.gameStore.state.settings) {
              if (window.gameStore.state.settings.haptics === false) return;
           }
+          
+          // v37.1: Support preset names
+          if (typeof pattern === 'string' && this.hapticPatterns[pattern]) {
+            pattern = this.hapticPatterns[pattern];
+          }
+          
           navigator.vibrate(pattern);
       }
+  },
+  
+  /**
+   * v37.1: Check if device should use reduced effects
+   * @returns {boolean}
+   */
+  shouldReduceEffects() {
+    return this.isLowPowerMode || 
+           window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 };
 
@@ -196,3 +293,4 @@ if (document.readyState === 'loading') {
 
 // Export to global scope
 window.MobileHandler = MobileHandler;
+

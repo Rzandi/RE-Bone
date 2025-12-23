@@ -213,6 +213,186 @@ export const Achievements = {
         progress: 0, 
         target: 10 
     },
+    
+    // --- v37.0: GEMS & SOCKETS ---
+    gem_collector: {
+      name: "Gem Collector",
+      desc: "Collect 10 gems",
+      icon: "💎",
+      unlocked: false,
+      progress: 0,
+      target: 10
+    },
+    gem_hoarder: {
+      name: "Gem Hoarder",
+      desc: "Collect 50 gems",
+      icon: "💎",
+      unlocked: false,
+      progress: 0,
+      target: 50
+    },
+    rare_gem_finder: {
+      name: "Rare Gem Hunter",
+      desc: "Find 5 rare-tier gems",
+      icon: "🔷",
+      unlocked: false,
+      progress: 0,
+      target: 5
+    },
+    epic_gem_finder: {
+      name: "Epic Gem Hunter",
+      desc: "Find 5 epic-tier gems",
+      icon: "🟣",
+      unlocked: false,
+      progress: 0,
+      target: 5
+    },
+    legendary_gem_finder: {
+      name: "Legendary Gem Hunter",
+      desc: "Find a legendary gem",
+      icon: "⭐",
+      unlocked: false
+    },
+    socket_novice: {
+      name: "Socket Apprentice",
+      desc: "Socket 5 gems into items",
+      icon: "🔨",
+      unlocked: false,
+      progress: 0,
+      target: 5
+    },
+    socket_master: {
+      name: "Socket Master",
+      desc: "Socket 20 gems into items",
+      icon: "⚒️",
+      unlocked: false,
+      progress: 0,
+      target: 20
+    },
+    fully_socketed: {
+      name: "Fully Gemmed",
+      desc: "Have a 3-socket item fully filled",
+      icon: "💠",
+      unlocked: false
+    },
+    synthesis_novice: {
+      name: "Alchemist",
+      desc: "Synthesize 5 items",
+      icon: "⚗️",
+      unlocked: false,
+      progress: 0,
+      target: 5
+    },
+    synthesis_master: {
+      name: "Master Synthesizer",
+      desc: "Synthesize 20 items",
+      icon: "🧪",
+      unlocked: false,
+      progress: 0,
+      target: 20
+    },
+    legendary_synthesis: {
+      name: "Legendary Crafter",
+      desc: "Synthesize a legendary item",
+      icon: "🌟",
+      unlocked: false
+    },
+    
+    // --- v37.0 Phase 3: BLACK MARKET ---
+    curse_curious: {
+      name: "Curse Curious",
+      desc: "Own 1 cursed item",
+      icon: "☠️",
+      unlocked: false,
+      progress: 0,
+      target: 1
+    },
+    curse_collector: {
+      name: "Curse Collector",
+      desc: "Own 5 cursed items",
+      icon: "💀",
+      unlocked: false,
+      progress: 0,
+      target: 5
+    },
+    curse_connoisseur: {
+      name: "Curse Connoisseur",
+      desc: "Own 10 cursed items",
+      icon: "👻",
+      unlocked: false,
+      progress: 0,
+      target: 10
+    },
+    curse_master: {
+      name: "Curse Master",
+      desc: "Own 15 cursed items",
+      icon: "🦇",
+      unlocked: false,
+      progress: 0,
+      target: 15
+    },
+    lord_of_curses: {
+      name: "Lord of Curses",
+      desc: "Own all 20 cursed items",
+      icon: "👑",
+      unlocked: false,
+      progress: 0,
+      target: 20
+    },
+    mystery_opener: {
+      name: "Gambler",
+      desc: "Open 10 mystery boxes",
+      icon: "📦",
+      unlocked: false,
+      progress: 0,
+      target: 10
+    },
+    mystery_addict: {
+      name: "Box Addict",
+      desc: "Open 50 mystery boxes",
+      icon: "🎰",
+      unlocked: false,
+      progress: 0,
+      target: 50
+    },
+    
+    // --- v37.0 Phase 4: ECONOMY ---
+    big_spender: {
+      name: "Big Spender",
+      desc: "Spend 10,000 gold total",
+      icon: "💰",
+      unlocked: false,
+      progress: 0,
+      target: 10000
+    },
+    merchant_friend: {
+      name: "Merchant's Friend",
+      desc: "Reach Merchant Rep 25",
+      icon: "🤝",
+      unlocked: false,
+      progress: 0,
+      target: 25
+    },
+    haggler: {
+      name: "Haggler",
+      desc: "Get a discount from merchant",
+      icon: "📉",
+      unlocked: false
+    },
+    inflation_survivor: {
+      name: "Inflation Survivor",
+      desc: "Shop with 50%+ inflation",
+      icon: "📈",
+      unlocked: false
+    },
+    market_veteran: {
+      name: "Market Veteran",
+      desc: "Experience 5 market events",
+      icon: "🎪",
+      unlocked: false,
+      progress: 0,
+      target: 5
+    },
   },
   
   // Check and unlock achievements

@@ -1,19 +1,81 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onUnmounted } from "vue";
 import { gameStore } from "../game/store.js";
 import { SaveManager } from "../game/managers/SaveManager.js";
-import { initGame } from "../game/entry.js"; // We might need to re-think init flow
+import { initGame } from "../game/entry.js";
 
 const hasSave = ref(false);
 
+// v37.1: Save Preview Data
+const savePreview = ref(null);
+
+// v37.1: Ember particles
+const embers = ref([]);
+let emberInterval = null;
+
 onMounted(() => {
   hasSave.value = SaveManager.hasSave();
+  
+  // v37.1: Load save preview if exists
+  if (hasSave.value) {
+    try {
+      const rawSave = localStorage.getItem('rebone_save');
+      if (rawSave) {
+        const saveData = JSON.parse(rawSave);
+        savePreview.value = {
+          className: saveData.className || 'Unknown',
+          floor: saveData.floor || 1,
+          souls: saveData.souls || 0,
+          level: saveData.level || 1
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to load save preview:', e);
+      savePreview.value = null;
+    }
+  }
+  
+  // v37.1: Start ember particles
+  createEmbers();
+  emberInterval = setInterval(createEmbers, 2000);
 });
+
+onUnmounted(() => {
+  if (emberInterval) clearInterval(emberInterval);
+});
+
+// v37.1: Create floating ember particles
+const createEmbers = () => {
+  const count = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < count; i++) {
+    const ember = {
+      id: Date.now() + i,
+      left: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 3 + Math.random() * 3,
+      size: 2 + Math.random() * 4
+    };
+    embers.value.push(ember);
+    
+    // Remove after animation
+    setTimeout(() => {
+      embers.value = embers.value.filter(e => e.id !== ember.id);
+    }, (ember.duration + ember.delay) * 1000);
+  }
+  
+  // Limit max embers
+  if (embers.value.length > 30) {
+    embers.value = embers.value.slice(-20);
+  }
+};
 
 const onNewGame = () => {
   if (hasSave.value) {
     if (!confirm("Overwrite existing save?")) return;
   }
+  
+  // Play sound
+  if (window.SoundManager) window.SoundManager.play('menu_open');
 
   SaveManager.clearSave();
   gameStore.state.logs = [];
@@ -21,6 +83,9 @@ const onNewGame = () => {
 };
 
 const onContinue = () => {
+  // Play sound
+  if (window.SoundManager) window.SoundManager.play('success');
+  
   if (SaveManager.loadGame()) {
     SaveManager.initAutoSave(); // Start Autosave
     
@@ -39,6 +104,7 @@ const onContinue = () => {
         }
     }
   } else {
+    if (window.SoundManager) window.SoundManager.play('error');
     alert("Failed to load save!");
   }
 };
@@ -49,7 +115,7 @@ const showLeaderboard = () => {
         alert("Error: Social Manager not loaded. Please refresh.");
         return; 
     }
-    if(!window.Social) { alert("Social Manager not loaded!"); return; }
+    if (window.SoundManager) window.SoundManager.play('menu_open');
     gameStore.state.activePanel = "leaderboard";
 };
 
@@ -59,7 +125,7 @@ const showSoulForge = () => {
         alert("Error: Ascension Manager not loaded. Please refresh.");
         return; 
     }
-    if(!window.Ascension) { alert("Ascension Manager not loaded!"); return; }
+    if (window.SoundManager) window.SoundManager.play('menu_open');
     gameStore.state.activePanel = "shop-ascension";
 };
 
@@ -69,13 +135,15 @@ const showAchievements = () => {
         alert("Error: Achievements Manager not loaded. Please refresh.");
         return; 
     }
-    if(!window.Achievements) { alert("Achievements Manager not loaded!"); return; }
+    if (window.SoundManager) window.SoundManager.play('menu_open');
     gameStore.state.activePanel = "achievements";
 };
 
 const showPatchModal = ref(false);
 
 const patchNotes = [
+    { ver: "v37.1.0", date: "2025-12-24", changes: ["🎨 COMPLETE POLISH UPDATE!", "UI: Glass morphism, dynamic sprites & glows", "Sound: 25+ new SFX + Audio Engine upgrade", "Features: Reforge UNDO button, Inflation Cap", "Fixes: Sprite Rendering, Critical Safety Patches", "Accessibility: Reduced motion & Haptics"] },
+    { ver: "v37.0.0", date: "2025-12-24", changes: ["⚒️ THE MASTER SMITH!", "Socketing: 60 gems, socket system", "Reforging: Reroll legendary stats", "Black Market: Mystery boxes, cursed items", "Dynamic Economy: Inflation, scarcity, market events", "30+ new achievements"] },
     { ver: "v36.9.0", date: "2025-12-23", changes: ["📱 MOBILE OPTIMIZATION COMPLETE!", "Touch Controls: 44px+ tap targets, swipe gestures, FAB button", "Responsive Layouts: Vertical stacking, bottom sheets, full-screen details", "Performance: 300ms debounced search, memory leak fixes, optimized repaints", "Edge Cases: Long names truncation, keyboard handling, landscape mode", "15+ mobile-specific features, PWA-ready"] },
     { ver: "v36.8.0", date: "2025-12-23", changes: ["🎨 UI/UX POLISH!", "Status Icons: Emoji icons (🔥☠️⚡) replace text", "Upgrade Badges: ⚡X shows skill investment", "Preview Tooltips: Hover for before/after stats", "Animations: Cooldown ticks, SP pulse, panel transitions", "Advanced: Skill comparison, confirmation modals, search & filter", "Keyboard Shortcuts: ESC, U, 1-5"] },
     { ver: "v36.7.0", date: "2025-12-23", changes: ["🔮 SKILL MANAGEMENT SYSTEM!", "Equip Up to 5 Skills for Combat", "Upgrade Skills with SP (Skill Points)", "Gain +2 SP per Level Up", "SP Cost Scaling: base 3 * 1.5^level", "Upgrade Paths: Power, Cooldown, Ailment boosts", "New Panel: Full skill management UI"] },
@@ -97,9 +165,8 @@ const patchNotes = [
 ];
 
 const togglePatchNotes = () => {
+    if (window.SoundManager) window.SoundManager.play('tab_switch');
     showPatchModal.value = !showPatchModal.value;
-    // Reset page on close/open if desired, or keep state
-    // if(showPatchModal.value) currentPage.value = 0; 
 };
 
 const ITEMS_PER_PAGE = 4;
@@ -129,9 +196,27 @@ const onImportSave = () => {
     const success = SaveManager.importSaveString(saveString);
     
     if (success) {
+      if (window.SoundManager) window.SoundManager.play('success');
       alert("✅ Save imported successfully! Click Continue to load."); 
       hasSave.value = true; // Show Continue button
+      
+      // Update preview
+      try {
+        const rawSave = localStorage.getItem('rebone_save');
+        if (rawSave) {
+          const saveData = JSON.parse(rawSave);
+          savePreview.value = {
+            className: saveData.className || 'Unknown',
+            floor: saveData.floor || 1,
+            souls: saveData.souls || 0,
+            level: saveData.level || 1
+          };
+        }
+      } catch (e) {
+        savePreview.value = null;
+      }
     } else {
+      if (window.SoundManager) window.SoundManager.play('error');
       alert("❌ Import failed! Invalid save string.");
     }
   }
@@ -144,33 +229,52 @@ const ascension = computed(() => {
 
 <template>
   <div class="start-screen scanline">
+    <!-- v37.1: Floating Ember Particles -->
+    <div class="ember-container">
+      <div 
+        v-for="ember in embers" 
+        :key="ember.id"
+        class="ember"
+        :style="{
+          left: ember.left + '%',
+          animationDelay: ember.delay + 's',
+          animationDuration: ember.duration + 's',
+          width: ember.size + 'px',
+          height: ember.size + 'px'
+        }"
+      ></div>
+    </div>
+
     <div class="title-container">
-      <h1>RE:BONE</h1>
-      <p class="version-text">v36.9.0 MOBILE COMPLETE 📱✨</p>
+      <h1 class="title-glow">RE:BONE</h1>
+      <p class="version-text">v37.1.0 COMPLETE POLISH 🎨✨</p>
       <div v-if="ascension > 0" class="cycle-display">
           ☠️ CYCLE {{ ascension }} ☠️
       </div>
     </div>
 
     <!-- MAIN MENU -->
-    <div class="menu">
+    <div class="menu stagger-children">
       <div class="primary-actions">
-           <!-- Logic: If Save exists, show CONTINUE clearly. -->
-           <button v-if="hasSave" class="btn-main btn-continue" @click="onContinue">[ CONTINUE ]</button>
-           <button class="btn-main btn-start" @click="onNewGame">[ NEW GAME ]</button>
-           <button class="btn-main btn-import" @click="onImportSave">[ IMPORT SAVE ]</button>
+           <!-- Logic: If Save exists, show CONTINUE with preview -->
+           <button v-if="hasSave" class="btn-main btn-continue animate-initial" @click="onContinue">
+             [ CONTINUE ]
+             <span v-if="savePreview" class="save-preview">
+               {{ savePreview.className }} Lv.{{ savePreview.level }} • FL{{ savePreview.floor }} • 💀{{ savePreview.souls }}
+             </span>
+           </button>
+           <button class="btn-main btn-start animate-initial" @click="onNewGame">[ NEW GAME ]</button>
+           <button class="btn-main btn-import animate-initial" @click="onImportSave">[ IMPORT SAVE ]</button>
       </div>
       
       <p class="powered-text">Powered by Gemini AI ✨</p>
 
       <div class="extra-menu">
-          <button class="btn-small" @click="showLeaderboard">🏆 HALL OF BONES</button>
-          <button class="btn-small" @click="showAchievements">🎖️ ACHIEVEMENTS</button>
-          <button class="btn-small" @click="showSoulForge">👻 SOUL SHOP</button>
-          <button class="btn-small" @click="onNewGame">🌞 DAILY RUN</button> <!-- Using New Game for now as placeholder for Daily logic -->
+          <button class="btn-small animate-initial" @click="showLeaderboard">🏆 HALL OF BONES</button>
+          <button class="btn-small animate-initial" @click="showAchievements">🎖️ ACHIEVEMENTS</button>
+          <button class="btn-small animate-initial" @click="showSoulForge">👻 SOUL SHOP</button>
+          <button class="btn-small animate-initial" @click="onNewGame">🌞 DAILY RUN</button>
       </div>
-      
-      <!-- Soul Forge if unlocked? Kept hidden for clean UI or add if needed -->
     </div>
 
     <div class="footer-actions">
@@ -434,5 +538,183 @@ h1 {
     letter-spacing: 2px;
     margin-top: 5px;
     animation: pulse 2s infinite;
+}
+
+/* ============================================
+   v37.1 POLISH ENHANCEMENTS
+   ============================================ */
+
+/* Ember Particles Container */
+.ember-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.ember {
+  position: absolute;
+  bottom: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff6600 0%, #ff3300 50%, transparent 100%);
+  opacity: 0.8;
+  animation: emberFloat 4s ease-out forwards;
+  box-shadow: 0 0 6px #ff4400, 0 0 12px #ff2200;
+}
+
+@keyframes emberFloat {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* Title Glow Effect */
+.title-glow {
+  animation: titleFlicker 4s ease-in-out infinite;
+}
+
+@keyframes titleFlicker {
+  0%, 100% { 
+    text-shadow: 0 0 10px #500, 0 0 20px #300, 0 0 40px #200; 
+  }
+  10% { 
+    text-shadow: 0 0 15px #700, 0 0 30px #500, 0 0 50px #300; 
+  }
+  20% { 
+    text-shadow: 0 0 10px #500, 0 0 20px #300, 0 0 40px #200; 
+  }
+  30% { 
+    text-shadow: 0 0 12px #600, 0 0 25px #400, 0 0 45px #250; 
+  }
+  50% { 
+    text-shadow: 0 0 18px #800, 0 0 35px #600, 0 0 60px #400; 
+  }
+  70% { 
+    text-shadow: 0 0 10px #500, 0 0 20px #300, 0 0 40px #200; 
+  }
+  90% { 
+    text-shadow: 0 0 14px #650, 0 0 28px #450, 0 0 48px #280; 
+  }
+}
+
+/* Save Preview */
+.save-preview {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--c-gold, #cfaa4c);
+  margin-top: 4px;
+  font-weight: normal;
+  opacity: 0.9;
+  letter-spacing: 0;
+}
+
+/* Button Continue Enhanced */
+.btn-continue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--c-gold, #cfaa4c) !important;
+}
+
+.btn-continue:hover {
+  transform: scale(1.08);
+  text-shadow: 0 0 15px var(--c-gold, #cfaa4c);
+}
+
+/* Staggered menu animation */
+.stagger-children .animate-initial {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.stagger-children .primary-actions .animate-initial:nth-child(1) { animation-delay: 0.1s; }
+.stagger-children .primary-actions .animate-initial:nth-child(2) { animation-delay: 0.2s; }
+.stagger-children .primary-actions .animate-initial:nth-child(3) { animation-delay: 0.3s; }
+.stagger-children .extra-menu .animate-initial:nth-child(1) { animation-delay: 0.4s; }
+.stagger-children .extra-menu .animate-initial:nth-child(2) { animation-delay: 0.5s; }
+.stagger-children .extra-menu .animate-initial:nth-child(3) { animation-delay: 0.6s; }
+.stagger-children .extra-menu .animate-initial:nth-child(4) { animation-delay: 0.7s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced buttons */
+.btn-main {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-main::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transition: left 0.5s;
+}
+
+.btn-main:hover::before {
+  left: 100%;
+}
+
+/* Enhanced small buttons */
+.btn-small {
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.btn-small:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Modal glass effect */
+.modal-content {
+  background: rgba(17, 17, 17, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ember {
+    animation: none;
+    display: none;
+  }
+  
+  .title-glow {
+    animation: none;
+  }
+  
+  .stagger-children .animate-initial {
+    animation: none;
+    opacity: 1;
+  }
+  
+  .cycle-display {
+    animation: none;
+  }
 }
 </style>
