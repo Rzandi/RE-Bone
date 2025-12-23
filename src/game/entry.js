@@ -7,7 +7,7 @@ import './config/skills.js';
 import './config/classes.js';
 import './config/biomes.js';
 import './config/realms.js'; // v34.0 Realms
-import './config/secrets.js';
+// import './config/secrets.js';
 import './config/evolution.js';
 import './config/recipes.js';
 import './config/skill_trees.js';
