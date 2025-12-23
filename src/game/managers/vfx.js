@@ -62,6 +62,28 @@ export const VFX = {
     }
   },
   
+  // v35.3: Relic visual cue (Glimmer on player)
+  showRelicTrigger(name) {
+       if(window.GameStore) {
+            // Text Popup
+            window.GameStore.state.vfx.push({
+                id: Math.random(),
+                type: 'buff',
+                val: name || 'Relic!',
+                target: 'player'
+            });
+            // Sparkles
+            for(let i=0; i<5; i++) {
+                window.GameStore.state.vfx.push({
+                    id: Math.random(),
+                    type: 'particle-heal', // Reuse heal green/gold sparkles
+                    val: '',
+                    target: 'player'
+                });
+            }
+       }
+  },
+  
   // Play skill-specific animation on target
   playSkillAnimation(type, targetElement) {
     const sprite = document.getElementById('mob-sprite');

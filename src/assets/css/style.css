@@ -335,3 +335,38 @@ button:disabled {
     padding: 10px;
   }
 }
+/* SCROLLBARS */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #111; 
+}
+::-webkit-scrollbar-thumb {
+  background: #444; 
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #666; 
+}
+
+/* MOBILE OPTIMIZATION */
+@media (max-width: 600px) {
+  #app {
+    height: 100vh; /* Fallback */
+    height: 100dvh; /* Mobile Browser fix */
+    width: 100vw;
+    border: none;
+    border-radius: 0;
+    max-width: none;
+    box-shadow: none;
+    padding-bottom: env(safe-area-inset-bottom); /* Fix for iPhone Home Bar */
+  }
+  body {
+    background: #000;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+}

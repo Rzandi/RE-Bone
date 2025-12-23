@@ -167,10 +167,23 @@ export const MobileHandler = {
       el.addEventListener('touchend', clear, { passive: true });
       el.addEventListener('touchmove', clear, { passive: true });
       el.addEventListener('touchcancel', clear, { passive: true });
-      // Prevent context menu on long press
       el.addEventListener('contextmenu', (e) => {
          e.preventDefault();
       });
+  },
+
+  /**
+   * Trigger Haptic Feedback
+   * @param {number|number[]} pattern - Vibration pattern
+   */
+  vibrate(pattern) {
+      if ('vibrate' in navigator) {
+          // Check Settings if available
+          if (window.gameStore && window.gameStore.state.settings) {
+             if (window.gameStore.state.settings.haptics === false) return;
+          }
+          navigator.vibrate(pattern);
+      }
   }
 };
 

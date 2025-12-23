@@ -1,6 +1,9 @@
-/* =========================================
-   CRAFTING MANAGER
-   ========================================= */
+import { RECIPES } from "../config/recipes.js";
+import { gameStore } from "../store.js";
+import { Player } from "../logic/Player.js"; // Ensure Player is imported or assumed global
+import { SoundManager } from "../managers/sound.js"; // Optional import if not global
+import { DB } from "../config/database.js";
+import { CONSTANTS } from "../config/constants.js";
 
 export const Crafting = {
   // Check if player has materials for a recipe

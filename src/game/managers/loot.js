@@ -1,10 +1,16 @@
+import { 
+    RARITY_DISTRIBUTIONS, 
+    FLOOR_BONUS_CONFIG, 
+    RARITY_TIERS,
+    DEFAULT_DISTRIBUTION 
+} from '../config/loot_config.js';
+
 const LootManager = {
     /**
      * Main drop logic for enemies
      * @param {Object} enemy - The enemy object
      */
-    dropLoot(enemy) {
-        let dropChance = 0.3; // 30% base drop rate
+    dropLoot(enemy) {        let dropChance = 0.3; // 30% base drop rate
         let droppedItem = null;
         
         const floor = Game.floor; // Dependency on Game State
@@ -14,6 +20,13 @@ const LootManager = {
         
         if (isMainBoss) {
             dropChance = 1.0;
+            
+            // v36: Specific Realm Boss Drop
+            if(enemy.drop && DB.ITEMS[enemy.drop]) {
+                Player.addItem(enemy.drop);
+                return `[MYTHIC] ${DB.ITEMS[enemy.drop].name}`;
+            }
+
             let legendaryItems = this.getLegendaryItems();
             if (legendaryItems.length > 0) {
                 let item = legendaryItems[Math.floor(Math.random() * legendaryItems.length)];
@@ -64,9 +77,9 @@ const LootManager = {
         if (roll < 0.15 + floorBonus) return "epic";
         if (roll < 0.45 + floorBonus) return "rare";
         
-        // v30.10 Deep Floor Clamps (No trash late game)
-        if (floor <= 30) return "rare"; // Minimum Rare at Floor 30
-        if (floor <= 10) return "epic"; // Minimum Epic at Floor 10
+        // v36.5: Deep Floor Clamps (No trash late game) - FIXED INVERTED LOGIC
+        if (floor >= 90) return "epic"; // Minimum Epic at Floor 90+
+        if (floor >= 70) return "rare"; // Minimum Rare at Floor 70+
         
         return "common";
     },
@@ -96,6 +109,213 @@ const LootManager = {
             }
         }
         return items;
+    },
+    
+    /**
+     * Get themed loot pool based on enemy type (ALL VALID ITEMS)
+     */
+    getEnemyLootPool(enemyName) {
+        const name = (enemyName || '').toLowerCase();
+        
+        // Enemy-specific item themes using ALL new themed items
+        if (name.includes('skeleton') || name.includes('bone')) {
+            return ['bone_dagger', 'bone_sword', 'skull_helm', 'rib_cage', 'bone_mail', 'bone_ring'];
+        }
+        if (name.includes('fire') || name.includes('flame') || name.includes('infernal') || name.includes('lava')) {
+            return ['flame_sword', 'inferno_robe', 'fire_ring', 'spell_wand', 'wizard_hat', 'lava_rock'];
+        }
+        if (name.includes('slime') || name.includes('ooze') || name.includes('toxic') || name.includes('sludge') || name.includes('poison')) {
+            return ['poison_dagger', 'venom_dagger', 'slimy_boots', 'toxic_ring', 'venom_sac', 'swamp_moss'];
+        }
+        if (name.includes('wolf') || name.includes('beast') || name.includes('thorn')) {
+            return ['claw_gauntlet', 'wolf_pelt', 'fang_necklace', 'beast_fang', 'tough_leather', 'leather_armor'];
+        }
+        if (name.includes('undead') || name.includes('zombie') || name.includes('ghoul')) {
+            return ['rusty_knife', 'rotten_meat', 'dark_essence', 'torn_cloak', 'diseased_cloth'];
+        }
+        if (name.includes('dragon') || name.includes('drake')) {
+            return ['dragon_scale', 'flame_sword', 'excalibur', 'fire_ring', 'fragment_dragon'];
+        }
+        if (name.includes('shadow') || name.includes('dark') || name.includes('void')) {
+            return ['shadow_blade', 'dark_cloak', 'void_ring', 'shadow_cloth', 'rogue_hood', 'dark_essence'];
+        }
+        if (name.includes('spider') || name.includes('web')) {
+            return ['web_cloak', 'spider_ring', 'poison_dagger', 'venom_dagger', 'spider_silk', 'venom_sac'];
+        }
+        if (name.includes('goblin') || name.includes('thief') || name.includes('assassin') || name.includes('rogue')) {
+            return ['thief_ring', 'rusty_knife', 'leather_armor', 'rogue_hood', 'smoke_bomb', 'assassin_token'];
+        }
+        if (name.includes('golem') || name.includes('stone') || name.includes('gargoyle')) {
+            return ['stone_gauntlet', 'rock_shield', 'earth_ring', 'steel_plate', 'plate_mail', 'golem_core'];
+        }
+        if (name.includes('elf') || name.includes('ranger') || name.includes('druid')) {
+            return ['nature_cloak', 'leaf_ring', 'druid_staff', 'bark_shield', 'ironwood_log', 'blessed_robe'];
+        }
+        if (name.includes('mage') || name.includes('wizard') || name.includes('cultist')) {
+            return ['arcane_ring', 'mage_robe', 'spell_wand', 'wizard_hat', 'mana_crystal', 'mana_potion'];
+        }
+        if (name.includes('knight') || name.includes('guard') || name.includes('warden') || name.includes('paladin')) {
+            return ['knight_ring', 'iron_sword', 'plate_mail', 'paladin_shield', 'steel_plate'];
+        }
+        if (name.includes('rat') || name.includes('crow') || name.includes('fly') || name.includes('pest')) {
+            return ['diseased_ring', 'diseased_cloth', 'rotten_meat', 'sewer_rat_tail', 'rusty_knife', 'torn_cloak'];
+        }
+        if (name.includes('water') || name.includes('siren') || name.includes('elemental') || name.includes('river')) {
+            return ['water_staff', 'tide_ring', 'aqua_cloak', 'spell_wand', 'blessed_robe', 'holy_water_vial'];
+        }
+        if (name.includes('mimic') || name.includes('chest')) {
+            return ['silver_ring', 'smoke_bomb', 'mana_crystal', 'thief_ring'];
+        }
+        
+        return null; // No themed pool
+    },
+    
+    /**
+     * Weighted rarity roll based on enemy rarity
+     * Enemy rarity shifts the probability distribution (bell curve)
+     * ALL rarities are possible, but enemy rarity determines the PEAK
+     * NOW USES CONFIG FILE - Easy to balance!
+     */
+    getRarityFromEnemyDistribution(floor, enemyRarity) {
+        // Use config distribution, fallback to default
+        const dist = RARITY_DISTRIBUTIONS[enemyRarity] || DEFAULT_DISTRIBUTION;
+        
+        // Floor bonus from config
+        const floorBonus = Math.min(
+            floor * FLOOR_BONUS_CONFIG.bonusPerFloor, 
+            FLOOR_BONUS_CONFIG.maxBonus
+        );
+        
+        // Adjust distribution with floor bonus using config weights
+        const adjustedDist = {};
+        for (let rarity in dist) {
+            const weight = FLOOR_BONUS_CONFIG.weights[rarity] || 0;
+            adjustedDist[rarity] = Math.max(1, dist[rarity] + (floorBonus * weight));
+        }
+        
+        // Normalize to 100%
+        const total = Object.values(adjustedDist).reduce((a, b) => a + b, 0);
+        const normalized = {};
+        for (let key in adjustedDist) {
+            normalized[key] = (adjustedDist[key] / total) * 100;
+        }
+        
+        // Roll weighted random
+        const roll = Math.random() * 100;
+        let cumulative = 0;
+        
+        // Use config rarity tiers for order
+        for (let rarity of RARITY_TIERS) {
+            if (normalized[rarity]) {
+                cumulative += normalized[rarity];
+                if (roll <= cumulative) {
+                    return rarity;
+                }
+            }
+        }
+        
+        return 'common'; // Fallback
+    },
+    
+    /**
+     * Generate a loot drop (Modern API for Combat.js)
+     * @param {number} floor - Current floor
+     * @param {string} rarityOverride - Force specific rarity (optional)
+     * @param {Object} enemy - Enemy object for themed drops (optional)
+     * @returns {Object} Item object with all properties
+     */
+    generateDrop(floor, rarityOverride = null, enemy = null) {
+        // 25% chance for enemy-themed drop (if applicable)
+        if (enemy && enemy.name && Math.random() < 0.25) {
+            const themedPool = this.getEnemyLootPool(enemy.name);
+            if (themedPool && themedPool.length > 0) {
+                // Filter by items that exist in DB
+                const validItems = themedPool.filter(id => DB.ITEMS[id]);
+                if (validItems.length > 0) {
+                    const itemId = validItems[Math.floor(Math.random() * validItems.length)];
+                    return { ...DB.ITEMS[itemId], id: itemId };
+                }
+            }
+        }
+        
+        // Weighted rarity distribution based on enemy rarity
+        let rarity;
+        if (rarityOverride) {
+            rarity = rarityOverride;
+        } else if (enemy && enemy.rarity) {
+            // Use weighted distribution (bell curve centered at enemy rarity)
+            rarity = this.getRarityFromEnemyDistribution(floor, enemy.rarity);
+        } else {
+            // Standard floor-based roll
+            rarity = this.getRarityRoll(floor);
+        }
+        
+        let itemId = this.getRandomItemByRarity(rarity);
+        if (!itemId || !DB.ITEMS[itemId]) return null;
+        
+        return { ...DB.ITEMS[itemId], id: itemId };
+    },
+    
+    // v35.1: Merchant Stock Generator
+    generateMerchantStock(floor) {
+        let stock = [];
+        // Merchant always has some basics
+        stock.push('health_potion');
+        
+        // Random 5-7 items based on floor
+        const count = 5 + Math.floor(Math.random() * 3);
+        
+        for(let i=0; i<count; i++) {
+             // Roll rarity slightly boosted for shop
+             let rarity = this.getRarityRoll(floor);
+             
+             // Ensure we don't just get nulls
+             let attempts = 0;
+             let item = null;
+             while(!item && attempts < 5) {
+                 item = this.getRandomItemByRarity(rarity);
+                 attempts++;
+             }
+             
+             if(item) stock.push(item);
+        }
+        
+        // 5% Chance for a Skill Book
+        if(Math.random() < 0.05) {
+             const books = Object.keys(DB.ITEMS).filter(k => DB.ITEMS[k].slot === 'skill_book');
+             if(books.length > 0) {
+                 stock.push(books[Math.floor(Math.random() * books.length)]);
+             }
+        }
+        
+        return stock;
+    },
+    
+    // v35.2 Relic Drop
+    dropRelic(tier="common") {
+        if(!window.RELICS) return null;
+        
+        // Filter by rarity if needed, or just random from pool
+        const pool = Object.keys(window.RELICS).filter(k => {
+             const r = window.RELICS[k];
+             if(tier === 'legend' && r.rarity === 'legend') return true;
+             if(tier === 'common') return true; // All pool for now?
+             return true;
+        });
+        
+        if(pool.length === 0) return null;
+        
+        // Try to give one the player doesn't have
+        let valid = pool;
+        if(window.Player && window.Player.relics) {
+            valid = pool.filter(id => !window.Player.relics.includes(id));
+        }
+        
+        if(valid.length === 0) return null; // Player has all relics?
+        
+        const picked = valid[Math.floor(Math.random() * valid.length)];
+        Player.addRelic(picked);
+        return window.RELICS[picked].name;
     }
 };
 

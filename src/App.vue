@@ -24,8 +24,10 @@ import SettingsPanel from "./components/SettingsPanel.vue";
 import WorldMapPanel from "./components/WorldMapPanel.vue";
 import NodeMapPanel from "./components/NodeMapPanel.vue";
 import EventPanel from "./components/EventPanel.vue";
+import { REALMS } from "./game/config/realms";
 
 const s = gameStore.state;
+const realmsConfig = REALMS; // Make available to template
 
 // Computed for bars
 const hpPct = computed(() => (s.hp / s.maxHp) * 100);
@@ -106,7 +108,12 @@ const handleAction = (action) => {
       <!-- HEADER -->
       <header>
         <div class="col-c">
-          <span style="color: var(--c-gold)">FL {{ s.floor }}</span>
+          <span style="color: var(--c-gold)">
+              <span v-if="s.world && s.world.activeRealm && realmsConfig[s.world.activeRealm]">
+                  {{ realmsConfig[s.world.activeRealm].icon }} 
+              </span>
+              FL {{ s.floor }}
+          </span>
           <small style="color: #888"> ({{ s.progress }}%)</small><br />
           <span style="font-size: 0.8rem"
             >{{ s.className }} Lv.{{ s.level }}</span
@@ -186,8 +193,9 @@ const handleAction = (action) => {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  padding: 10px;
+  /* Height handled by style.css (100dvh) */
+  width: 100%;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom)) 10px; /* Safe Area Fix */
   box-sizing: border-box;
 }
 /* Header handled by global style.css for responsive grid */

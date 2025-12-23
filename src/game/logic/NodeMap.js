@@ -22,7 +22,8 @@ export const NodeMap = {
 
     generateMap(realmId) {
         let map = [];
-        
+        const realmConfig = window.REALMS ? window.REALMS[realmId] : null;
+
         // 1. Generate Layers
         for (let l = 0; l < this.config.layers; l++) {
             let layerNodes = [];
@@ -30,12 +31,12 @@ export const NodeMap = {
             // First Layer: All Combat (easier start)
             if (l === 0) {
                 for (let i = 0; i < 3; i++) {
-                    layerNodes.push(this.createNode(l, i, 'combat'));
+                    layerNodes.push(this.createNode(l, i, 'combat', realmConfig));
                 }
             } 
             // Last Layer: Boss
             else if (l === this.config.layers - 1) {
-                layerNodes.push(this.createNode(l, 0, 'boss'));
+                layerNodes.push(this.createNode(l, 0, 'boss', realmConfig));
             }
             // Middle Layers
             else {
@@ -46,7 +47,7 @@ export const NodeMap = {
                     // Force Rest Site at ~50% mark (Layer 7)
                     if (l === 7 && i === 0) type = 'rest';
                     
-                    layerNodes.push(this.createNode(l, i, type));
+                    layerNodes.push(this.createNode(l, i, type, realmConfig));
                 }
             }
             map.push(layerNodes);
@@ -78,15 +79,40 @@ export const NodeMap = {
                 }
             });
             
-            // Validation: Ensure every next-layer node has at least one parent?
-            // (Skip for MVP, assume randomness covers it mostly)
+            
+            // Validation: Ensure every next-layer node has at least one parent
+            const nextLayerIds = nextLayer.map(n => n.index);
+            const connectedIndices = new Set();
+            currentLayer.forEach(n => n.next.forEach(idx => connectedIndices.add(idx)));
+
+            nextLayer.forEach(nextNode => {
+                if (!connectedIndices.has(nextNode.index)) {
+                     // ORPHAN DETECTED! Connect a random parent from current layer
+                     // Find a parent with close index to keep lines somewhat straight
+                     const parent = currentLayer.reduce((prev, curr) => {
+                        return (Math.abs(curr.index - nextNode.index) < Math.abs(prev.index - nextNode.index)) ? curr : prev;
+                     });
+                     parent.next.push(nextNode.index);
+                     connectedIndices.add(nextNode.index);
+                     // console.log(`Fixed Orphan: Node ${nextNode.id} connected to ${parent.id}`);
+                }
+            });
         }
 
         return map;
     },
 
-    createNode(layer, index, typeId) {
+    createNode(layer, index, typeId, realmConfig = null) {
         const type = Object.values(this.nodeTypes).find(t => t.id === typeId);
+        
+        // v34.0: Assign Sub-Biome
+        let biome = null;
+        if(realmConfig && realmConfig.biomes) {
+            // Simple logic: 5 biomes spread across 15 layers -> 3 layers per biome
+            const biomeIndex = Math.min(Math.floor(layer / 3), realmConfig.biomes.length - 1);
+            biome = realmConfig.biomes[biomeIndex];
+        }
+
         return {
             id: `${layer}-${index}`,
             layer: layer,
@@ -95,7 +121,8 @@ export const NodeMap = {
             icon: type.icon,
             color: type.color,
             next: [], // Indices of connected nodes in next layer
-            status: 'locked' // locked | available | completed
+            status: 'locked', // locked | available | completed
+            biome: biome // The specific environment
         };
     },
 

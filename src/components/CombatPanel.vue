@@ -1,13 +1,31 @@
 <script setup>
 import { computed } from "vue";
 import { gameStore } from "../game/store.js";
+import { REALMS } from "../game/config/realms";
 
 const s = gameStore.state;
 const enemy = computed(() => s.combat.enemy);
+const activeRealm = computed(() => s.world.activeRealm);
+
+const realmConfig = computed(() => {
+    if (activeRealm.value && REALMS[activeRealm.value]) {
+        return REALMS[activeRealm.value];
+    }
+    return null;
+});
+
+const panelStyle = computed(() => {
+    if (realmConfig.value) {
+        return {
+            borderColor: realmConfig.value.color,
+            background: `linear-gradient(to bottom, rgba(20,10,10,0.95), ${realmConfig.value.color}11)` 
+        };
+    }
+    return {}; 
+});
 
 const formatHp = (hp) => Math.floor(hp);
 
-// Computed HP Bar Color (Green -> Yellow -> Red)
 const hpColor = computed(() => {
   if (!enemy.value) return "#f00";
   const pct = enemy.value.hp / enemy.value.maxHp;
@@ -16,13 +34,8 @@ const hpColor = computed(() => {
   return "#f44";
 });
 
-// Sprite Handling (HTML/Emoji)
-// Legacy used .pixel-sprite classes or raw HTML headers
-// We will try to render the sprite string as HTML, or fallback
-// Enemy sprites in DB are often strings like `<span ...>...</span>`
 const spriteHtml = computed(() => {
   if (!enemy.value) return "";
-  // Use SpriteManager if available to handle states/HTML
   if (window.SpriteManager) {
       return window.SpriteManager.render(enemy.value.sprite || "👹");
   }
@@ -31,18 +44,18 @@ const spriteHtml = computed(() => {
 </script>
 
 <template>
-  <div class="combat-panel scanline" v-if="enemy ">
+  <div class="combat-panel scanline" v-if="enemy" :style="panelStyle">
     <!-- ENEMY INFO -->
     <div class="enemy-header">
-      <h2 :class="{ boss: enemy.isBoss }">{{ enemy.name }}</h2>
+      <h2 :class="{ boss: enemy.isBoss }" :style="{ color: realmConfig ? realmConfig.color : '#fff' }">
+          {{ enemy.name }}
+      </h2>
       <small class="enemy-type">{{ enemy.desc || "A dangerous foe." }}</small>
     </div>
 
     <!-- SPRITE AREA -->
     <div class="sprite-container">
-      <!-- Render Raw HTML from DB (Safe because internal content) -->
       <div id="mob-sprite" class="mob-sprite" v-html="spriteHtml"></div>
-
     </div>
 
     <!-- HP BAR -->
@@ -81,21 +94,21 @@ const spriteHtml = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px; /* Reduced from 20px */
+  padding: 10px;
   background: rgba(20, 10, 10, 0.8);
   border: 1px solid #522;
-  margin-bottom: 5px; /* Reduced from 10px */
+  margin-bottom: 5px;
   position: relative;
   border-radius: 4px;
 }
 
 .enemy-header {
   text-align: center;
-  margin-bottom: 5px; /* Reduced from 15px */
+  margin-bottom: 5px;
 }
 .enemy-header h2 {
   margin: 0;
-  font-size: 1.2rem; /* Reduced from 1.4rem */
+  font-size: 1.2rem;
   color: #fff;
   text-shadow: 0 0 5px #f00;
 }
@@ -111,18 +124,23 @@ const spriteHtml = computed(() => {
 }
 
 .sprite-container {
-  height: 80px; /* Reduced from 120px */
+  height: 80px;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 10px; /* Reduced from 15px */
+  margin-bottom: 10px;
   position: relative;
 }
 
 .mob-sprite {
-  font-size: 3rem; /* Fallback size for emojis */
+  font-size: 3rem;
   filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.3));
-  /* The sprite HTML usually contains its own styling if using pixel-art spans */
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .hp-container {
@@ -130,37 +148,53 @@ const spriteHtml = computed(() => {
   max-width: 300px;
   position: relative;
   margin-bottom: 10px;
+  background: #111; /* Darker bg for contrast */
+  border-radius: 4px; /* Consistent rounded */
 }
 .hp-bar-bg {
   background: #222;
-  height: 16px;
-  border: 1px solid #555;
-  border-radius: 2px;
+  height: 18px; /* Slightly taller */
+  border: 1px solid #444;
+  border-radius: 4px;
+  overflow: hidden; /* Ensure fill respects radius */
 }
 .hp-bar-fill {
   height: 100%;
-  transition: width 0.2s;
+  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother */
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2) inset; /* Gloss */
 }
 .hp-text {
   position: absolute;
-  top: -1px;
+  top: 0;
   width: 100%;
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 18px; /* Vertically center */
   color: #fff;
-  text-shadow: 1px 1px 0 #000;
-  font-weight: bold;
+  text-shadow: 1px 1px 1px #000;
+  font-weight: 700;
+  font-family: 'Courier New', monospace; /* Tech feel */
+  pointer-events: none;
 }
 
 .enemy-status {
   display: flex;
+  justify-content: center;
   gap: 4px;
+  margin-top: 5px;
 }
 .status-badge {
-  background: #333;
-  color: #fff;
-  padding: 2px 4px;
+  background: #222;
+  color: #eee;
+  padding: 2px 6px;
   font-size: 10px;
   border: 1px solid #555;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
+/* Dynamic Status Colors could be done via :style in template, 
+   but simplistic CSS classes would be cleaner if status IDs matched. 
+   For now, generic styling looks cleaner. */
 </style>

@@ -79,24 +79,35 @@ const handleClick = (btn) => {
 </template>
 
 <style scoped>
-/* Grid layout is handled by global #controls in style.css for responsive support */
+/* Grid layout forced here for reliability */
+#controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 5px;
+  margin-top: auto; /* Push to bottom if flex parent */
+}
+
 button {
-  background: #111;
+  background: linear-gradient(to bottom, #222, #111);
   border: 1px solid var(--c-border);
   color: var(--c-text);
   font-family: inherit;
-  font-size: 0.95rem; /* Reduced from 1.1rem */
+  font-size: 1rem;
   font-weight: bold;
   cursor: pointer;
   text-transform: uppercase;
   transition: all 0.1s;
-  border-radius: 4px;
-  padding: 8px 4px; /* Explicit padding */
-  min-height: 40px; /* Ensure touch target */
+  border-radius: 6px;
+  padding: 0; /* Centered by flex usually, or line-height */
+  display: flex; justify-content: center; align-items: center;
+  min-height: 54px; /* Optimal Touch Target (48px+) */
+  box-shadow: 0 4px 0 #000; /* Retro press depth */
 }
 button:active {
   background: #333;
-  transform: translateY(2px);
+  transform: translateY(4px); /* Pushed down */
+  box-shadow: 0 0 0 #000;
 }
 .empty-btn {
   visibility: hidden;

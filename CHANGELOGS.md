@@ -1,19 +1,205 @@
-## v32.4 (2024-12-21) - RE:INVENTED
+# RE:BONE - Version History
 
-**Logic & Strategy Update**
+## v36.4 - UI Polish & Optimization 🎨 (2025-12-23)
 
-- **Combat Depth**:
-  - **Status Effects**: Implemented Dot (Damage Over Time) for `Burn`, `Poison`.
-  - **Buffs/Debuffs**: `Strength` and `Weakness` correctly modify damage output.
-- **Refactoring**:
+**"Looks pretty, kills smoother."**
 
-  - **Modernization**: `Crafting.js` and `Merchant.js` refactored to remove legacy DOM code, ensuring strict Vue reactivity.
-  - **Stability**: Fixed skill tree crash in `SkillsPanel`.
+### 🎨 Visual Overhaul
 
-- **System**:
-  - **Version Sync**: Unified version number across all documentation.
+- **Status Panel**: Added dynamic **Class Icons** (🧙‍♂️, 🛡️, ⚔️) replacing the generic skull.
+- **Inventory**:
+  - Added **Icon Placeholders** for all items based on slot/type.
+  - Improved grid spacing and responsiveness.
+  - Polished "Floor Badge" visuals.
+- **Combat**:
+  - Enemies now have a **Floating Animation** (Idle).
+  - HP Bar transitions are smoother (cubic-bezier).
+  - Status badges have better contrast.
+- **Log Panel**: Darker background, crisper text, and better count badges.
+- **Controls**: Retro 3D buttons with satisfying "push" animation & larger touch targets.
 
-## v33.1 (2024-12-21) - POLISH & JUICE 🧃
+### 📱 Mobile & Optimization
+
+- **Full Viewport**: Game now takes 100% width/height on mobile (no borders/padding).
+- **Scrollbars**: Custom dark-themed scrollbars for all panels.
+- **Performance**: Reduced CSS layout thrashing in Combat Panel.
+- **Mobile Layout Fix (v36.4.1)**: Fixed "cut off" UI buttons on iPhone/Android browsers by implementing `100dvh` dynamic height.
+- **Crash Fixes & Stability (v36.4.2)**:
+  - **Soul Forge**: Fixed crash when Shop Stock was undefined (`NaN` refresh count) and wired up "Initialize Shop" button correctly.
+  - **Settings**: Fixed "Export Save" crash on mobile browsers (added legacy Clipboard fallback).
+  - **Class Selection**: Improved grid layout (min-width 280px) and bottom padding to prevent scroll clipping.
+  - **Patch Notes**: Added pagination (4 items/page) for better readability.
+
+---
+
+## v36.3 - Loot & Rewards System Overhaul 🎁 (2025-12-23)
+
+**"Fortune favors the brave."**
+
+### 🎁 Victory Rewards FIXED
+
+- **CRITICAL FIX**: Victory rewards now work correctly!
+- ✅ EXP gain after combat
+- ✅ Gold drops from enemies
+- ✅ Floor completion percentage progression
+- ✅ Item drops from combat
+- ✅ All rewards log to LogPanel with proper icons (💰/🎁/🆙)
+- ✅ Level up notifications working
+
+### 🎲 Weighted Rarity Distribution System
+
+- **NEW**: Enemy rarity determines loot probability distribution (bell curve)
+- Uncommon enemies MOSTLY drop uncommon items (40% peak)
+- But ALL rarities still possible from ANY enemy! (RNG excitement)
+- Higher floors boost rare+ drop chances (+0.5% per floor, max +10%)
+- **Config-based**: Easy balance changes without editing code
+
+**Loot Distribution Table:**
+| Enemy Rarity | Common | Uncommon | Rare | Epic | Legend |
+|-------------|--------|----------|------|------|--------|
+| Common | 50% | 30% | 15% | 4% | 1% |
+| Uncommon | 30% | **40%** | 20% | 8% | 2% |
+| Rare | 15% | 25% | **35%** | 20% | 5% |
+| Epic | 5% | 15% | 25% | **40%** | 15% |
+| Legend | 2% | 8% | 20% | 30% | **40%** |
+
+### ✨ Lucky Drop Notifications
+
+- **+1 tier higher**: ✨ Lucky drop! [Item] (RARITY)
+- **+2 tiers higher**: 🍀 VERY LUCKY! [Item] (RARITY)!
+- **+3 tiers higher**: ⭐ JACKPOT! [Item] (EPIC) from [Enemy]!
+- Shows rarity and enemy name for maximum excitement
+
+### 👾 Enemy-Themed Loot (40+ New Items!)
+
+- **16 enemy type categories** with themed drops
+- **25% chance** for contextual loot (Skeletons → Bone items)
+- **New Items**:
+  - 🦴 Bone Set (Dagger, Helmet, Cage, Ring)
+  - 🐺 Beast Set (Claw Gauntlet, Wolf Pelt, Fang Necklace)
+  - ☠️ Poison Set (Poison Dagger, Slimy Boots, Toxic Ring)
+  - 🕷️ Spider Set (Web Cloak, Spider Silk, Spider Ring)
+  - 🗿 Golem Set (Stone Gauntlet, Rock Shield, Earth Ring)
+  - 🔥 Fire Set - EPIC (Flame Sword, Inferno Robe, Fire Ring)
+  - 🌑 Shadow Set - EPIC (Shadow Blade, Dark Cloak, Void Ring)
+  - And many more!
+
+### 🍀 Luck-Based Double Drops
+
+- **Base 5%** chance for 2x items
+- **+1% per 5 luck** stat (scales with character)
+- Max ~25% at 100 luck
+- Shows luck percentage: "💎 LUCKY! Double drop! (Luck: 10%)"
+
+### 🏷️ Floor Tracking System
+
+- All equipment tagged with origin floor
+- Purple "FL#" badge displayed in inventory
+- Helps judge item quality and progression
+- Materials/consumables excluded (clutter-free)
+
+### 📝 Improved Item Descriptions
+
+- All items show stats: "+10 ATK, +5 DEF, +20 HP"
+- Special effects highlighted: "+10% Dodge", "Poisons on hit"
+- Materials labeled: "Crafting material. [description]"
+
+### 🛍️ Merchant Panel Fixed
+
+- **FIXED**: No longer shows "Sold Out" on first open
+- Auto-generates 5-7 items + health potion
+- Refresh button (50G) working correctly
+
+### 🔧 Technical Improvements
+
+- **NEW FILE**: `loot_config.js` - Centralized loot configuration
+- Easy balance changes for game designers
+- Future-proof for new rarities (mythic ready!)
+- All hardcoded values moved to config
+- Single source of truth for rarity systems
+
+### 🐛 Bug Fixes
+
+1. Victory rewards completely broken → FIXED
+2. Merchant empty panel → FIXED
+3. Missing loot drops → FIXED
+4. Floor progression stuck → FIXED
+5. EXP not gained → FIXED
+
+---
+
+## v36.0 - The Great Stabilization 🛡️ (2025-12-23)
+
+**"Order from Chaos."**
+
+### 🛡️ Code & Stability
+
+- **Deep Audit**: Comprehensive scan of codebase to identify and fix legacy issues.
+- **Ghost Enemy Fix**: Resolved critical bug where enemies would persist after death or appear incorrectly.
+- **UI Restoration**: Restored missing UI components and verified responsiveness.
+- **Performance**: Optimized rendering loop for smoother gameplay.
+
+### 🐛 Bug Fixes
+
+- Fixed multiple render glitches.
+- Fixed state inconsistencies in Combat Manager.
+- Cleaned up console errors.
+
+---
+
+## v35.0 - The Arsenal of Vengeance ⚔️ (2025-12-22)
+
+**"Power comes at a price."**
+
+### 🏺 The Relic System
+
+- **Global Passives**: Collected artifacts that provide permanent bonuses for the run.
+- **Inventory Integration**: View collected relics in the Player Panel.
+- **Unique Effects**:
+  - **Assassin Cloak**: Double damage on first hit.
+  - **Cursed Skull**: Reduces all enemy HP by 20%.
+  - **Vampire Tooth**: Lifesteal effect.
+
+### 🎭 New Content
+
+- **Relic Events**: Special nodes where you can find or sacrifice HP for Relics.
+- **Relic Hunter Achievement**: Find unique relics.
+- **Visuals**: Glimmer VFX when relics trigger.
+
+---
+
+## v34.0 - The Revenge of the Abandoned (2025-12-21)
+
+**"The Crossroads are open. The hunt begins."**
+
+### 🌍 New Features: World Map & Nodes
+
+- **World Map**: Unlocks at Floor 100. Choose from 5 Realms to invade.
+- **Node System**: Traverse procedural maps with Combat, Elite, Rest, and Event nodes.
+- **5 Realms**:
+  - **Nature's Den** (Toxic/Forest)
+  - **Shadow Guild** (Rogue/Sewer)
+  - **Iron Fortress** (Industrial/Fire)
+  - **Castle of Light** (Holy/Citadel)
+  - **Arcane Tower** (Magic/Void)
+- **Event System**: Text-based narrative choices with risks and rewards.
+
+### 🎨 Visual & Audio Polish
+
+- **Dynamic Themes**: Combat and Event UIs now change color based on the Active Realm.
+- **Ambient Audio**: Unique procedural soundscapes for each Realm (Deep drones, high ethereal winds, etc).
+- **HUD Update**: Main Header now displays the Realm Icon.
+- **Transitions**: Smooth SVG connection lines on the Node Map.
+
+### 🐛 Bug Fixes
+
+- Fixed World State not loading correctly from save file.
+- Fixed Victory Loop returning to Main Menu instead of Map.
+- Fixed `CombatPanel` HTML syntax errors.
+
+---
+
+## v33.1 - POLISH & JUICE 🧃 (2024-12-21)
 
 **Visuals & Audio Update**
 
@@ -28,7 +214,7 @@
   - Removed all legacy Vanilla JS files (`core/player.js`, `core/combat.js`).
   - Optimized `store.js` state management.
 
-## v33.0 (2024-12-21) - THE ENDLESS CYCLE ♾️
+## v33.0 - THE ENDLESS CYCLE ♾️ (2024-12-21)
 
 **New Game+ Update**
 
@@ -38,7 +224,20 @@
   - **Soft Reset**: Prestiging now instantly resets your Character and World (Floor 1) while keeping your Meta-Progression (Souls, Upgrades, Unlocks), without reloading the page.
   - **Visuals**: Start Screen now proudly displays your current **Death Cycle**. Enemies in NG+ have a skull 💀 indicator next to their name.
 
-## v32.2 (2024-12-21) - RE:INVENTED
+## v32.4 - RE:INVENTED (Logic Patch) (2024-12-21)
+
+**Logic & Strategy Update**
+
+- **Combat Depth**:
+  - **Status Effects**: Implemented Dot (Damage Over Time) for `Burn`, `Poison`.
+  - **Buffs/Debuffs**: `Strength` and `Weakness` correctly modify damage output.
+- **Refactoring**:
+  - **Modernization**: `Crafting.js` and `Merchant.js` refactored to remove legacy DOM code, ensuring strict Vue reactivity.
+  - **Stability**: Fixed skill tree crash in `SkillsPanel`.
+- **System**:
+  - **Version Sync**: Unified version number across all documentation.
+
+## v32.2 - RE:INVENTED (UI Patch) (2024-12-21)
 
 **Major Update: Inventory & UI Overhaul**
 
@@ -60,7 +259,7 @@
   - Fixed Merchant Menu not appearing.
   - Fixed items missing from Inventory UI due to prop connection issues.
 
-## v32.1 (2024-12-19)
+## v32.1 - The Roguelike Update (2024-12-19)
 
 **Roguelike & Content Update**
 
@@ -73,7 +272,7 @@
 - **UI Polish**:
   - Remastered Start Screen with "Hall of Bones" and "Daily Run" shortcuts.
 
-## v32.0 (2024-12-18)
+## v32.0 - The Vue Remaster (2024-12-18)
 
 **Technical Migration**
 
@@ -81,7 +280,7 @@
 - **Performance**: Significant optimization in rendering loop.
 - **Mobile Controls**: Added "MobileTooltip" for long-press inspection.
 
-## v31.0 (2024-12-10)
+## v31.0 - The Boss Rush (2024-12-10)
 
 **Content Expansion**
 
@@ -95,202 +294,46 @@
 
 _Archived changelogs from the Vanilla JS era._
 
-## [v31.0] - Architecture Refactor & Stability 🏗️
+## [v31.0 Legacy] - Architecture Refactor & Stability 🏗️
 
 **Release Date**: 2025-12-18
 
-### 🚨 Critical Fixes
+- **"Stuck at Floor 100" Fixed**: Resolved a critical syntax error in `game.js`.
+- **Refactor**: Decoupled `LootManager` and `ProgressionManager` from `game.js`.
 
-- **"Stuck at Floor 100" Fixed**: Resolved a critical syntax error in `game.js` that caused progression to freeze.
-- **Syntax Cleanup**: Fixed dangling commas and extra braces throughout codebase.
-
-### 🏗️ Major Refactor (The "God Object" Fix)
-
-- **LootManager** (`js/managers/loot.js`):
-  - Extracted all drop logic, rarity calculation, and legendary handling.
-  - Decoupled from core Game loop.
-- **ProgressionManager** (`js/managers/progression.js`):
-  - Extracted Level Up, Evolution, and Class Mutation UI logic.
-  - Centralized UI state management for progression.
-- **Game.js Cleanup**:
-  - Reduced file size by ~200 lines.
-  - Now focuses strictly on Core Loop (Explore -> Combat -> Repeat).
-
-## [v29.0] - Social Update 💀
+## [v29.0 Legacy] - Social Update 💀
 
 **Release Date**: 2025-12-16
 
-### Added
+- **Hall of Bones**: Local Leaderboard.
+- **Daily Dungeon**: Unique daily seeded runs.
 
-- **Hall of Bones (Leaderboard)**:
-  - Local tracking of Top 20 Runs.
-  - Displays Class, Level, Floor, and Total Score.
-  - New Main Menu integration.
-- **Daily Dungeon**:
-  - A unique challenge generated every 24 hours.
-  - **Global Modifiers**: Effects like _Glass Cannon_ (High DMG, Low HP) or _Gold Rush_.
-  - Fixed seed ensures all players face the same challenge on the same day.
-  - 20% Score Bonus for Daily Runs.
-- **Social Implementation**:
-  - `SocialManager` handles `localStorage` persistence.
-  - **Score Formula**: Calculated based on Floor, Level, Gold, and Boss Kills.
-
-## [v28.0] - System Overhaul 🛠️
+## [v28.0 Legacy] - System Overhaul 🛠️
 
 **Release Date**: 2025-12-16
 
-### Added
+- **Crafting**: Convert Scrap/Dust into items.
+- **Salvage**: Breakdown items for materials.
+- **Skill Tree**: Passives like HP, ATK, DEF.
 
-- **Crafting System**:
-  - Convert materials (`Scrap`, `Dust`, `Leather`, `Essence`) into items.
-  - **Recipes**: Potions, Basic Gear, and Legendary Upgrades.
-  - **Legendary Crafting**: Create `Dragon Claw` and `Aegis Shield` using rare fragments.
-- **Salvage Mode**:
-  - Breakdown unwanted items in inventory.
-  - Returns materials based on item Rarity and Slot.
-  - Chance to find **Legendary Fragments** (<10%) from high-tier items.
-- **Skill Tree System**:
-  - **Skill Points (SP)** earned on Level Up.
-  - Unlockable passive bonuses (`HP`, `ATK`, `DEF`, `VIT`, `INT`).
-  - Dedicated **Skills Panel** UI to manage progression.
-- **New Materials**:
-  - `Scrap Metal`, `Magic Dust`, `Tough Leather`, `Dark Essence`.
-  - `Dragon Fragment`, `Void Fragment`.
+## [v27.0 Legacy] - Content Expansion
 
-## [27.0] - 2025-12-16 - CONTENT EXPANSION
+**Release Date**: 2025-12-16
 
-### 🎉 Major Content Update
+- **Classes**: Dark Knight, Necro Priest, Shadow Assassin.
+- **Biome**: Crystal Caverns (Floors 75-55).
+- **Items**: Dragon's Wrath Set, Eternal Guard Set.
 
-#### Added
+## [v26.2 Legacy] - Mobile Optimization
 
-- **3 New Classes**
-  - **Dark Knight** 🛡️: HP sacrifice mechanic, high damage.
-  - **Necro Priest** 🔮: Sustain mage, damage reflection.
-  - **Shadow Assassin** 🗡️: Stealth, critical hits.
-- **New Biome: Crystal Caverns** 💎
-  - Floors 75-55 (Alternative path).
-  - New Theme: Cyan/Dark Purple neon aesthetic.
-  - New Enemies: Crystal Golem, Shard Wisp.
-  - New Boss: **Prism Construct** (Floor 70).
-- **New Legendary Items**
-  - **Dragon's Wrath Set** 🔥: Fire damage & burn focus.
-  - **Eternal Guard Set** 🛡️: Tanking & HP regen.
-  - **Standalone Items**: Void Walker Boots, Mirror Shield, Cursed Blade.
+**Release Date**: 2025-12-15
 
-## [26.2] - 2025-12-15 - MOBILE OPTIMIZATION
+- **Responsive**: CSS for 320px+ screens.
+- **Touch**: Added `TouchManager` for swipe/tap.
 
-### 🎉 Mobile-Ready Release
+## [v25.0 Legacy] - Legendary Update
 
-#### Added
+**Release Date**: 2025-12-15
 
-- **Mobile Optimization**
-  - Comprehensive responsive CSS (`mobile.css`)
-  - Support for 320px - 1024px+ screens
-  - Touch-optimized UI (55px min button height)
-  - Special landscape mode optimizations
-  - Safe area support for notched devices
-  - PWA-ready meta tags
-- **Touch Handler Module** (`mobile.js`)
-  - Auto touch device detection
-  - Button touch feedback
-  - Double-tap zoom prevention (iOS)
-  - Swipe gesture framework
-  - Mobile toast notifications
-  - Landscape detection
-
-## [26.1] - 2025-12-15 - CODE QUALITY
-
-### 🎉 Code Quality Improvements
-
-#### Added
-
-- **JSDoc Documentation**
-  - Comprehensive comments for 13 functions
-  - Type hints and parameter documentation
-- **Constants Module** (`constants.js`)
-  - Extracted 30+ magic numbers
-  - Single source of truth for values
-  - Animation durations centralized
-  - Game balance values organized
-
-## [26.0] - 2025-12-15 - POLISH & BALANCE
-
-### 🎉 Polish Update
-
-#### Added
-
-- **Inventory System Enhancements**
-  - Sort buttons (Rarity, Type, Name, ATK)
-  - Filter buttons (All, Weapon, Armor, Accessory)
-  - Item comparison tooltips (green ↑ / red ↓)
-  - Quick-swap equipment (⚡ click to equip)
-  - Auto-sort button
-  - Item lock/favorite system (🔒/🔓)
-- **Enhanced Tooltips**
-  - Stat breakdown tooltips (HP/MP hover)
-  - Shows Base + Equipment calculation
-  - Set bonus display
-  - Color-coded stat differences
-- **Visual Polish**
-  - Achievement unlock popup animations
-  - Screen flash effects
-  - Color-coded damage numbers (physical/magic/heal/critical)
-  - Larger critical hit numbers with rotation
-  - Legendary item glow effects
-  - Set item indicators (⚡)
-
-## [25.0] - 2025-12-15 - MAJOR UPDATE
-
-### 🎉 SPRINT 2: Legendary Items & Game Modes
-
-#### Added
-
-- **Legendary Item System**
-  - 16 unique legendary items with special effects
-  - 3 complete item sets (Vampire, Bone Lord, Shadow)
-  - Set bonus system (2-piece and 3-piece bonuses)
-  - 4 rarity tiers: Common → Rare → Epic → Legend
-- **Boss Rush Mode**
-  - Fight all 5 bosses consecutively
-  - Limited healing between encounters (+20 HP, +10 MP)
-  - Victory rewards: 500 gold + 2 legendary items
-- **Achievement System**
-  - 14 achievements across multiple categories
-  - Progress tracking (heal X HP, defeat Y bosses)
-  - LocalStorage persistence
-- **Unique Legendary Effects**
-  - Bloodfang: +10% lifesteal
-  - Phoenix Feather: Auto-revive at 60% HP (consumes item)
-  - Time Crystal: Extra turn on kill
-  - Shadow Cloak: +15% dodge
-  - Soul Reaper: +3 HP per kill
-  - Eternal Grimoire: -1 MP cost on all skills
-  - Mana Siphon Ring: +3 MP when enemy uses skill
-  - Berserker Helm: +ATK at low HP
-
-## [24.0] - 2025-12-14 - SPRINT 1.5 COMPLETE
-
-### 🎮 Skill & Passive Mechanics
-
-#### Added - Core Skill Mechanics
-
-- **Lifesteal System**
-  - Blood Drain: 50% lifesteal
-  - Bat Swarm: 30% lifesteal per hit
-  - Vampirism passive: 20% lifesteal on basic attacks
-- **Multi-Hit Attacks**
-  - Bat Swarm: 3 hits at 0.8x power each
-  - Staggered damage visuals (150ms delay)
-- **Ignore DEF Mechanic**
-  - Phase Strike bypasses enemy defense completely
-
-## [23.0] - 2025-12-14 - SPRINT 1 COMPLETE
-
-### 🗺️ Foundation: 100 Floors & Biomes
-
-#### Added
-
-- **Extended Dungeon**: Expanded from 50 to 100 floors with dynamic difficulty scaling.
-- **Biome System**: 5 unique biomes with distinct themes (Ruins, Caverns, Dark Dungeon, Crypt, Abyss).
-- **New Classes**: Vampire, Lich, Wraith.
-- **Enemy Expansion**: Added 16 new enemy types and 5 boss encounters.
+- **Legendary Items**: 16 new items with unique effects (e.g. Phoenix Feather).
+- **Achievements**: Track stats and unlocks.

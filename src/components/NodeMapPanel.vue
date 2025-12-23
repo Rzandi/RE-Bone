@@ -1,3 +1,4 @@
+<script setup>
 import { computed, onMounted, ref, nextTick, onUnmounted } from 'vue';
 import { gameStore } from '../game/store';
 import { NodeMap } from '../game/logic/NodeMap';

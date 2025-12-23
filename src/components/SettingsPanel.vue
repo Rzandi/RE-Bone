@@ -22,6 +22,76 @@ const toggleCRT = () => {
     SoundManager.play('click');
 };
 
+const copyToClipboard = (text) => {
+    // 1. Try Modern API (HTTPS/Localhost)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Save String Copied to Clipboard!");
+            SoundManager.play('click');
+        }).catch(err => {
+            console.error("Clipboard API Failed:", err);
+            fallbackCopy(text);
+        });
+    } else {
+        // 2. Fallback for HTTP/Mobile (Legacy)
+        fallbackCopy(text);
+    }
+};
+
+const fallbackCopy = (text) => {
+    try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        
+        // Ensure it's not visible but part of DOM
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        document.body.appendChild(textArea);
+        
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+            alert("Save String Copied (Legacy Mode)!");
+            SoundManager.play('click');
+        } else {
+            throw new Error("execCommand failed");
+        }
+    } catch (err) {
+        console.error("Fallback Copy Failed:", err);
+        prompt("Clipboard blocked. Copy this manually:", text);
+    }
+};
+
+const exportSave = () => {
+    if(window.SaveManager) {
+        const str = window.SaveManager.exportSaveString();
+        if(str) {
+            copyToClipboard(str);
+        }
+    }
+};
+
+const importSave = () => {
+    if(window.SaveManager) {
+        const str = prompt("Paste Save String (Base64):");
+        if(str) {
+            const success = window.SaveManager.importSaveString(str);
+            if(success) {
+                alert("Save Imported Successfully! Reloading...");
+                window.location.reload();
+            } else {
+                alert("Invalid Save Data!");
+                SoundManager.play('error');
+            }
+        }
+    }
+};
+
 const close = () => {
     s.activePanel = "menu-view";
     SoundManager.play('click');
@@ -67,8 +137,19 @@ const close = () => {
 
         <hr>
 
+        <!-- DATA MANAGEMENT (v36.1) -->
+        <div class="section">
+            <h3>CLOUD SAVE</h3>
+            <div class="row">
+                <button class="btn-wide" @click="exportSave">📤 EXPORT TO CLIPBOARD</button>
+            </div>
+            <div class="row">
+                <button class="btn-wide" @click="importSave">📥 IMPORT FROM CLIPBOARD</button>
+            </div>
+        </div>
+
         <div class="footer">
-            <small>v32.3 RE:BONE</small>
+            <small>v36.1 RE:BONE</small>
         </div>
     </div>
   </div>
@@ -78,7 +159,7 @@ const close = () => {
 .settings-panel {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100dvh;
   background: #050505;
   color: #eee;
   font-family: 'Courier New', monospace;
@@ -97,6 +178,7 @@ const close = () => {
 .content {
   padding: 20px;
   flex: 1;
+  overflow-y: auto;
 }
 
 .section { margin-bottom: 20px; }
@@ -118,6 +200,22 @@ const close = () => {
 }
 .btn-toggle.on { background: #0a0; color: #000; }
 .btn-toggle.off { background: #333; color: #888; }
+
+.btn-wide {
+    width: 100%;
+    padding: 10px;
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+.btn-wide:hover {
+    background: #333;
+    border-color: #fff;
+}
 
 .btn-close {
   background: transparent;

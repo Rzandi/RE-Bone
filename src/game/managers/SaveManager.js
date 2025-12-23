@@ -69,6 +69,22 @@ export const SaveManager = {
                 Player.checkEvolution();
             }
             
+            // 3. Repair History/Lore (For saves pre-v36)
+            if (!gameStore.state.history) {
+                 gameStore.state.history = { events: [], lore: [] };
+             } else {
+                 if(!gameStore.state.history.events) gameStore.state.history.events = [];
+                 if(!gameStore.state.history.lore) gameStore.state.history.lore = [];
+             }
+             
+            // 4. World Map Repair (v34 Node Map)
+            if (!gameStore.state.world) {
+                gameStore.state.world = { unlockedRealms: [], activeRealm: null, nodeMap: [], currentNode: null };
+            } else {
+                if (!Array.isArray(gameStore.state.world.nodeMap)) gameStore.state.world.nodeMap = [];
+                if (!gameStore.state.world.unlockedRealms) gameStore.state.world.unlockedRealms = [];
+            }
+            
             // 3. Repair Combat State (Timeouts are lost)
             if (gameStore.state.activePanel === 'combat') {
                 // If it was enemy turn, reset to player turn to prevent softlock
@@ -130,7 +146,45 @@ export const SaveManager = {
         }, intervalMs);
         */
        console.log("Auto-save disabled for Roguelike Mode");
+    },
+
+  // Cloud Save (Export to String)
+  exportSaveString() {
+    try {
+      const allData = {
+        save: localStorage.getItem('rebone_save_v32'),
+        meta: localStorage.getItem('rebone_meta_v32'),
+        achievements: localStorage.getItem('rebone_achievements'),
+        settings: localStorage.getItem('rebone_settings'),
+        timestamp: Date.now(),
+        version: "v36.4"
+      };
+      return btoa(JSON.stringify(allData));
+    } catch (e) {
+      console.error("Export Failed", e);
+      return null;
     }
+  },
+
+  // Cloud Save (Import from String)
+  importSaveString(str) {
+    try {
+      const decoded = atob(str);
+      const data = JSON.parse(decoded);
+      
+      if (!data.version || !data.meta) throw new Error("Invalid Save Data");
+      
+      if(data.save) localStorage.setItem('rebone_save_v32', data.save);
+      if(data.meta) localStorage.setItem('rebone_meta_v32', data.meta);
+      if(data.achievements) localStorage.setItem('rebone_achievements', data.achievements);
+      if(data.settings) localStorage.setItem('rebone_settings', data.settings);
+      
+      return true;
+    } catch (e) {
+      console.error("Import Failed", e);
+      return false;
+    }
+  }
 };
 
 // Expose for debugging

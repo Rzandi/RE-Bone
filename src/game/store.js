@@ -38,6 +38,7 @@ export const gameState = reactive({
     // Skills & Passives
     skills: [],
     passives: [],
+    relics: [], // v35.2 Relic System (Permanent Passive Items)
     activeSkills: [],
     learnedSkills: [],
     
@@ -71,6 +72,12 @@ export const gameState = reactive({
         maxFloor: 1, // Track max floor for unlocks
     },
     
+    // v35.3 History & Lore
+    history: {
+        events: [], // IDs of completed events
+        lore: []    // Discovered lore fragments
+    },
+    
     // v34.0 World Map State
     world: {
         unlockedRealms: [],     // ['nature', 'shadow', etc.]
@@ -99,17 +106,13 @@ export const gameStore = {
 
     // VFX Helper
     triggerVfx(data) {
-        // data: { type: 'damage'|'heal'|'crit', val: string|number, x?: number, y?: number }
-        // For simple centralized combat, we ignore x/y for now and center it or randomize slightly
         this.state.vfx.push({ 
             id: Date.now() + Math.random(), 
             ...data,
             timestamp: Date.now()
         });
         
-        // Auto-cleanup happens in VFXLayer or via timer, but let's keep array small just in case
         if(this.state.vfx.length > 20) this.state.vfx.shift();
-
     },
 
     triggerShake(intensity = "medium") {

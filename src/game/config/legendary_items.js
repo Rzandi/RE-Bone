@@ -252,7 +252,7 @@ const LEGENDARY_ITEMS = {
     price: 800,
     uniqueEffect: "reflect_magic_20"
   },
-  cursed_blade: {
+    cursed_blade: {
     name: "Cursed Blade",
     slot: "weapon",
     atk: 35,
@@ -261,6 +261,63 @@ const LEGENDARY_ITEMS = {
     desc: "+35 ATK, -20 HP | High Risk",
     price: 666,
     uniqueEffect: "cursed_power"
+  },
+
+  // ===== SOUL WEAPONS (v35.0 Traitor Loot) =====
+  excalibur: {
+    name: "Excalibur",
+    slot: "weapon",
+    atk: 50,
+    vit: 20,
+    rarity: "god",
+    desc: "The Holy Sword. +50 ATK, +20 VIT. Smite on hit.",
+    price: 9999,
+    setBonus: "god_set",
+    uniqueEffect: "smite_on_hit"
+  },
+  wrath_of_nature: {
+    name: "Wrath of Nature",
+    slot: "weapon",
+    atk: 30,
+    vit: 40,
+    rarity: "god",
+    desc: "+30 ATK, +40 VIT. Poison & Regen.",
+    price: 9999,
+    setBonus: "god_set",
+    uniqueEffect: "poison_regen"
+  },
+  ragnarok: {
+    name: "Ragnarok",
+    slot: "weapon",
+    atk: 60,
+    str: 30,
+    rarity: "god",
+    desc: "The End. +60 ATK, +30 STR. Splash Dmg.",
+    price: 9999,
+    setBonus: "god_set",
+    uniqueEffect: "splash_100"
+  },
+  chronos_staff: { // Mechanist Drop
+    name: "Deus Ex Machina",
+    slot: "weapon",
+    int: 50,
+    maxMp: 100,
+    rarity: "god",
+    desc: "God Machine. +50 INT. Skills cost 0 MP (10% chance).",
+    price: 9999,
+    setBonus: "god_set",
+    uniqueEffect: "free_cast"
+  },
+  nightfall_blade: { // Shadow Assassin Drop
+    name: "Nightfall",
+    slot: "weapon",
+    atk: 40,
+    dodge: 20,
+    rarity: "god",
+    desc: "Eternal Night. +40 ATK, +20% Dodge. Execute < 30%.",
+    price: 9999,
+    setBonus: "god_set",
+    uniqueEffect: "execute_30"
   }
 };
 
@@ -327,7 +384,7 @@ const SET_BONUSES = {
 };
 
 // Export to global
-// window.LEGENDARY_ITEMS = LEGENDARY_ITEMS;
-// window.SET_BONUSES = SET_BONUSES;
+window.LEGENDARY_ITEMS = LEGENDARY_ITEMS; // Needed for Game.js drop logic
+window.SET_BONUSES = SET_BONUSES;
 
 export { LEGENDARY_ITEMS, SET_BONUSES };

@@ -9,9 +9,21 @@ const props = defineProps({
 });
 
 const s = gameStore.state;
-const filterType = ref("ALL"); // ALL, EQUIP, USE, MAT
+const filterType = ref("ALL"); // ALL, EQUIP, USE, MAT, RELIC
 const sortRarity = ref(false); // Toggle
 const selectedItem = ref(null); // For Details
+
+const maxInventory = computed(() => {
+    return window.Player?.maxInventory || 20;
+});
+
+const relics = computed(() => {
+    // Construct relic objects from IDs
+    if(!s.relics) return [];
+    return s.relics.map(rid => {
+        return window.RELICS ? window.RELICS[rid] : { name: rid, desc: 'Unknown Relic', rarity: 'common' };
+    }).filter(r => r);
+});
 
 const rarityRank = {
     "common": 1, "uncommon": 2, "rare": 3, "epic": 4, "legend": 5, "mythic": 6
@@ -25,9 +37,12 @@ const filteredInventory = computed(() => {
     if (filterType.value === "EQUIP") {
         list = list.filter(i => ["weapon", "armor", "acc"].includes(i.slot));
     } else if (filterType.value === "USE") {
-        list = list.filter(i => i.type === "consumable" || i.slot === "item");
+        list = list.filter(i => i.type === "consumable" || i.slot === "con" || i.slot === "skill_book");
     } else if (filterType.value === "MAT") {
-        list = list.filter(i => i.type === "material");
+        // Fix: Check for slot 'mat' OR type 'material' just in case
+        list = list.filter(i => i.slot === "mat" || i.type === "material");
+    } else if (filterType.value === "RELIC") {
+        return relics.value;
     }
     
     // Sort
@@ -43,16 +58,7 @@ const filteredInventory = computed(() => {
 });
 
 const handleItemClick = (item, index) => {
-  // Toggle Selection if already selected, otherwise select
   if(selectedItem.value === item) {
-       // If clicking active item, USE it logic? Use double click?
-       // For now, let's keep simple: Click = Select. Double Click or Button = Use.
-       // User asked for "Description", so selection model is better.
-       // But current logic is Click = Use/Equip.
-       // I should change: Click = Select. "Use" button in Detail panel?
-       // OR: Keep Click = Use, but Hover = Detail?
-       // Mobile has no hover.
-       // Better: Click = Select/Detail. Detail has "USE/EQUIP" button.
        selectedItem.value = null; // Deselect
   } else {
        selectedItem.value = item;
@@ -63,16 +69,42 @@ const handleItemClick = (item, index) => {
 const useSelectedItem = () => {
     if(!selectedItem.value) return;
     const idx = props.inventory.indexOf(selectedItem.value);
-    if(idx === -1) return; // Should not happen
+    if(idx === -1) return; 
     
     if (window.PlayerLogic) {
-        PlayerLogic.handleItemClick(selectedItem.value, idx);
-        selectedItem.value = null; // Clear after use
+        PlayerLogic.handleItemClick(idx); // Standard Use/Equip
+        // Don't deselect automatically if stackable (might want to use again)
+        if (!selectedItem.value.qty || selectedItem.value.qty <= 1) {
+             selectedItem.value = null; 
+        }
+    }
+};
+
+const discardSelectedItem = () => {
+    if(!selectedItem.value) return;
+    const idx = props.inventory.indexOf(selectedItem.value);
+    if(idx === -1) return;
+    
+    if (confirm(`Discard ${selectedItem.value.name}? This cannot be undone.`)) {
+        if (window.PlayerLogic) PlayerLogic.discardItem(idx);
+        selectedItem.value = null;
     }
 };
 
 const toggleOracle = () => {
     if(window.PlayerLogic) PlayerLogic.toggleInspect();
+};
+
+const openCrafting = () => {
+    gameStore.state.activePanel = 'crafting';
+};
+
+const openAlchemy = (type) => {
+    // Assuming Alchemy is part of Crafting or separate panel?
+    // Using 'crafting' panel with a tab or separate?
+    // Let's assume we pass a reliable way or just open Crafting for now.
+    // If 'Alchemy' doesn't exist, fallback to Crafting.
+    gameStore.state.activePanel = 'crafting'; // For now
 };
 
 const getRarityColor = (rarity) => {
@@ -86,13 +118,36 @@ const getRarityColor = (rarity) => {
   };
   return map[rarity] || "#fff";
 };
+
+const getItemIcon = (item) => {
+    if (item.icon) return item.icon; // If item has specific icon
+    
+    // Generic Icons by Slot/Type
+    const map = {
+        weapon: '⚔️',
+        armor: '🛡️',
+        acc: '💍',
+        con: '🧪',
+        skill_book: '📜',
+        mat: '🧱',
+        material: '🦴'
+    };
+    
+    // Fallback logic
+    if (item.type === 'consumable') return '🧪';
+    if (item.id && item.id.includes('bone')) return '🦴';
+    if (item.slot === 'relic') return '🏺';
+    
+    return map[item.slot] || '📦';
+};
 </script>
 
 <template>
   <div class="inv-panel scanline">
     <div class="header">
-        <h3>INVENTORY <small>({{ props.inventory.length }})</small></h3>
+        <h3>BACKPACK <small>({{ props.inventory.length }}/{{ maxInventory }})</small></h3>
         <div class="toolbar">
+             <button @click="openCrafting" title="Crafting">🔨</button>
             <button @click="toggleOracle" :class="{ active: s.inspectMode }" title="Inspect">👁️</button>
             <button @click="sortRarity = !sortRarity" :class="{ active: sortRarity }" title="Sort Rarity">💎</button>
         </div>
@@ -104,6 +159,7 @@ const getRarityColor = (rarity) => {
         <button :class="{ active: filterType === 'EQUIP' }" @click="filterType = 'EQUIP'">EQUIP</button>
         <button :class="{ active: filterType === 'USE' }" @click="filterType = 'USE'">USE</button>
         <button :class="{ active: filterType === 'MAT' }" @click="filterType = 'MAT'">MAT</button>
+        <button :class="{ active: filterType === 'RELIC' }" @click="filterType = 'RELIC'" style="color:#fd0">RELICS</button>
     </div>
     
     <div v-if="s.inspectMode" class="oracle-banner">
@@ -120,10 +176,19 @@ const getRarityColor = (rarity) => {
         :style="{ borderColor: getRarityColor(item.rarity) }"
         @click="handleItemClick(item, i)"
       >
+        <!-- Icon Placeholder -->
+        <div class="item-icon">{{ getItemIcon(item) }}</div>
+        
+        <!-- Quantity Badge -->
+        <div v-if="item.qty > 1" class="qty-badge">{{ item.qty }}</div>
+        
+        <!-- Floor Badge (Top Right) -->
+        <div v-if="item.dropFloor" class="floor-badge">F{{ item.dropFloor }}</div>
+
         <div class="item-name" :style="{ color: getRarityColor(item.rarity) }">
           {{ item.name }}
         </div>
-        <small class="item-type">{{ item.slot === 'item' ? 'use' : item.slot }}</small>
+        <small class="item-type">{{ item.slot === 'item' ? 'use' : (item.slot || 'relic') }}</small>
         <span v-if="s.inspectMode" style="font-size:0.7rem">❓</span>
       </div>
 
@@ -138,7 +203,7 @@ const getRarityColor = (rarity) => {
     <!-- DETAIL PANEL (Fixed Bottom) -->
     <div class="detail-panel" v-if="selectedItem">
         <div class="detail-header" :style="{ color: getRarityColor(selectedItem.rarity) }">
-            {{ selectedItem.name }}
+            {{ selectedItem.name }} <span v-if="selectedItem.qty > 1">x{{ selectedItem.qty }}</span>
         </div>
         <div class="detail-body">
             <div class="desc">{{ selectedItem.desc || 'No description available.' }}</div>
@@ -152,10 +217,22 @@ const getRarityColor = (rarity) => {
              <div class="effects" v-if="selectedItem.uniqueEffect">
                 Effect: {{ selectedItem.uniqueEffect }}
             </div>
+            
+            <!-- Relic Indicator -->
+            <div v-if="filterType === 'RELIC'" class="relic-status">
+                ✨ PASSIVE EFFECT ACTIVE
+            </div>
         </div>
-        <button class="action-btn" @click="useSelectedItem">
-            {{ ['weapon','armor','acc'].includes(selectedItem.slot) ? 'EQUIP' : 'USE' }}
-        </button>
+        
+        <!-- Only show actions for non-relics -->
+        <div class="actions" v-if="filterType !== 'RELIC'">
+            <button class="action-btn use" @click="useSelectedItem">
+                {{ ['weapon','armor','acc'].includes(selectedItem.slot) ? 'EQUIP' : 'USE' }}
+            </button>
+            <button class="action-btn discard" @click="discardSelectedItem">
+                🗑️
+            </button>
+        </div>
     </div>
   </div>
 </template>
@@ -214,21 +291,49 @@ const getRarityColor = (rarity) => {
   background: #1a1a1a;
   padding: 5px;
   cursor: pointer;
-  min-height: 60px;
+  min-height: 70px; /* Slightly taller for icon */
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start; /* Align top */
   align-items: center;
   text-align: center;
   font-size: 0.8rem;
   transition: all 0.2s;
   position: relative;
 }
+.item-icon {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+}
 .inv-item:hover {
   background: #2a2a2a; transform: translateY(-2px); z-index: 1;
 }
 .inv-item.selected {
     background: #333; border-color: #fff !important; box-shadow: 0 0 8px rgba(255,255,255,0.2);
+}
+.qty-badge {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--c-gold);
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+.floor-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(100, 50, 200, 0.8);
+  color: #fff;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  border: 1px solid rgba(150, 100, 255, 0.5);
 }
 .empty-msg {
     grid-column: 1/-1; text-align: center; color: #555; padding: 20px;
@@ -254,12 +359,13 @@ const getRarityColor = (rarity) => {
 }
 .effects { color: #f8f; margin-top: 5px; font-style: italic; }
 
+.actions { display: flex; gap: 5px; margin-top: 5px; }
 .action-btn {
-    margin-top: 5px;
-    background: var(--c-gold); color: #000; border: none; padding: 8px;
-    font-weight: bold; cursor: pointer; text-transform: uppercase;
+    border: none; padding: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase;
 }
-.action-btn:hover { background: #fff; }
+.action-btn.use { flex: 1; background: var(--c-gold, #fd0); color: #000; }
+.action-btn.discard { width: 40px; background: #522; color: #fcc; }
+.action-btn:hover { filter: brightness(1.2); }
 
 @keyframes slideUp {
     from { transform: translateY(20px); opacity: 0; }
@@ -269,5 +375,12 @@ const getRarityColor = (rarity) => {
     0% { opacity: 0.8; }
     50% { opacity: 1; }
     100% { opacity: 0.8; }
+}
+
+.relic-status {
+    margin-top: 10px; padding: 5px;
+    background: #331; color: #fd0; border: 1px solid #772;
+    text-align: center; font-weight: bold; font-size: 0.8rem;
+    border-radius: 4px;
 }
 </style>

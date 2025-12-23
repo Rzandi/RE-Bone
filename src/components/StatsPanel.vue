@@ -16,12 +16,18 @@ const stats = computed(() => {
   ];
 });
 
+// Derived Stats
 const derived = computed(() => {
   return [
     { label: "ATK", val: s.atk || 0 },
     { label: "DEF", val: s.def || 0 },
     { label: "CRIT", val: Math.floor((s.crit || 0) * 100) + "%" },
     { label: "DODGE", val: Math.floor((s.dodge || 0) * 100) + "%" },
+    // v35.3: New Relic Stats
+    { label: "L.STEAL", val: Math.floor((s.bonuses?.lifesteal || 0) * 100) + "%", color: "#f55" },
+    { label: "REFLECT", val: Math.floor((s.bonuses?.reflect || 0) * 100) + "%", color: "#a5f" },
+    { label: "GOLD+", val: "x" + (s.multipliers?.gold || 1).toFixed(2), color: "#fd0" },
+    { label: "EXP+", val: "x" + (s.multipliers?.exp || 1).toFixed(2), color: "#4af" },
   ];
 });
 
@@ -48,6 +54,22 @@ const close = () => {
   gameStore.state.activePanel = "menu-view";
 };
 
+const getClassIcon = (className) => {
+    const map = {
+        'Novice': '😐',
+        'Skeleton': '💀',
+        'Warrior': '⚔️',
+        'Mage': '🧙‍♂️',
+        'Rogue': '🗡️',
+        'Paladin': '🛡️',
+        'Dark Knight': '🦇',
+        'Necro Priest': '⚰️',
+        'Vampire Lord': '🧛‍♂️',
+        'Lich King': '👑'
+    };
+    return map[className] || '❓';
+};
+
 const allocate = (key) => {
     if(window.ProgressionManager) {
         ProgressionManager.applyLevelUp(key);
@@ -66,8 +88,8 @@ const allocate = (key) => {
       <!-- AVATAR / CLASS -->
       <div class="section avatar-section">
         <div class="pixel-art">
-          <!-- Placeholder for Class Sprite -->
-          <span style="font-size: 40px">💀</span>
+          <!-- Class Sprite -->
+          <span style="font-size: 40px">{{ getClassIcon(s.className) }}</span>
         </div>
         <div class="info">
           <h3>{{ s.className }}</h3>
@@ -99,11 +121,10 @@ const allocate = (key) => {
         </div>
       </div>
 
-      <!-- DERIVED STATS -->
       <div class="section derived">
         <div v-for="stat in derived" :key="stat.label" class="stat-row">
           <span class="label">{{ stat.label }}</span>
-          <span class="val">{{ stat.val }}</span>
+          <span class="val" :style="{ color: stat.color || '#eee' }">{{ stat.val }}</span>
         </div>
       </div>
 
@@ -215,6 +236,11 @@ const allocate = (key) => {
   font-weight: bold;
   width: 40px;
   text-align: right;
+}
+.stat-row .val-colored {
+    font-weight: bold;
+    width: 50px;
+    text-align: right;
 }
 .stat-row small {
   color: #777;

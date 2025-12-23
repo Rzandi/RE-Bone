@@ -18,8 +18,11 @@ const unlockedClasses = computed(() => s.meta ? s.meta.unlockedClasses : []);
 const ascensionShopItems = computed(() => window.Ascension ? window.Ascension.SHOP_ITEMS : []);
 // Bind directly to meta for sync
 const ascensionUpgrades = computed(() => s.meta ? s.meta.upgrades : {});
-const ascensionShopStock = computed(() => s.meta ? s.meta.shopStock : []);
-const ascensionRefreshCount = computed(() => s.meta ? s.meta.refreshCount : 0);
+const ascensionShopStock = computed(() => (s.meta && s.meta.shopStock) ? s.meta.shopStock : []);
+const ascensionRefreshCount = computed(() => {
+    const val = s.meta ? s.meta.refreshCount : 3;
+    return (isNaN(val) || val === undefined) ? 3 : val;
+});
 
 // Currency: Sync with Meta Souls
 // Duplicate removed
@@ -62,7 +65,15 @@ const buyClass = (id) => {
 
 // --- LEGACY ASCENSION LOGIC (Keep for upgrades if needed) ---
 const buy = (id) => {
-    if(window.Ascension) Ascension.buyUpgrade(id);
+    if(window.Ascension) window.Ascension.buyUpgrade(id);
+};
+
+const initializeShop = () => {
+    if(window.Ascension) window.Ascension.refreshShop();
+};
+
+const refreshShop = () => {
+     if(window.Ascension) window.Ascension.refreshShop();
 };
 
     const close = () => {
@@ -148,7 +159,7 @@ const buy = (id) => {
         <div v-show="activeTab === 'perks'" class="grid">
             <div v-if="ascensionShopStock.length === 0" class="empty-msg">
                 No Perks Available via Soul Shop yet.
-                <button @click="() => { if(window.Ascension) Ascension.refreshShop(); }">Initialize Shop</button>
+                <button @click="initializeShop">Initialize Shop</button>
             </div>
             
             <div v-else v-for="pid in ascensionShopStock" :key="pid" class="card">
@@ -165,7 +176,7 @@ const buy = (id) => {
             </div>
              <!-- Refresh Button -->
              <div style="width:100%; text-align:center; padding:10px;">
-                <button @click="() => { if(window.Ascension) Ascension.refreshShop(); }" style="width:auto; background:#f90;">
+                <button @click="refreshShop" style="width:auto; background:#f90;">
                    🔄 Refresh Perks ({{ ascensionRefreshCount }})
                 </button>
             </div>

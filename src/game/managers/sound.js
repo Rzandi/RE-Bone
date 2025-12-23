@@ -106,6 +106,26 @@ export const SoundManager = {
     if (t === "evo") this.playTone(200, "triangle", 1.5, 0.1);
     if (t === "hazard") this.playTone(50, "sawtooth", 0.2, 0.1);
     
+    // v35.3 Polish Sounds
+    if (t === "shop_buy") this.playTone(800, "sine", 0.1, 0.1); // Short high blip
+    if (t === "sell") this.playTone(600, "square", 0.1, 0.05); // Lower blip
+    if (t === "relic") {
+        // Magical chime
+        let now = this.ctx.currentTime;
+        [600, 800, 1000, 1200].forEach((f, i) => { 
+            this.playToneAt(f, "sine", 0.3, 0.05, now + i * 0.05);
+        });
+    }
+
+    // Haptics Integration (v36.1)
+    if (window.MobileHandler) {
+        if (t === 'hit') window.MobileHandler.vibrate(50); // Short
+        if (t === 'click') window.MobileHandler.vibrate(10); // Tiny
+        if (t === 'victory') window.MobileHandler.vibrate([100, 50, 100]);
+        if (t === 'hazard') window.MobileHandler.vibrate(200);
+        if (t === 'relic') window.MobileHandler.vibrate([50, 50, 50]);
+    }
+    
     // Complex Sounds
     if (t === "level_up") {
         // Arpeggio
@@ -122,6 +142,35 @@ export const SoundManager = {
              let dur = (i < 3) ? 0.1 : 0.3;
              this.playToneAt(f, "square", dur, 0.1, now + i * 0.15);
         });
+    }
+
+    // v36.3 Event Sounds
+    if (t === "event_good") {
+        let now = this.ctx.currentTime;
+        [523, 659, 783, 1046].forEach((f, i) => { // Major Triad Up
+            this.playToneAt(f, "sine", 0.4, 0.05, now + i * 0.08);
+        });
+    }
+    if (t === "event_bad") {
+        let now = this.ctx.currentTime;
+        // Dissonant Tritone
+        this.playToneAt(110, "sawtooth", 0.5, 0.1, now);
+        this.playToneAt(155, "sawtooth", 0.5, 0.1, now); // Tritone
+    }
+    if (t === "event_mystery") {
+        let now = this.ctx.currentTime;
+        // Mystery Slide
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = "sine";
+        o.frequency.setValueAtTime(440, now);
+        o.frequency.exponentialRampToValueAtTime(880, now + 1); // Slide Up
+        g.gain.setValueAtTime(0.05 * this.volume, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 1);
+        o.connect(g);
+        g.connect(this.ctx.destination);
+        o.start(now);
+        o.stop(now + 1);
     }
 
     if (t === "ascend") {

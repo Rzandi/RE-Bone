@@ -13,6 +13,48 @@ const skills = computed(() => {
     }).filter(sk => sk); // Filter nulls
 });
 
+// Auto-generate detailed description from skill data
+const getDetailedDesc = (skill) => {
+    const parts = [];
+    
+    // Damage calculation
+    if (skill.power) {
+        const dmgPercent = Math.round(skill.power * 100);
+        if (skill.type === 'mag') {
+            parts.push(`Deals ${dmgPercent}% INT as magic damage`);
+        } else if (skill.type === 'phys') {
+            parts.push(`Deals ${dmgPercent}% ATK as physical damage`);
+        } else if (skill.type === 'heal') {
+            parts.push(`Heals ${dmgPercent}% of max HP`);
+        }
+    }
+    
+    // Status effects
+    if (skill.status) {
+        const status = skill.status;
+        const effectName = status.id.charAt(0).toUpperCase() + status.id.slice(1);
+        
+        if (status.id === 'shock' || status.id === 'stun') {
+            parts.push(`Stuns enemy for ${status.turn} turn(s)`);
+        } else if (status.id === 'bleed') {
+            parts.push(`Applies Bleed: ${status.val} damage per turn for ${status.turn} turns`);
+        } else if (status.id === 'burn') {
+            parts.push(`Applies Burn: ${status.val} damage per turn for ${status.turn} turns`);
+        } else if (status.id === 'poison') {
+            parts.push(`Applies Poison: ${status.val} damage per turn for ${status.turn} turns`);
+        } else {
+            parts.push(`Applies ${effectName} for ${status.turn} turn(s)`);
+        }
+    }
+    
+    // Buff type
+    if (skill.type === 'buff') {
+        parts.push(skill.desc || 'Applies buff effect');
+    }
+    
+    return parts.join('. ') || skill.desc || 'No description';
+};
+
 const useSkill = (skill) => {
     if (s.mp < (skill.mpCost || 0)) {
         gameStore.log("Not enough MP!", "error");
@@ -45,7 +87,7 @@ const close = () => {
             <div class="icon">{{ skill.icon || '⚡' }}</div>
             <div class="info">
                 <h3>{{ skill.name }}</h3>
-                <small>{{ skill.desc }}</small>
+                <small>{{ getDetailedDesc(skill) }}</small>
             </div>
             <div class="cost" :class="{ 'no-mp': s.mp < (skill.mpCost || 0) }">
                 {{ skill.mpCost || 0 }} MP

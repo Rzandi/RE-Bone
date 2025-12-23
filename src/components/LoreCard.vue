@@ -24,7 +24,7 @@ const close = () => {
 
 <style scoped>
 .lore-backdrop {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
     background: rgba(0,0,0,0.8); z-index: 10000;
     display: flex; align-items: center; justify-content: center;
 }

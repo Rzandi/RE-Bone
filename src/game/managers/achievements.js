@@ -94,6 +94,30 @@ export const Achievements = {
       icon: "👻",
       unlocked: false
     },
+    paladin_master: { 
+      name: "Paladin Master", 
+      desc: "Beat game as Paladin", 
+      icon: "🛡️", 
+      unlocked: false 
+    },
+    druid_master: { 
+      name: "Druid Master", 
+      desc: "Beat game as Druid", 
+      icon: "🌿", 
+      unlocked: false 
+    },
+    berserker_master: { 
+      name: "Berserker Master", 
+      desc: "Beat game as Berserker", 
+      icon: "🪓", 
+      unlocked: false 
+    },
+    mechanist_master: { 
+      name: "Mechanist Master", 
+      desc: "Beat game as Mechanist", 
+      icon: "⚙️", 
+      unlocked: false 
+    },
     
     // Miscellaneous
     floor_100: {
@@ -164,6 +188,31 @@ export const Achievements = {
     crafting_novice: { name: "Crafter", desc: "Craft 5 Items", icon: "🔨", unlocked: false, progress: 0, target: 5 },
     crafting_master: { name: "Blacksmith", desc: "Craft 20 Items", icon: "🔨", unlocked: false, progress: 0, target: 20 },
     social_butterfly: { name: "Social", desc: "Share a run", icon: "📢", unlocked: false },
+    // --- EVENTS (v36.3) ---
+    nature_friend: { name: "Nature's Friend", desc: "Awaken the Forest Spirit", icon: "🌸", unlocked: false },
+    rat_ally: { name: "King's Hand", desc: "Ally with the Rat King", icon: "🐀", unlocked: false },
+    void_gazer: { name: "Void Gazer", desc: "Stare into the Abyss (and survive)", icon: "👁️", unlocked: false },
+    cursed_destiny: { name: "Cursed One", desc: "Wield the Cursed Blade", icon: "🗡️", unlocked: false },
+    
+    // --- EXPLORATION ---
+    realm_traveler: { 
+        name: "World Traveler", 
+        desc: "Visit all 5 Realms", 
+        icon: "🌍", 
+        unlocked: false, 
+        progress: 0, 
+        target: 5 
+    },
+    
+    // --- RELICS ---
+    relic_hunter: { 
+        name: "Archaeologist", 
+        desc: "Find 10 Unique Relics", 
+        icon: "🏺", 
+        unlocked: false, 
+        progress: 0, 
+        target: 10 
+    },
   },
   
   // Check and unlock achievements

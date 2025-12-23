@@ -4,15 +4,29 @@ import { gameStore } from "../game/store.js";
 
 const s = gameStore.state;
 const activeFx = ref([]);
+let lastProcessedLength = 0;
 
 // Watch the VFX queue for new items
 watch(
   () => s.vfx.length,
-  (newLen, oldLen) => {
-    if (newLen > oldLen) {
-      // Get the new items
-      const newItems = s.vfx.slice(oldLen);
-      newItems.forEach((item) => {
+  (newLen) => {
+    if (newLen > lastProcessedLength) {
+      const newItems = s.vfx.slice(lastProcessedLength);
+      lastProcessedLength = newLen;
+      
+      // Batch deduplication: Remove duplicates within the same batch
+      const uniqueItems = [];
+      const seen = new Set();
+      
+      for (const item of newItems) {
+        const key = `${item.type}-${item.val}-${item.target}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueItems.push(item);
+        }
+      }
+      
+      uniqueItems.forEach((item) => {
         addFx(item);
       });
     }
@@ -20,9 +34,23 @@ watch(
 );
 
 const addFx = (item) => {
-  // Deduplicate: If this ID is already being shown, ignore it
-  if (activeFx.value.some(fx => fx.id === item.id)) return;
+  // ALLOW ALL VFX (Text Popups Restored)
+  if (!item.type) return;
 
+  // Smart dedupe for particles & text
+  const now = Date.now();
+  const isDup = activeFx.value.some(fx => 
+    fx.type === item.type && 
+    fx.target === item.target &&
+    fx.val === item.val && // Check VALUE to allow different numbers
+    fx.timestamp && (now - fx.timestamp) < 100 // Reduced window to 100ms
+  );
+  
+  if (isDup) return;
+  
+  // Add timestamp for tracking
+  item.timestamp = now;
+  
   // Add to local display list with random offset
   const offsetX = Math.random() * 60 - 30;
   const offsetY = Math.random() * 40 - 20;
@@ -69,6 +97,20 @@ const addFx = (item) => {
   }, 1000);
 };
 
+const getAttackIcon = (item) => {
+  if (item.type === 'heal') return '💚';
+  if (item.type === 'buff') return '✨';
+  if (item.type === 'critical') return '⚡';
+  
+  // Damage types based on target
+  if (item.type === 'damage') {
+    if (item.target === 'enemy') return '⚔️'; // Player attacking
+    if (item.target === 'player') return '💥'; // Enemy attacking
+  }
+  
+  return ''; // No icon for particles
+};
+
 const getParticleColor = (t) => {
     switch(t) {
         case 'fire': return '#f55';
@@ -89,7 +131,8 @@ const getParticleColor = (t) => {
       :class="[fx.type, { 'player-dmg': fx.target === 'player' }]"
       :style="fx.style"
     >
-      {{ fx.val }}
+      <span class="icon">{{ fx.icon }}</span>
+      <span class="value">{{ fx.val }}</span>
     </div>
   </div>
 </template>
@@ -114,6 +157,18 @@ const getParticleColor = (t) => {
   text-shadow: 2px 2px 0 #000;
   animation: floatUp 0.8s ease-out forwards;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dmg-popup .icon {
+  font-size: 28px;
+  filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
+}
+
+.dmg-popup .value {
+  font-size: 20px;
 }
 
 .dmg-popup.critical {

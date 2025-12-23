@@ -2,7 +2,7 @@
 import './config/constants.js';
 import './config/legendary_items.js';
 import './config/items.js';
-import './config/enemies.js';
+import { ENEMIES_DB, BOSSES_DB, BIOME_ENEMIES } from './config/enemies.js'; // v36.2
 import './config/skills.js';
 import './config/classes.js';
 import './config/biomes.js';
@@ -11,6 +11,8 @@ import './config/secrets.js';
 import './config/evolution.js';
 import './config/recipes.js';
 import './config/skill_trees.js';
+import './config/relics.js'; // v35.2 Relics
+import { EVENTS_DB } from './config/events.js'; // v36.0 Events
 import './config/database.js'; // Must be last config
 
 // Import Logic
@@ -136,6 +138,7 @@ const CompatPlayer = {
     recalc: () => PlayerLogic.recalc(),
     takeDamage: (amt) => PlayerLogic.takeDamage(amt),
     addItem: (id) => PlayerLogic.addItem(id),
+    gainStat: (stat, val) => PlayerLogic.gainStat(stat, val),
     
     // Todo: Map other methods if Legacy calls them
     getSetBonuses: () => PlayerLogic.getSetBonuses ? PlayerLogic.getSetBonuses() : {},
@@ -149,8 +152,6 @@ const CompatPlayer = {
 // Expose Bridge
 window.Player = CompatPlayer;
 window.CombatManager = CombatLogic;
-window.Combat = CombatLogic; // Alias just in case
-window.Combat = CombatLogic; // Alias just in case
 window.SoundManager = SoundManager; // Expose for UI/Combat hooks
 
 // Restored Global Access
@@ -160,11 +161,13 @@ window.Crafting = Crafting;
 window.Social = Social;
 window.VFX = VFX;
 window.SpriteManager = SpriteManager;
-window.SpriteManager = SpriteManager;
-window.MobileHandler = MobileHandler;
 window.MobileHandler = MobileHandler;
 window.Gemini = Gemini; // Ensure explicit exposure
 window.GameStore = gameStore; // Critical for Game.js sync
+window.EVENTS_DB = EVENTS_DB;
+window.ENEMIES_DB = ENEMIES_DB;
+window.BIOME_ENEMIES = BIOME_ENEMIES;
+window.BOSSES_DB = BOSSES_DB;
 
 export function initGame() {
     console.log("Initializing Re:BONE (Vue Engine)...");

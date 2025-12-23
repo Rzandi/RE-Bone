@@ -577,6 +577,94 @@ const CLASS_TREES = {
       { id: "sin_void", name: "Void Walker", desc: "Where am I?", stats: { str: 20, vit: 20, int: 40 }, sprite: `<span class="pixel-sprite sprite-class-sin">🕳️💀</span>`, skills: ["vanish", "abyssal_shield", "soul_harvest"], passivePool: ["ethereal", "swift_foot", "mana_leech"] },
       { id: "sin_death", name: "Angel of Death", desc: "Instant Kill", stats: { str: 50, vit: 10, int: 20 }, sprite: `<span class="pixel-sprite sprite-class-sin">👼💀</span>`, skills: ["soul_cleave", "backstab", "terror"], passivePool: ["executioner", "lucky_strike", "glass_cannon"] }
     ]
+  },
+
+  // ============================
+  // v35.0 TRAITOR CLASS EVOLUTIONS
+  // ============================
+
+  paladin: {
+    // TIER 1 (Lv 20)
+    20: [
+        { id: "pal_crusader", name: "Crusader", desc: "Holy Warrior", stats: { str: 6, vit: 6, int: 4 }, sprite: `<span class="pixel-sprite">⚔️🛡️</span>`, skills: ["smash", "judgement", "shield_bash"], passivePool: ["divine_aura", "thick_skin", "smite_master"] },
+        { id: "pal_guardian", name: "Guardian", desc: "Unbreakable Wall", stats: { str: 2, vit: 10, int: 4 }, sprite: `<span class="pixel-sprite">🛡️🧱</span>`, skills: ["divine_shield", "shield_bash", "mend"], passivePool: ["divine_aura", "retribution", "thorns"] },
+        { id: "pal_cleric", name: "Cleric", desc: "Battle Healer", stats: { str: 2, vit: 6, int: 8 }, sprite: `<span class="pixel-sprite">🩹✨</span>`, skills: ["consecrate", "mend", "judgement"], passivePool: ["nature_touch", "mana_leech", "int_boost"] }
+    ],
+    // TIER 2 (Lv 50)
+    50: [
+        { id: "pal_templar", name: "Templar", desc: "Wrath of God", stats: { str: 10, vit: 10, int: 10 }, sprite: `<span class="pixel-sprite">🏰⚔️</span>`, skills: ["judgement", "soul_cleave", "frenzy"], passivePool: ["god_of_war", "executioner", "divine_aura"] },
+        { id: "pal_justicar", name: "Justicar", desc: "Lawbringer", stats: { str: 15, vit: 10, int: 5 }, sprite: `<span class="pixel-sprite">⚖️🔨</span>`, skills: ["executing_strike", "shield_bash", "terror"], passivePool: ["retribution", "thorns_aura", "justice"] },
+        { id: "pal_saint", name: "Living Saint", desc: "Holy Avatar", stats: { str: 5, vit: 15, int: 20 }, sprite: `<span class="pixel-sprite">👼✨</span>`, skills: ["divine_shield", "consecrate", "revive"], passivePool: ["undying", "phylactery", "pure_heart"] }
+    ],
+    // TIER 3 (Lv 80)
+    80: [
+        { id: "pal_god", name: "God of Light", desc: "The Sun Itself", stats: { str: 30, vit: 30, int: 30 }, sprite: `<span class="pixel-sprite">☀️👑</span>`, skills: ["judgement", "supernova", "divine_shield"], passivePool: ["god_of_light", "invincible", "retribution"] },
+        { id: "pal_aegis", name: "Aegis", desc: "Indestructible", stats: { str: 10, vit: 60, int: 10 }, sprite: `<span class="pixel-sprite">🛡️♾️</span>`, skills: ["divine_shield", "abyssal_shield", "reflect_all"], passivePool: ["thorns_aura", "iron_will", "titan_skin"] },
+        { id: "pal_judge", name: "Supreme Judge", desc: "Final Verdict", stats: { str: 50, vit: 20, int: 10 }, sprite: `<span class="pixel-sprite">👨‍⚖️⚡</span>`, skills: ["executing_strike", "soul_harvest", "void_slash"], passivePool: ["executioner", "lucky_strike", "truth"] }
+    ]
+  },
+
+  druid: {
+    // TIER 1 (Lv 20)
+    20: [
+        { id: "dru_bear", name: "Bear Form", desc: "Tank Transformation", stats: { str: 5, vit: 10, int: 0 }, sprite: `<span class="pixel-sprite">🐻</span>`, skills: ["bear_form", "smash", "cannibalize"], passivePool: ["thick_skin", "regenerator", "nature_touch"] },
+        { id: "dru_wolf", name: "Wolf Form", desc: "DPS Transformation", stats: { str: 8, vit: 4, int: 2 }, sprite: `<span class="pixel-sprite">🐺</span>`, skills: ["rend", "frenzy", "bite"], passivePool: ["swift_foot", "lucky_strike", "blood_frenzy"] },
+        { id: "dru_tree", name: "Treekin", desc: "Rooted Support", stats: { str: 2, vit: 8, int: 8 }, sprite: `<span class="pixel-sprite">🌳</span>`, skills: ["entangle", "regrowth", "thorns"], passivePool: ["thorns_aura", "nature_touch", "photosynthesis"] }
+    ],
+    // TIER 2 (Lv 50)
+    50: [
+        { id: "dru_behemoth", name: "Behemoth", desc: "Giant Beast", stats: { str: 20, vit: 20, int: 5 }, sprite: `<span class="pixel-sprite">🐘</span>`, skills: ["bear_form", "stomp", "earthquake"], passivePool: ["iron_will", "thick_skin", "rage_meter"] },
+        { id: "dru_stalker", name: "Night Stalker", desc: "Invisible Hunter", stats: { str: 25, vit: 5, int: 5 }, sprite: `<span class="pixel-sprite">🐆</span>`, skills: ["vanish", "backstab", "executing_strike"], passivePool: ["shadow_arts", "assassination", "scavenger"] },
+        { id: "dru_ancient", name: "Ancient Treant", desc: "Forest Lord", stats: { str: 5, vit: 20, int: 20 }, sprite: `<span class="pixel-sprite">🌲👑</span>`, skills: ["entangle", "consecrate", "summon_treant"], passivePool: ["regrowth", "thorns_aura", "wisdom"] }
+    ],
+    // TIER 3 (Lv 80)
+    80: [
+        { id: "dru_gaia", name: "Gaia's Avatar", desc: "Nature Incarnate", stats: { str: 30, vit: 40, int: 30 }, sprite: `<span class="pixel-sprite">🌍</span>`, skills: ["earthquake", "tsunami", "rebirth"], passivePool: ["god_of_nature", "immortal", "nature_touch"] },
+        { id: "dru_fenrir", name: "Fenrir", desc: "World Eater", stats: { str: 60, vit: 20, int: 10 }, sprite: `<span class="pixel-sprite">🌖🐺</span>`, skills: ["devour", "executing_strike", "howl"], passivePool: ["god_of_war", "blood_frenzy", "scavenger_pro"] },
+        { id: "dru_storm", name: "Storm Crow", desc: "Weather Master", stats: { str: 10, vit: 10, int: 60 }, sprite: `<span class="pixel-sprite">⛈️🐦</span>`, skills: ["lighting_storm", "whirlwind", "flight"], passivePool: ["swift_foot", "dodge_master", "static"] }
+    ]
+  },
+
+  berserker: {
+    // TIER 1 (Lv 20)
+    20: [
+        { id: "ber_barbarian", name: "Barbarian", desc: "Raw Strength", stats: { str: 10, vit: 5, int: 0 }, sprite: `<span class="pixel-sprite">🏋️</span>`, skills: ["smash", "whirlwind", "shout"], passivePool: ["rage_meter", "strong_arm", "thick_skin"] },
+        { id: "ber_slayer", name: "Slayer", desc: "Kill Speed", stats: { str: 12, vit: 2, int: 0 }, sprite: `<span class="pixel-sprite">👺</span>`, skills: ["rend", "executing_strike", "frenzy"], passivePool: ["lucky_strike", "executioner", "blood_frenzy"] },
+        { id: "ber_viking", name: "Viking", desc: "Durable Fighter", stats: { str: 8, vit: 8, int: 0 }, sprite: `<span class="pixel-sprite">🛶</span>`, skills: ["shield_bash", "whirlwind", "battle_cry"], passivePool: ["scavenger", "iron_will", "undying"] }
+    ],
+    // TIER 2 (Lv 50)
+    50: [
+        { id: "ber_chieftain", name: "Chieftain", desc: "War Leader", stats: { str: 20, vit: 15, int: 5 }, sprite: `<span class="pixel-sprite">⛺👑</span>`, skills: ["enrage", "rally", "whirlwind"], passivePool: ["leadership", "rage_meter", "god_of_war"] },
+        { id: "ber_destroyer", name: "Destroyer", desc: "Armor Breaker", stats: { str: 30, vit: 5, int: 0 }, sprite: `<span class="pixel-sprite">🔨💥</span>`, skills: ["sunder", "executing_strike", "ground_slam"], passivePool: ["ignore_def", "crit_dmg", "blood_fueled"] },
+        { id: "ber_juggernaut", name: "Juggernaut", desc: "Unstoppable", stats: { str: 15, vit: 25, int: 0 }, sprite: `<span class="pixel-sprite">🚂</span>`, skills: ["charge", "iron_skin", "whirlwind"], passivePool: ["immune_cc", "thick_skin", "thorns_aura"] }
+    ],
+    // TIER 3 (Lv 80)
+    80: [
+        { id: "ber_kratos", name: "God of War", desc: "Spartan Rage", stats: { str: 70, vit: 20, int: 0 }, sprite: `<span class="pixel-sprite">😡⛓️</span>`, skills: ["god_smash", "blade_storm", "revive"], passivePool: ["god_of_war", "undying_rage", "blood_frenzy"] },
+        { id: "ber_asura", name: "Asura", desc: "Six Arms", stats: { str: 50, vit: 30, int: 10 }, sprite: `<span class="pixel-sprite">👐👹</span>`, skills: ["flurry", "hundred_fists", "meditate"], passivePool: ["multi_hit", "counter_attack", "zen"] },
+        { id: "ber_titan", name: "Titan", desc: "World Breaker", stats: { str: 40, vit: 50, int: 0 }, sprite: `<span class="pixel-sprite">🌋</span>`, skills: ["meteor", "fissure", "roar"], passivePool: ["titan_grip", "colossal", "intimidate"] }
+    ]
+  },
+
+  mechanist: {
+    // TIER 1 (Lv 20)
+    20: [
+        { id: "mech_gunner", name: "Gunner", desc: "Ranged DPS", stats: { str: 4, vit: 4, int: 8 }, sprite: `<span class="pixel-sprite">🔫</span>`, skills: ["rocket_salvo", "aimed_shot", "reload"], passivePool: ["eagle_eye", "lucky_strike", "quick_hands"] },
+        { id: "mech_tinker", name: "Tinkerer", desc: "Utility & Buffs", stats: { str: 2, vit: 4, int: 10 }, sprite: `<span class="pixel-sprite">🔧</span>`, skills: ["overclock", "repair", "flashbang"], passivePool: ["scavenger_pro", "greed", "invention"] },
+        { id: "mech_eng", name: "Engineer", desc: "Turrets", stats: { str: 2, vit: 6, int: 8 }, sprite: `<span class="pixel-sprite">🏗️</span>`, skills: ["deploy_turret", "fortify", "wrench_whack"], passivePool: ["automated_defense", "metal_plating", "builder"] }
+    ],
+    // TIER 2 (Lv 50)
+    50: [
+        { id: "mech_sniper", name: "Deadeye", desc: "One Shot", stats: { str: 5, vit: 5, int: 25 }, sprite: `<span class="pixel-sprite">🎯</span>`, skills: ["headshot", "vanish", "rocket_salvo"], passivePool: ["glass_cannon", "assassination", "eagle_eye"] },
+        { id: "mech_pilot", name: "Mech Pilot", desc: "Robo Suit", stats: { str: 10, vit: 15, int: 15 }, sprite: `<span class="pixel-sprite">🤖</span>`, skills: ["missile_barrage", "flamethrower", "eject"], passivePool: ["iron_will", "battery", "armor_clad"] },
+        { id: "mech_alchemist", name: "Mad Scientist", desc: "Potions & Bombs", stats: { str: 2, vit: 10, int: 25 }, sprite: `<span class="pixel-sprite">🧪💥</span>`, skills: ["acid_bomb", "elixir", "transmute"], passivePool: ["poison_master", "gold_alchemy", "madness"] }
+    ],
+    // TIER 3 (Lv 80)
+    80: [
+        { id: "mech_nova", name: "Nova Core", desc: "Energy Being", stats: { str: 10, vit: 20, int: 60 }, sprite: `<span class="pixel-sprite">⚛️</span>`, skills: ["laser_beam", "black_hole", "overclock"], passivePool: ["infinite_energy", "shield_gen", "zap"] },
+        { id: "mech_tank", name: "Walking Tank", desc: "Heavy Artillery", stats: { str: 30, vit: 50, int: 10 }, sprite: `<span class="pixel-sprite">🚜💣</span>`, skills: ["nuke", "bunker", "artillery"], passivePool: ["thick_skin", "impenetrable", "explosive"] },
+        { id: "mech_cyber", name: "Cyber God", desc: "Digital Ascendancy", stats: { str: 20, vit: 20, int: 50 }, sprite: `<span class="pixel-sprite">💾👑</span>`, skills: ["hack", "download", "glitch"], passivePool: ["dodge_code", "rewrite", "upload"] }
+    ]
   }
 };
 

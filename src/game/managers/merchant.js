@@ -82,14 +82,23 @@ const Merchant = {
     },
     
     buy(key) {
+        // v36.2 Refactor: Check gold and use Player logic if needed
         const item = DB.ITEMS[key];
-        if(Player.gold >= item.price) {
-            Player.gold -= item.price;
-            Player.addItem(key); // Standard addItem handles inventory push
-            SoundManager.play("loot"); // Or "buy" sound
-            this.render(); // Re-render to update gold
+        const p = Player.state; // Assumes window.Player exposed or imported logic
+        
+        if(p.gold >= item.price) {
+            p.gold -= item.price;
+            Player.addItem(key); 
+            
+            // Log & Sound
+            if(window.gameStore) window.gameStore.log(`Bought ${item.name}`, "shop");
+            if(window.SoundManager) window.SoundManager.play("buy"); // Use 'buy' if exists
+            
+            // Re-render handled by Reactivity usually, but if manual:
+            this.render(); 
         } else {
-            UI.toast("Not enough Gold!");
+            // UI.toast is likely deprecated or not linked
+            if(window.gameStore) window.gameStore.log("Not enough Gold!", "error");
         }
     }
 };

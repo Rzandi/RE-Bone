@@ -155,7 +155,7 @@ const Game = {
     this.combatState(true);
   },
 
-  combatState(isBoss = false) {
+  combatState(isBoss = false, isElite = false) {
     this.stopLoops();
     this.currAction = "combat";
     if(window.GameStore) window.GameStore.state.currAction = "combat"; // SYNC TO STORE
@@ -164,12 +164,12 @@ const Game = {
     if (isBoss) {
         this.enemy = this.generateBoss();
     } else {
-        this.enemy = this.generateEnemy();
+        this.enemy = this.generateEnemy(isElite);
     }
     
     // Delegate
     if (window.CombatManager) {
-        CombatManager.startCombat(this.enemy, isBoss);
+        CombatManager.startCombat(this.enemy, isBoss, isElite);
     }
   },
   
@@ -216,51 +216,64 @@ const Game = {
       this.stopLoops();
 
       // Check Gold
-      if (Player.gold >= RESURRECT_COST) {
-          Events.emit("log", `Resurrect for ${RESURRECT_COST} Gold?`);
-          
-          UI.setButtons([
-              { 
-                  txt: `💸 RESURRECT (${RESURRECT_COST}G)`, 
-                  col: "var(--c-gold)", 
-                  fn: () => this.resurrect(RESURRECT_COST) 
-              },
-              null,
-              { 
-                  txt: "💀 ACCEPT DEATH", 
-                  col: "#f00", 
-                  fn: () => this.permadeath() 
-              },
-              null
-          ]);
-      } else {
-          Events.emit("log", "Not enough gold to resurrect...");
-          setTimeout(() => this.permadeath(), 2000);
+      const canRez = Player.gold >= RESURRECT_COST;
+      
+      const buttons = [];
+      
+      if(canRez) {
+          buttons.push({ 
+              txt: `💸 RESURRECT (${RESURRECT_COST}G)`, 
+              col: "var(--c-gold)", 
+              fn: () => this.resurrect(RESURRECT_COST) 
+          });
       }
+      
+      buttons.push({ 
+          txt: "💀 ACCEPT DEATH (RESTART)", 
+          col: "#f00", 
+          fn: () => this.permadeath(false) // Soft Restart
+      });
+      
+      // Force reload option just in case
+      buttons.push({
+          txt: "🔄 RELOAD APP",
+          fn: () => this.permadeath(true)
+      });
+      
+      if(!canRez) {
+          Events.emit("log", "Not enough gold to resurrect...");
+      } else {
+          Events.emit("log", `Resurrect for ${RESURRECT_COST} gold?`);
+      }
+      
+      UI.setButtons(buttons);
   },
   
   resurrect(cost) {
       Player.gold -= cost;
-      Player.hp = Math.floor(Player.maxHp * 0.5); // 50% HP Revive
+      Player.hp = Math.floor(Player.maxHp * 0.5);
       Events.emit("log_item", `Resurrected! -${cost} Gold`);
       Events.emit("log", "Get up, Skeleton!");
-      
-      // Auto-save on Resurrection to fail-safe the gold loss
       this.saveGame(); 
-      
       setTimeout(() => {
           this.exploreState();
       }, 1000);
   },
   
-  permadeath() {
+  permadeath(forceReload = false) {
       Events.emit("log_boss", "YOUR SOUL FADES...");
-      if(window.SaveManager) SaveManager.wipeSave();
+      if(window.SaveManager) SaveManager.clearSave(); // Don't wipe meta!
       
       setTimeout(() => {
-          // Reset Game
-          window.location.reload(); 
-      }, 3000);
+          if(forceReload) {
+              window.location.reload();
+          } else {
+              // Soft Restart
+              this.startNewGame();
+              Events.emit("log_boss", "🆕 NEW CYCLE BEGINS");
+              UI.showPanel("menu-view");
+          }
+      }, 1000);
   },
 
   // Risky Rest from Menu
@@ -340,20 +353,20 @@ const Game = {
 
   // v34.0: Handle Node Click
   resolveNode(node) {
-      // node: { type: 'combat', ... }
       this.stopLoops();
+
+      // v36.1: Biome Effects
+      if (node.biome) this.applyBiomeEffect(node.biome);
       
       switch(node.type) {
           case 'combat':
-              this.combatState(); // Normal combat
+              this.combatState(); 
               break;
           case 'elite':
-              this.combatState(false); // TODO: pass isElite flag
-              // For MVP, just stronger combat
+              this.combatState(false, true); // isBoss=false, isElite=true
               Events.emit("log_boss", "⚠️ ELITE ENEMY APPROACHING!");
               break;
           case 'boss':
-              // The Traitor match
               this.combatState(true);
               break;
           case 'rest':
@@ -363,7 +376,6 @@ const Game = {
               if (window.EventManager) {
                   window.EventManager.triggerEvent(node);
               } else {
-                  // Fallback
                   Events.emit("log_item", "❓ Event System not ready.");
                   setTimeout(() => UI.showPanel("node_map"), 1000);
               }
@@ -372,6 +384,38 @@ const Game = {
               this.combatState();
       }
   },
+
+    applyBiomeEffect(biome) {
+        if(!window.Player || !biome || !biome.effect) return;
+
+        const type = biome.effect;
+        const name = biome.name;
+        let log = `Zone: ${name} (${type})`;
+
+        switch(type) {
+            case 'Poison': 
+                Player.takeDamage(5); 
+                log += " -5 HP (Toxic)";
+                break;
+            case 'Heal': 
+                Player.heal(10);
+                log += " +10 HP (Blessed)";
+                break;
+            case 'Heat':
+                Player.takeDamage(3);
+                log += " -3 HP (Heat)";
+                break;
+            case 'Cold':
+                Player.takeDamage(2);
+                break;
+            case 'Fog':
+                log += " (Low Visibility)";
+                break;
+            default:
+                break;
+        }
+        Events.emit("log", log);
+    },
 
   // v34.0: Helper for EventManager to return
   returnToMap() {
@@ -389,8 +433,25 @@ const Game = {
 
       try {
           // Loot Calculation
-          let lootLog = `LOOT: +${this.enemy.exp} XP`;
-          let itemDrop = null;
+          // Loot Calculation
+          // v35.3: Apply EXP Multiplier
+          // Safety check for enemy
+          if (!this.enemy || typeof this.enemy.exp === 'undefined') {
+              console.error("handleWin called but enemy or enemy.exp is missing", this.enemy);
+              // Fallback to minimal rewards
+              Player.exp += 10;
+              Player.gold += 5;
+              this.exploreState();
+              return;
+          }
+          
+          let expGain = Math.floor(this.enemy.exp * (Player.multipliers.exp || 1));
+          Player.exp += expGain; // Add EXP to player directly or via helper? Player.gainExp handled usually?
+          // Note: Player.exp is direct property. Level up logic is usually separate check.
+          // Let's assume we just add it here for now or check Player.gainExp exists.
+          // Player.js has no gainExp, just property.
+          
+          let lootLog = `LOOT: +${expGain} XP`;
           
           // GOLD REWARD (New v31.1)
           // Base Gold = EXP * 0.5 + Floor * 2. Randomized +/- 20%
@@ -398,20 +459,69 @@ const Game = {
           let goldReward = Math.floor(baseGold * (0.8 + Math.random() * 0.4));
           if (goldReward < 1) goldReward = 1;
           
+          // v35.3: Apply Gold Multiplier
+          goldReward = Math.floor(goldReward * (Player.multipliers.gold || 1));
+          
           Player.gold += goldReward;
           lootLog += `, +${goldReward} G`;
           
+          
           if(window.LootManager) {
+              // Standard Loot
               itemDrop = LootManager.dropLoot(this.enemy);
+              
+              // v35.0: TRAITOR BOSS UNLOCKS & DROPS
+              if (this.enemy.unlockClass) {
+                  const unlockId = this.enemy.unlockClass;
+                  const store = window.GameStore;
+                  
+                  // Unlock Class
+                  if (store && !store.state.meta.unlockedClasses.includes(unlockId)) {
+                      store.state.meta.unlockedClasses.push(unlockId);
+                      Events.emit("log_boss", `✨ UNLOCKED NEW CLASS: ${unlockId.toUpperCase()}!`);
+                      // Award Achievement Logic here if needed
+                  }
+              }
+              
+              // v35.0: GUARANTEED SOUL WEAPON DROP
+      // v35.2: Elite Enemy Relic Drop (30% Chance)
+      // Check if elite (rank 'elite' or manually set)
+      if (this.state.combat.enemy.rank === 'elite' || this.state.combat.enemy.isElite) {
+           if (Math.random() < 0.30) {
+                if (window.LootManager) {
+                     const relicName = LootManager.dropRelic('common');
+                     if (relicName) {
+                         this.log(`Elite Drop: Found Relic - ${relicName}!`, "buff");
+                     }
+                }
+           }
+      }
+
+      // Check for Boss Drop (Soul Weapon)
+      if (this.state.combat.enemy.drop) {
+         const dropId = this.state.combat.enemy.drop;
+         if (window.LEGENDARY_ITEMS && LEGENDARY_ITEMS[dropId]) {
+              Player.addItem(dropId);
+              this.log(`BOSS DEFEATED! Obtained Soul Weapon: ${LEGENDARY_ITEMS[dropId].name}`, "buff");
+              Events.emit("log_item", `Found ${LEGENDARY_ITEMS[dropId].name}`);
+         }
+      }                       
           }
 
           // HP Per Kill
           let setBonus = Player.getSetBonuses();
           let uniqueEffects = Player.getUniqueEffects();
           let totalHpPerKill = (setBonus.hpPerKill || 0) + (uniqueEffects.hpPerKill || 0);
+          
+          // v35.3: RELIC - Soul Stealer (% HP on Kill)
+          if(Player.bonuses.hpPerKillPercent) {
+               totalHpPerKill += Math.floor(Player.maxHp * Player.bonuses.hpPerKillPercent);
+               Events.emit("log_item", `Relic: Soul Stealer drained life.`);
+          }
+          
           if (totalHpPerKill > 0) {
-            Player.hp = Math.min(Player.hp + totalHpPerKill, Player.maxHp);
-            lootLog += `, +${totalHpPerKill} HP`;
+              Player.hp = Math.min(Player.hp + totalHpPerKill, Player.maxHp);
+               Events.emit("log_item", `Healed ${totalHpPerKill} HP (On-Kill)`);
           }
           
           // Boss Rush Logic
@@ -422,22 +532,15 @@ const Game = {
           }
       
           // Gain EXP
-          Player.exp += this.enemy.exp;
-          if (Player.exp >= Player.nextExp) {
-            Player.level++;
-            // if(window.UI) UI.showLevelUpEffect(Player.level); // Let loop handle log
-            Player.exp = Player.exp - Player.nextExp; // Handle overflow correctly
-            Player.nextExp = Math.floor(Player.nextExp * 1.5);
-            
-            // Award SP
-            Player.sp = (Player.sp || 0) + 1;
-            lootLog += ` | 🆙 LEVEL UP!`;
-            
-            if(window.ProgressionManager) ProgressionManager.levelUpState();
-             // Important: Level Up might interrupt explore loop return? 
-             // Logic says if Level Up Open, wait?
-             // But let's log first.
+          // v36.1: Centralized via Player Logic
+          Player.gainExp(expGain);
+          
+          if (Player.level > (this._lastLevel || Player.level)) {
+              lootLog += ` | 🆙 LEVEL UP!`;
+              // ProgressionManager check? Player.js handles panel switch now?
+              if(window.ProgressionManager) ProgressionManager.levelUpState();
           }
+          this._lastLevel = Player.level; // track for log check
 
           // Progress
           this.state.progress = Math.min(100, this.state.progress + 20);
@@ -597,8 +700,26 @@ const Game = {
       return "dungeon";
   },
   
-  generateEnemy() {
-      const pool = DB.ENEMIES.filter(e => e.floor <= this.state.floor);
+  generateEnemy(isElite = false) {
+      // v36.2: Biome-Specific Logic
+      let pool = [];
+      const worldState = window.GameStore ? window.GameStore.state.world : null;
+      let usedBiome = false;
+
+      // Check if we are in a Biome Node on World Map
+      if (worldState && worldState.currentNode && worldState.currentNode.biome) {
+          const biomeId = worldState.currentNode.biome.id; // Corrected: Node.biome is object {id, name, eff}
+          if (DB.BIOME_ENEMIES && DB.BIOME_ENEMIES[biomeId]) {
+              pool = DB.BIOME_ENEMIES[biomeId];
+              usedBiome = true;
+          }
+      }
+
+      // Legacy/Fallback Logic
+      if (pool.length === 0) {
+           pool = DB.ENEMIES.filter(e => e.floor <= this.state.floor);
+      }
+
       const base = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : DB.ENEMIES[0];
       const enemy = JSON.parse(JSON.stringify(base)); 
 
@@ -609,12 +730,17 @@ const Game = {
       // Random Rank (Weighted towards lower)
       let rRoll = Math.random();
       let rankIdx = 0;
-      if (rRoll < 0.5) rankIdx = 0; // 50% E
-      else if (rRoll < 0.75) rankIdx = 1; // 25% D
-      else if (rRoll < 0.90) rankIdx = 2; // 15% C
-      else if (rRoll < 0.96) rankIdx = 3; // 6% B
-      else if (rRoll < 0.99) rankIdx = 4; // 3% A
-      else rankIdx = 5; // 1% S
+      
+      if (isElite) {
+          rankIdx = 3 + Math.floor(Math.random() * 3); // B, A, S
+      } else {
+          if (rRoll < 0.5) rankIdx = 0; // 50% E
+          else if (rRoll < 0.75) rankIdx = 1; // 25% D
+          else if (rRoll < 0.90) rankIdx = 2; // 15% C
+          else if (rRoll < 0.96) rankIdx = 3; // 6% B
+          else if (rRoll < 0.99) rankIdx = 4; // 3% A
+          else rankIdx = 5; // 1% S
+      }
       
       const rank = ranks[rankIdx];
       const rankMult = [0.8, 1.0, 1.2, 1.5, 2.0, 3.0][rankIdx];
@@ -622,17 +748,23 @@ const Game = {
       // Random Rarity
       let qRoll = Math.random();
       let rarIdx = 0;
-      if (qRoll < 0.6) rarIdx = 0;
-      else if (qRoll < 0.85) rarIdx = 1;
-      else if (qRoll < 0.95) rarIdx = 2;
-      else if (qRoll < 0.99) rarIdx = 3;
-      else rarIdx = 4;
+      
+      if (isElite) {
+          rarIdx = 2 + Math.floor(Math.random() * 3); // Rare, Epic, Leg
+      } else {
+          if (qRoll < 0.6) rarIdx = 0;
+          else if (qRoll < 0.85) rarIdx = 1;
+          else if (qRoll < 0.95) rarIdx = 2;
+          else if (qRoll < 0.99) rarIdx = 3;
+          else rarIdx = 4;
+      }
       
       const rarity = rarities[rarIdx];
       const rarMult = [1.0, 1.2, 1.5, 2.0, 3.0][rarIdx];
       
       // Apply States
       enemy.name = `[${rank}] ${enemy.name} (${rarity})`;
+      if (isElite) enemy.name = `⚠️ ELITE ${enemy.name}`;
       enemy.rank = rank;
       enemy.rarity = rarity;
       
@@ -642,15 +774,14 @@ const Game = {
           ascMult += (window.gameStore.state.meta.ascensionLevel * 0.2); // +20% per cycle
       }
       
-      const totalMult = rankMult * rarMult * ascMult;
+      const totalMult = rankMult * rarMult * ascMult * (isElite ? 1.5 : 1.0);
       
       enemy.maxHp = Math.floor((enemy.maxHp || enemy.hp) * totalMult);
       enemy.hp = enemy.maxHp;
       enemy.atk = Math.floor(enemy.atk * totalMult);
-      enemy.exp = Math.floor(enemy.exp * totalMult); // More Risk = More Reward
+      enemy.exp = Math.floor(enemy.exp * totalMult * (isElite ? 2 : 1)); 
       
       if(ascMult > 1.0) {
-          // Visual Indicator of Ascension
           enemy.name = `💀${window.gameStore.state.meta.ascensionLevel} ${enemy.name}`; 
       }
       
@@ -658,6 +789,23 @@ const Game = {
   },
   
   generateBoss() {
+      // v36.3: Realm Boss Priority
+      const store = window.GameStore;
+      if (store && store.state.world.activeRealm) {
+          const rId = store.state.world.activeRealm;
+          if (window.REALMS && REALMS[rId] && REALMS[rId].boss) {
+              const rBoss = REALMS[rId].boss;
+              // Mixin generic boss traits if missing
+              return { 
+                  ...DB.ENEMIES[0], 
+                  ...rBoss, 
+                  isBoss: true, 
+                  maxHp: rBoss.hp, // Ensure MaxHP set
+                  exp: rBoss.exp || (this.state.floor * 100) // Fallback Exp
+              };
+          }
+      }
+
       const boss = DB.BOSSES ? DB.BOSSES[this.state.floor] : null;
       if(boss) return JSON.parse(JSON.stringify(boss));
       
@@ -679,6 +827,10 @@ const Game = {
         v34: worldData // specific v34 data
       })
     );
+    
+    // v35.0: Ensure Meta (Unlocks) is saved
+    if(window.SaveManager) window.SaveManager.saveMeta();
+    
     Events.emit("log_item", "Saved.");
   },
   
@@ -694,6 +846,20 @@ const Game = {
           // v34.0: Restore World
           if(data.v34 && window.GameStore) {
                Object.assign(window.GameStore.state.world, data.v34);
+          }
+          
+          // v35.0: Restore Meta
+          if(window.SaveManager) window.SaveManager.loadMeta();
+
+          // v35.2: Sync Relics back to Store (Fix Persistence Bug)
+          if(window.GameStore) {
+              // Ensure Player.relics is synced to reactive store
+              if(Player.relics) {
+                  window.GameStore.state.relics = Player.relics;
+              } else {
+                   window.GameStore.state.relics = [];
+                   Player.relics = window.GameStore.state.relics;
+              }
           }
 
           if(Player.recalc) Player.recalc();

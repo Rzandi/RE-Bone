@@ -25,6 +25,8 @@ export const Ascension = {
         { id: "exp_boost", name: "Ancient Wisdom", desc: "+10% EXP Gain", cost: 10, max: 5 },
         { id: "gold_boost", name: "Midas Touch", desc: "+20% Gold Gain", cost: 8, max: 5 },
         { id: "mythic_chance", name: "God's Favor", desc: "+1% Mythic Drop Rate", cost: 20, max: 3 },
+        // v35.1: Inventory Expansion
+        { id: "inventory_slot", name: "Bag of Holding", desc: "+5 Inventory Slots", cost: 100, max: 10, scale: 1.5 }
      ];
   },
   
@@ -130,10 +132,15 @@ export const Ascension = {
   },
   
   refreshShop() {
-      if (this.refreshCount > 0) {
+      // Safety fix for NaN
+      if (typeof this.meta.refreshCount !== 'number' || isNaN(this.meta.refreshCount)) {
+          this.meta.refreshCount = 3;
+      }
+
+      if (this.meta.refreshCount > 0) {
           this.meta.refreshCount--;
           this.generateStock();
-          gameStore.log(`Shop Refreshed! (${this.refreshCount} left)`);
+          gameStore.log(`Shop Refreshed! (${this.meta.refreshCount} left)`);
           this.save();
       } else {
           gameStore.log("No refreshes remaining!", "error");
@@ -144,9 +151,14 @@ export const Ascension = {
     // 1. Check Item
     let item = this.SHOP_ITEMS.find(i => i.id === id);
     let cost = 0;
+    const currentLevel = this.upgrades[id] || 0;
     
     if (item) {
         cost = item.cost;
+        // Dynamic Scaling
+        if (item.scale && currentLevel > 0) {
+            cost = Math.floor(item.cost * Math.pow(item.scale, currentLevel));
+        }
     } else if (id.startsWith("perk_")) {
         item = { id: id, max: 1 };
         cost = 50;
@@ -155,7 +167,6 @@ export const Ascension = {
     }
 
     // 2. Check Level
-    const currentLevel = this.upgrades[id] || 0;
     if (currentLevel >= item.max) return false;
 
     // 3. Check Affordability
@@ -192,3 +203,6 @@ export const Ascension = {
 window.addEventListener('load', () => {
   if(window.Ascension) Ascension.init();
 });
+
+// Explicit Self-Bind
+window.Ascension = Ascension;

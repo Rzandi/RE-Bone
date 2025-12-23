@@ -61,7 +61,16 @@ const Player = {
     }
     
     // Inventory & Equipment
-    this.inventory = [];
+    // LINK TO STORE STATE FOR PERSISTENCE
+    if (window.gameStore) {
+        this.inventory = window.gameStore.state.inventory;
+        this.relics = window.gameStore.state.relics || [];
+        // Also Sync Gold/HP/etc if needed, but Inventory is the critical array
+    } else {
+        this.inventory = [];
+        this.relics = [];
+    }
+    
     this.equip = { weapon: null, armor: null, acc: null };
     this.lockedItems = []; 
     this.salvageMode = false;
@@ -256,7 +265,7 @@ const Player = {
           if (window.Game) Game.handleDefeat(); 
       }
       
-      // Flash red? handled by event usually
+      // Flash red & VFX
       if(window.UI && UI.fxDmg) UI.fxDmg(amount, "phys");
   },
 
@@ -299,6 +308,20 @@ const Player = {
             if (p.stats.exp) this.multipliers.exp = (this.multipliers.exp || 1) + p.stats.exp;
         }
     });
+
+    // Relics (v35.2)
+    if (window.RELICS && this.relics) {
+        this.relics.forEach(rid => {
+            const r = RELICS[rid];
+            if (r && r.effect) {
+                try {
+                     r.effect(this);
+                } catch(err) {
+                     console.error("Relic Effect Error:", rid, err);
+                }
+            }
+        });
+    }
 
     if (this.hp > this.maxHp) this.hp = this.maxHp;
   },
@@ -485,17 +508,75 @@ const Player = {
       };
   },
 
-  addItem(id) {
-    const t = DB.ITEMS[id];
-    if (t) {
-      this.inventory.push({ ...t, id });
-      if(window.UI && UI.log) UI.log(`Dapat: ${t.name}`, "log item");
-      if(window.SoundManager) SoundManager.play("loot");
-    }
+  // Inventory Limits
+  get maxInventory() {
+      let base = 20;
+      if (window.Ascension && Ascension.upgrades["inventory_slot"]) {
+          base += (Ascension.upgrades["inventory_slot"] * 5);
+      }
+      return base;
   },
   
+  // v35.2 Relic System
+  addRelic(id) {
+       if (!window.RELICS || !RELICS[id]) return false;
+       
+       if (this.relics.includes(id)) {
+           // Duplicate relic? Usually rare. Convert to Gold?
+           if(window.UI) UI.toast("Duplicate Relic converted to 50G");
+           this.gold += 50;
+           return false;
+       }
+       
+       this.relics.push(id);
+       this.recalc();
+       if(window.UI && UI.log) UI.log(`Obtained Relic: ${RELICS[id].name}!`, "buff");
+       if(window.SoundManager) SoundManager.play("relic"); 
+       if(window.VFX) VFX.showRelicTrigger("Relic Acquired!");
+       return true;
+  },
+
+  addItem(id, amount = 1) {
+    const t = DB.ITEMS[id];
+    if (t) {
+      // 1. Stacking Logic (Materials)
+      if (t.slot === 'mat') {
+          const existing = this.inventory.find(i => i.id === id);
+          if (existing) {
+              existing.qty = (existing.qty || 1) + amount;
+              if(window.UI && UI.log) UI.log(`Obtained: ${t.name} x${amount}`, "log item");
+              if(window.SoundManager) SoundManager.play("loot");
+              return true;
+          }
+      }
+
+      // 2. Capacity Check
+      if (this.inventory.length >= this.maxInventory) {
+          if(window.UI) UI.toast("Inventory Full!");
+          return false;
+      }
+
+      // 3. Add New Item
+      this.inventory.push({ ...t, id, qty: (t.slot === 'mat' ? amount : 1) });
+      if(window.UI && UI.log) UI.log(`Obtained: ${t.name}`, "log item");
+      if(window.SoundManager) SoundManager.play("loot");
+      return true;
+    }
+    return false;
+  },
+  
+  discardItem(idx) {
+      if (this.inventory[idx]) {
+          const name = this.inventory[idx].name;
+          this.inventory.splice(idx, 1);
+          if(window.UI) UI.log(`Discarded ${name}`, "log system");
+          // Re-render handled by UI reactivity
+      }
+  },
+
   handleItemClick(idx) {
     if (this.salvageMode) {
+        // Salvage Logic handles qty internally if needed, or simple splice
         if (confirm(`Salvage ${this.inventory[idx].name} for materials?`)) {
             this.salvageItem(idx);
         }
@@ -512,7 +593,7 @@ const Player = {
     // Skill Book
     if (it.slot === "skill_book") {
         if (this.learnSkill(it.skillId)) {
-            this.inventory.splice(idx, 1);
+            this.inventory.splice(idx, 1); // Books always consumed 1 by 1
             if(window.UI && UI.log) UI.log(`Read ${it.name}`, "log item");
         }
         this.recalc();
@@ -531,11 +612,25 @@ const Player = {
           if(window.UI && UI.log) UI.log(`Applied ${buffName}!`, "log item");
       }
       
-      this.inventory.splice(idx, 1);
-      if(window.UI && UI.log) UI.log(`Pakai ${it.name}`, "log item");
+      // Handle Stack
+      if (it.qty && it.qty > 1) {
+          it.qty--;
+      } else {
+          this.inventory.splice(idx, 1);
+      }
+      
+      if(window.UI && UI.log) UI.log(`Used ${it.name}`, "log item");
     } else {
+      // Equipment - SWAP mechanic
+      // Remove from inventory
       this.inventory.splice(idx, 1);
-      if (this.equip[it.slot]) this.inventory.push(this.equip[it.slot]);
+      
+      // If something equipped, add back to inventory
+      if (this.equip[it.slot]) {
+          // Check capacity? Effectively swapping is 1-for-1 so capacity neutral
+          this.inventory.push(this.equip[it.slot]);
+      }
+      
       this.equip[it.slot] = it;
       if(window.UI && UI.log) UI.log(`Equip ${it.name}`, "log item");
     }

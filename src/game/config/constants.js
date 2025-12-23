@@ -45,7 +45,7 @@ export const CONSTANTS = {
   BASE_HP: 20,
   BASE_MP: 10,
   HP_PER_VIT: 5,
-  MP_PER_INT: 3,
+  MP_PER_INT: 5, // v36.5: Buffed from 3 to match HP scaling
   
   // Encounters
   MERCHANT_CHANCE: 0.1,

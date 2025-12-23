@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { gameStore } from "../game/store.js";
 import { SaveManager } from "../game/managers/SaveManager.js";
 import { initGame } from "../game/entry.js"; // We might need to re-think init flow
@@ -44,24 +44,45 @@ const onContinue = () => {
 };
 
 const showLeaderboard = () => {
-    // We can't use gameStore activePanel efficiently if we are in StartScreen overlay?
-    // StartScreen is v-if="activePanel === 'title'".
-    // So if we switch activePanel to 'leaderboard', StartScreen disappears and Leaderboard appears.
-    // That's actually correct behavior.
+    if(!window.Social) { 
+        console.error("Social Manager missing");
+        alert("Error: Social Manager not loaded. Please refresh.");
+        return; 
+    }
+    if(!window.Social) { alert("Social Manager not loaded!"); return; }
     gameStore.state.activePanel = "leaderboard";
 };
 
 const showSoulForge = () => {
+    if(!window.Ascension) { 
+        console.error("Ascension Manager missing");
+        alert("Error: Ascension Manager not loaded. Please refresh.");
+        return; 
+    }
+    if(!window.Ascension) { alert("Ascension Manager not loaded!"); return; }
     gameStore.state.activePanel = "shop-ascension";
 };
 
 const showAchievements = () => {
+    if(!window.Achievements) { 
+        console.error("Achievements Manager missing");
+        alert("Error: Achievements Manager not loaded. Please refresh.");
+        return; 
+    }
+    if(!window.Achievements) { alert("Achievements Manager not loaded!"); return; }
     gameStore.state.activePanel = "achievements";
 };
 
 const showPatchModal = ref(false);
 
 const patchNotes = [
+    { ver: "v36.4.2", date: "2025-12-23", changes: ["CRITICAL FIX: Soul Forge Crash (Shop Init)", "CRITICAL FIX: Mobile Clipboard (Export Save)", "UI: Class Selector Grid & Scroll Padding", "UI: Patch Notes Pagination (Readable!)"] },
+    { ver: "v36.4.1", date: "2025-12-23", changes: ["MOBILE LAYOUT FIXED 📱", "Fixed 'Cut Off' UI Buttons on Mobile Browsers", "Implemented Dynamic Viewport (100dvh)", "Added Safe Area Padding for iPhone/Android Gestures"] },
+    { ver: "v36.4", date: "2025-12-23", changes: ["UI OPTIMIZATION 🎨", "Mobile Layout & Buttons (Retro 3D)", "New Class Icons in Status Panel (🧙‍♂️/🛡️)", "Inventory Visuals: Item Icons & Badges", "Combat: Floating Enemy & HP Animation", "Polished Log Panel (Text & Contrast)"] },
+    { ver: "v36.3", date: "2025-12-23", changes: ["Weighted Loot Rarity (Bell Curve)", "40+ Enemy-Themed Items", "Lucky Drop Notifications (✨/🍀/⭐)", "Floor Tracking Badges", "Fixed Victory Rewards (EXP/Gold/Loot)", "Fixed Merchant Stock Issues", "Luck Stat Boosts Double Drops"] },
+    { ver: "v36.0", date: "2025-12-23", changes: ["THE GREAT STABILIZATION 🛡️", "Deep Code Audit & cleanup", "Fixed Ghost Enemy & Render Glitches", "Restored & Verified UI Components", "Performance Optimization"] },
+    { ver: "v35.0", date: "2025-12-22", changes: ["THE ARSENAL OF VENGEANCE ⚔️", "NEW: Relic System (Global Passives)", "NEW: Relic Hunting Events", "NEW: Achievements (Relic Hunter)", "Items: Assassin Cloak, Cursed Skull"] },
+    { ver: "v34.0", date: "2025-12-21", changes: ["World Map: 5 Realms to Explore", "Node System: Navigate Combat, Events, & Rest", "Visual Polish: Dynamic Backgrounds & Transitions", "Audio: Realm Ambience"] },
     { ver: "v33.1", date: "2025-12-21", changes: ["Audio Expansion: Level Up, Victory, Ascend Sounds", "VFX Juice: Screen Shake & Blood Particles", "Optimized Codebase"] },
     { ver: "v33.0", date: "2025-12-21", changes: ["New Game+: Endless Ascension Cycles", "Soft Reset: Keep Souls & Unlocks", "Difficulty Scaling (+20% per Cycle)"] },
     { ver: "v32.2", date: "2025-12-21", changes: ["Inventory Overhaul: Item Details & Safe Use", "Loot Upgrade: Gold Drops & Consolidated Logs", "UI Fixes: Auto-Scroll Logs, Boss Button Fix","Minor Bugs Fixed"] },
@@ -72,6 +93,26 @@ const patchNotes = [
 
 const togglePatchNotes = () => {
     showPatchModal.value = !showPatchModal.value;
+    // Reset page on close/open if desired, or keep state
+    // if(showPatchModal.value) currentPage.value = 0; 
+};
+
+const ITEMS_PER_PAGE = 4;
+const currentPage = ref(0);
+
+const totalPages = computed(() => Math.ceil(patchNotes.length / ITEMS_PER_PAGE));
+
+const paginatedPatches = computed(() => {
+    const start = currentPage.value * ITEMS_PER_PAGE;
+    return patchNotes.slice(start, start + ITEMS_PER_PAGE);
+});
+
+const nextPage = () => {
+    if (currentPage.value < totalPages.value - 1) currentPage.value++;
+};
+
+const prevPage = () => {
+    if (currentPage.value > 0) currentPage.value--;
 };
 
 const ascension = computed(() => {
@@ -83,7 +124,7 @@ const ascension = computed(() => {
   <div class="start-screen scanline">
     <div class="title-container">
       <h1>RE:BONE</h1>
-      <p class="version-text">v33.1 POLISHED</p>
+      <p class="version-text">v36.4.2 HOTFIX</p>
       <div v-if="ascension > 0" class="cycle-display">
           ☠️ CYCLE {{ ascension }} ☠️
       </div>
@@ -116,9 +157,9 @@ const ascension = computed(() => {
     <!-- PATCH NOTES MODAL -->
     <div v-if="showPatchModal" class="modal-overlay" @click.self="togglePatchNotes">
         <div class="modal-content">
-            <h2>📜 CHANGELOGS</h2>
+            <h2>📜 CHANGELOGS ({{ currentPage + 1 }}/{{ totalPages }})</h2>
             <div class="changelog-list">
-                <div v-for="(note, idx) in patchNotes" :key="idx" class="patch-entry">
+                <div v-for="(note, idx) in paginatedPatches" :key="idx" class="patch-entry">
                     <div class="patch-header">
                         <span class="patch-ver">{{ note.ver }}</span>
                         <span class="patch-date">{{ note.date }}</span>
@@ -128,6 +169,14 @@ const ascension = computed(() => {
                     </ul>
                 </div>
             </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination-controls" v-if="totalPages > 1">
+                <button :disabled="currentPage === 0" @click="prevPage" class="btn-nav">◀ PREV</button>
+                <span>Page {{ currentPage + 1 }}</span>
+                <button :disabled="currentPage >= totalPages - 1" @click="nextPage" class="btn-nav">NEXT ▶</button>
+            </div>
+
             <button class="btn-close" @click="togglePatchNotes">CLOSE</button>
         </div>
     </div>
@@ -331,6 +380,15 @@ h1 {
 .btn-close:hover {
     background: #333;
 }
+
+.pagination-controls {
+    display: flex; justify-content: space-between; align-items: center; width: 100%;
+    margin-top: 10px; padding: 10px; border-top: 1px solid #333;
+}
+.btn-nav {
+    background: #222; border: 1px solid #444; color: #fff; padding: 5px 15px; cursor: pointer;
+}
+.btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-20px); }

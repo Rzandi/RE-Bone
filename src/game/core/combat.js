@@ -136,6 +136,17 @@ const CombatManager = {
 
     enemyTurn() {
         if (!this.enemy || this.enemy.hp <= 0) return;
+        
+        // Process enemy status effects (DoT, stun check)
+        this.processEnemyStatus();
+        
+        // Check if stunned - skip turn
+        if (this.enemy.status && this.enemy.status.some(s => s.id === 'stun' || s.id === 'shock')) {
+            Events.emit("log_combat", "💫 Enemy is STUNNED! Turn skipped!");
+            UI.refresh();
+            this.setCombatButtons();
+            return;
+        }
 
         // Check Invulnerability
         if (Player.invulnTurns > 0) {
@@ -351,6 +362,14 @@ const CombatManager = {
         }
 
         this.enemy.hp -= totalDmg;
+        
+        // APPLY STATUS EFFECTS for multi-hit skills
+        if (s.status) {
+            if (!this.enemy.status) this.enemy.status = [];
+            this.enemy.status.push({ ...s.status });
+            const statusName = s.status.id.charAt(0).toUpperCase() + s.status.id.slice(1);
+            Events.emit("log_combat", `💥 Applied ${statusName}!`);
+        }
         if (totalHeal > 0) {
             Player.hp = Math.min(Player.hp + totalHeal, Player.maxHp);
             Events.emit("log_combat", `${s.hits}-Hit! ${totalDmg} dmg, +${totalHeal} HP`);
@@ -393,6 +412,14 @@ const CombatManager = {
 
         this.enemy.hp -= dmg;
         
+        // APPLY STATUS EFFECTS (Stun, Bleed, Burn, Poison, etc.)
+        if (s.status) {
+            if (!this.enemy.status) this.enemy.status = [];
+            this.enemy.status.push({ ...s.status });
+            
+            const statusName = s.status.id.charAt(0).toUpperCase() + s.status.id.slice(1);
+            Events.emit("log_combat", `💥 Applied ${statusName}!`);
+        }
         
         if (healAmount > 0) {
             Player.hp = Math.min(Player.hp + healAmount, Player.maxHp);
@@ -431,6 +458,39 @@ const CombatManager = {
     applyStatus(target, st) {
         target.status.push(st);
         Events.emit("log_combat", "Status Applied!");
+    },
+    
+    processEnemyStatus() {
+        if (!this.enemy.status || this.enemy.status.length === 0) return;
+        
+        // Process DoT (Damage over Time)
+        for (let i = this.enemy.status.length - 1; i >= 0; i--) {
+            const st = this.enemy.status[i];
+            
+            // DoT damage
+            if (st.id === 'burn' || st.id === 'bleed' || st.id === 'poison') {
+                const dmg = st.val || 0;
+                if (dmg > 0) {
+                    this.enemy.hp -= dmg;
+                    const statusName = st.id.charAt(0).toUpperCase() + st.id.slice(1);
+                    Events.emit("log_combat", `🔥 ${statusName}: ${dmg} damage!`);
+                    
+                    // Check death from DoT
+                    if (this.enemy.hp <= 0) {
+                        Game.handleWin();
+                        return;
+                    }
+                }
+            }
+            
+            // Decrement duration
+            if (st.turn) st.turn--;
+            
+            // Remove if expired
+            if (st.turn <= 0) {
+                this.enemy.status.splice(i, 1);
+            }
+        }
     }
 };
 

@@ -36,7 +36,7 @@ const cont = () => {
 .victory-panel {
     background: #110011;
     color: #fff;
-    height: 100%;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;

@@ -16,25 +16,24 @@ const isUnlocked = (id) => {
     if (id === 'skeleton') return true;
     
     // Meta check
-    const meta = s.meta || { unlockedClasses: [], maxFloor: 0 }; // Fallback
-    
-    // Level Based Unlocks (Using Max Floor as proxy for progress, or if they own it)
-    if (meta.unlockedClasses.includes(id)) return true;
-    
-    // Hardcoded Level Unlocks (Check against some meta.maxLevel if we tracked it, 
-    // but for now we'll assumes unlockedClasses is the source of truth, 
-    // and we will Auto-Unlock them when requirements met).
-    // Actually, let's just show them as Locked with logic here.
-    
-    // NOTE: We need to Auto-Unlock Ghoul/Phantom when requirements met.
-    // For now, this function just checks if they ARE unlocked.
-    return false;
+    const meta = s.meta || { unlockedClasses: [], maxFloor: 0 }; 
+    return meta.unlockedClasses.includes(id);
 }
 
 const getLockReason = (id) => {
-    if (id === 'ghoul') return "Unlock at Level 50";
-    if (id === 'phantom') return "Unlock at Level 80";
-    return "Buy in Soul Shop";
+    if (id === 'ghoul') return "Reach Floor 20";
+    if (id === 'phantom') return "Reach Floor 40";
+    if (id === 'vampire') return "Events (Coming Soon)";
+    if (id === 'lich') return "Events (Coming Soon)";
+    
+    // Traitor Classes
+    if (id === 'druid') return "Defeat Keeper (Nature's Den)";
+    if (id === 'paladin') return "Defeat Lord Paladin (Castle)";
+    if (id === 'berserker') return "Defeat Warlord (Iron Fort)";
+    if (id === 'mechanist') return "Defeat Archmage (Arcane Twr)";
+    if (id === 'shadow_assassin') return "Defeat Grandmaster (Shadow Guild)";
+    
+    return "Locked";
 }
 
 const selectClass = (clsId) => {
@@ -100,7 +99,7 @@ const close = () => {
 
 <style scoped>
 .class-panel {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
     background: #000; z-index: 200;
     display: flex; flex-direction: column;
 }
@@ -109,14 +108,16 @@ const close = () => {
 .header h2 { color: #fff; margin: 0; letter-spacing: 2px; }
 
 .class-list {
-    flex: 1; padding: 20px; overflow-y: auto;
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;
+    flex: 1; 
+    padding: 20px 20px 200px 20px; /* Safe Scroll Area */
+    overflow-y: auto;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;
 }
 
 .class-card {
     background: #111; border: 1px solid #333; padding: 20px;
     cursor: pointer; transition: all 0.2s; display: flex; gap: 15px; align-items: center;
-    position: relative; overflow: hidden;
+    position: relative; /* Overflow hidden removed to prevent clipping */
 }
 
 .class-card:hover:not(.locked) {
@@ -124,7 +125,7 @@ const close = () => {
 }
 
 .class-card.locked {
-    opacity: 0.5; cursor: not-allowed; border-color: #222; grayscale: 100%;
+    opacity: 0.6; cursor: not-allowed; border-color: #222;
 }
 
 .icon { font-size: 3.5rem; }

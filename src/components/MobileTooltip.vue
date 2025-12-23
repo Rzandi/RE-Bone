@@ -23,7 +23,7 @@ const close = () => {
 
 <style scoped>
 .mobile-tooltip-backdrop {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
     background: rgba(0,0,0,0.6); z-index: 9999;
     display: flex; align-items: center; justify-content: center;
 }

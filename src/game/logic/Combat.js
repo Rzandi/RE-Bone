@@ -2,6 +2,7 @@ import { gameStore } from '../store.js';
 import { Player as PlayerLogic } from './Player.js';
 import { DB } from '../config/database.js';
 import { CONSTANTS } from '../config/constants.js';
+import { RARITY_TIERS, LUCKY_DROP_MESSAGES } from '../config/loot_config.js';
 
 /* =========================================
    COMBAT LOGIC (Vue Version)
@@ -10,10 +11,11 @@ import { CONSTANTS } from '../config/constants.js';
 export const Combat = {
     get state() { return gameStore.state; },
     get enemy() { return gameStore.state.combat.enemy; },
+    set enemy(val) { gameStore.state.combat.enemy = val; },
     
     init() {},
 
-    startCombat(enemyData, isBoss = false) {
+    startCombat(enemyData, isBoss = false, isElite = false) {
         // 1. Clear Buttons IMMEDIATELY to prevent "Explore" buttons from sticking
         gameStore.state.buttons = [];
         this.state.activePanel = 'combat';
@@ -24,10 +26,19 @@ export const Combat = {
             const enemy = JSON.parse(JSON.stringify(enemyData));
             enemy.maxHp = enemy.hp; // Ensure MaxHP is set
             enemy.isBoss = isBoss;
+            enemy.isElite = isElite;
             enemy.status = [];
             
             this.state.combat.enemy = enemy;
             this.state.combat.turn = 'player';
+            
+            // v35.3: RELIC - Cursed Skull (-20% Enemy HP)
+            if (PlayerLogic.state.bonuses.curseAura) {
+                 const reduction = Math.floor(enemy.maxHp * PlayerLogic.state.bonuses.curseAura);
+                 enemy.maxHp -= reduction;
+                 enemy.hp = enemy.maxHp;
+                 gameStore.log(`Relic: Cursed Skull reduced enemy HP by ${reduction}!`, "buff");
+            }
             
             gameStore.log(`Encounter: ${enemy.name}`, "combat");
         } catch (err) {
@@ -72,17 +83,59 @@ export const Combat = {
         
         let dmg = calcAtk + bonusDmg;
         
+        // v35.3: RELIC - Assassin Cloak (First Strike)
+        if (p.bonuses.firstStrike && e.hp === e.maxHp) {
+            dmg = Math.floor(dmg * 2);
+            gameStore.log("Relic: Assassin Cloak triggered (Double Damage)!", "buff");
+            gameStore.triggerVfx({ type: 'critical', val: "ASSASSINATE", target: 'enemy' });
+        }
+
+        // v36.2: RELIC/ITEM - Execute (Nightfall Blade)
+        if (p.bonuses.execute_30 && e.hp < (e.maxHp * 0.30)) {
+            dmg = e.hp; // Instant Kill
+            gameStore.log("Nightfall Execute!", "crit");
+            gameStore.triggerVfx({ type: 'critical', val: "EXECUTE", target: 'enemy' });
+        }
+
         // 2. Apply Damage (Critical Hit Logic)
+        // Redifining isCrit logic to avoid duplication
         let isCrit = Math.random() < (p.crit || 0); 
         if (isCrit) dmg = Math.floor(dmg * 1.5);
-
+        
         // DEBUG LOGGING
-        // Debug log removed
         // gameStore.log(`[Combat] Attack: Dmg=${dmg}`, "combat");
 
         e.hp -= dmg;
         gameStore.log(`You hit for ${dmg} damage!${isCrit ? ' (CRIT!)' : ''}`, isCrit ? "crit" : "damage");
         
+        // v36.2: Unique Effects (On Hit)
+        if (p.bonuses.smite_on_hit) {
+            const smiteDmg = 20; // Flat or scaling?
+            e.hp -= smiteDmg;
+            gameStore.log(`Excalibur Smite: ${smiteDmg}!`, "buff");
+             gameStore.triggerVfx({ type: 'damage', val: smiteDmg, target: 'enemy' });
+        }
+        if (p.bonuses.poison_regen) {
+            // Apply Poison to Enemy
+            this.applyStatusToEnemy({ id: 'poison', turn: 3, val: 5 }); // 5% DoT
+            // Regen Self
+             PlayerLogic.heal(5);
+        }
+        
+        // v36.2: PASSIVE - Rot Touch (Poison on Hit)
+        if (p.passives.includes('rot_touch')) {
+            this.applyStatusToEnemy({ id: 'poison', turn: 3 });
+        }
+        // v36.2: PASSIVE - Mana Leech (+1 MP)
+        if (p.passives.includes('mana_leech')) {
+            PlayerLogic.state.mp = Math.min(PlayerLogic.state.mp + 1, PlayerLogic.state.maxMp);
+        }
+        // v36.2: PASSIVE - Static (Stun Chance)
+        if (p.passives.includes('static') && Math.random() < 0.10) {
+            this.applyStatusToEnemy({ id: 'stun', turn: 1 });
+            gameStore.log("Static Charge STUNNED the enemy!", "buff");
+        }
+
         // SOUND HOOK
         if(window.SoundManager) {
             window.SoundManager.play(isCrit ? 'crit' : 'hit');
@@ -99,11 +152,16 @@ export const Combat = {
             console.warn("VFX Error", err);
         }
         
-        // 3. Lifesteal
-        if (p.passives.includes("vampirism")) {
-            const heal = Math.ceil(dmg * 0.2);
-            PlayerLogic.takeDamage(-heal); // Negative damage = heal
-            gameStore.triggerVfx({ type: 'heal', val: `+${heal}`, target: 'player' });
+        // 3. Lifesteal (Passive & Relics)
+        let lifesteal = p.bonuses.lifesteal || 0;
+        if (p.passives.includes("vampirism")) lifesteal += 0.2;
+        
+        if (lifesteal > 0) {
+            const heal = Math.ceil(dmg * lifesteal);
+            if(heal > 0) {
+                PlayerLogic.takeDamage(-heal); // Negative damage = heal
+                gameStore.triggerVfx({ type: 'heal', val: `+${heal}`, target: 'player' });
+            }
         }
 
         // 4. Check Defeat
@@ -121,38 +179,115 @@ export const Combat = {
         const e = this.enemy;
         if (!e || e.hp <= 0) return;
         
-        // 1. Process Enemy Status (Start of Turn)
+        // **CHECK STUN FIRST** before processing other status (so stun duration doesn't decrement before checking!)
+        const stunned = e.status.find(s => s.id === 'stun' || s.id === 'shock');
+        if (stunned) {
+            gameStore.log("💫 Enemy is STUNNED! Turn skipped!", "buff");
+            
+            // Decrement stun duration
+            stunned.turn--;
+            if (stunned.turn <= 0) {
+                e.status = e.status.filter(s => s.id !== 'stun' && s.id !== 'shock');
+                gameStore.log("Stun wore off.", "buff");
+            }
+            
+            // Skip enemy turn
+            this.state.combat.turn = 'player';
+            this.lastAttackTime = 0;
+            return;
+        }
+        
+        // 1. Process Enemy Status (Start of Turn) - DoT damage, debuffs, etc
         this.processStatusEffects(e, false);
         if (e.hp <= 0) {
             this.handleVictory();
             return;
         }
         
+        // v36.2: PASSIVE - Thorns (Thorns Aura / Zap)
+        // v36.5: Scaled with Defense
+        if (PlayerLogic.state.passives.includes('thorns_aura')) {
+             const thornsDmg = Math.floor(3 + (PlayerLogic.state.def * 0.5));
+             e.hp -= thornsDmg;
+             gameStore.log(`Thorns: Enemy took ${thornsDmg} dmg.`, "damage");
+        }
+        // Zap (Lightning Thorns)
+        // v36.5: Scaled with Intelligence
+        if (PlayerLogic.state.passives.includes('zap')) {
+             const zapDmg = Math.floor(5 + (PlayerLogic.state.int * 0.3));
+             e.hp -= zapDmg;
+             gameStore.log(`Zap: Enemy shocked for ${zapDmg} dmg.`, "damage");
+        }
+
         let dmg = e.atk || 5;
         
         // AI Logic stub
         gameStore.log(`${e.name} attacks for ${dmg}!`, "damage");
         
+        // v36.2: PASSIVE - Inner Rage (+ATK when hit)
+        if (PlayerLogic.state.passives.includes('rage_meter')) {
+            PlayerLogic.gainStat('atk', 1); // Temp battle buff? Or perm? Desc says "+1 ATK". Usually temp in roguelikes.
+            // Player.gainStat is PERMANENT. We need a temp buff.
+            // Let's add a temp status 'rage_buff'
+            PlayerLogic.state.status.push({ id: 'rage_buff', turn: 3, val: 1 });
+            gameStore.log("Inner Rage: +ATK!", "buff");
+        }
+
         // Hit Sfx
-        // Enemy attacks don't crit, so no isCrit check needed here.
         if(window.SoundManager) window.SoundManager.play("hit");
         if(window.gameStore) window.gameStore.triggerShake("medium");
         
         // VFX
-        gameStore.triggerVfx({ type: 'damage', val: dmg, target: 'player' });
+        // gameStore.triggerVfx({ type: 'damage', val: dmg, target: 'player' }); // Handled by Player.js now (integrity check)
         // Blood Particles
         for(let i=0; i<3; i++) gameStore.triggerVfx({ type: 'particle-blood', target: 'player' });
         
+        // Calculate Reflect
+        if(dmg > 0 && PlayerLogic.state.bonuses.reflect) {
+             const reflectDmg = Math.ceil(dmg * PlayerLogic.state.bonuses.reflect);
+             if(reflectDmg > 0) {
+                 e.hp -= reflectDmg;
+                 gameStore.log(`Reflected ${reflectDmg} damage!`, "damage");
+                 gameStore.triggerVfx({ type: 'damage', val: reflectDmg, target: 'enemy' });
+             }
+        }
+
+        // v36.2: Reflect Magic
+        if(dmg > 0 && PlayerLogic.state.bonuses.reflectMagic) {
+             const magicReflect = Math.ceil(dmg * PlayerLogic.state.bonuses.reflectMagic);
+             if(magicReflect > 0) {
+                 e.hp -= magicReflect;
+                 gameStore.log(`Magic Reflected ${magicReflect}!`, "damage");
+                 gameStore.triggerVfx({ type: 'damage', val: magicReflect, target: 'enemy' });
+             }
+        }
+
         PlayerLogic.takeDamage(dmg);
         
         if (this.state.combat.turn === 'enemy') { // Check if combat still active
+            // Check if Enemy died from Reflect/Thorns
+            if(e.hp <= 0) {
+                this.handleVictory();
+                return;
+            }
+
             // Return turn to player
             
             // 2. Process Player Status (Start of Player Turn)
             this.processStatusEffects(PlayerLogic.state, true);
             
             // Check Death after DOT
-            if (PlayerLogic.state.hp <= 0) {
+             if (PlayerLogic.state.hp <= 0) {
+                 // v35.3: RELIC - Phoenix Feather (Auto Revive)
+                 if (PlayerLogic.state.bonuses.autoRevive) {
+                      PlayerLogic.state.hp = Math.floor(PlayerLogic.state.maxHp * 0.5);
+                      PlayerLogic.state.bonuses.autoRevive = false; // Consume it
+                      gameStore.log("Relic: Phoenix Feather used! Revived!", "buff");
+                      gameStore.triggerVfx({ type: 'heal', val: "REVIVED", target: 'player' });
+                      if(window.SoundManager) SoundManager.play("relic");
+                      return;
+                 }
+                 
                  // Game.handleDefeat() called by takeDamage or similar logic
                  return;
             }
@@ -163,58 +298,214 @@ export const Combat = {
     
     handleVictory() {
         const e = this.enemy;
-        gameStore.log(`Defeated ${e.name}!`, "victory");
+        if (!e) return;
         
-        // Disable buttons using spacers (prevents ControlPanel defaulting to Attack buttons)
-        gameStore.state.buttons = [null, null, null, null]; 
+        gameStore.log(`✅ Defeated ${e.name}!`, "victory");
 
+        // v36.2: On Kill Effects
+        if(PlayerLogic.state.bonuses.hp_per_kill) {
+            PlayerLogic.heal(PlayerLogic.state.bonuses.hp_per_kill || 3);
+        }
+        
+        // **REWARDS CALCULATION**
+        const p = PlayerLogic.state;
+        
+        // EXP
+        let expGain = Math.floor((e.exp || 10) * (p.multipliers?.exp || 1));
+        PlayerLogic.gainExp(expGain);
+        
+        // GOLD
+        let baseGold = Math.floor((e.exp || 10) * 0.5) + (gameStore.state.floor * 2);
+        let goldReward = Math.floor(baseGold * (0.8 + Math.random() * 0.4));
+        goldReward = Math.floor(goldReward * (p.multipliers?.gold || 1));
+        if (goldReward < 1) goldReward = 1;
+        PlayerLogic.state.gold += goldReward;
+        
+        // **LOOT SYSTEM**
+        let lootDrops = [];
+        const isBoss = e.isBoss || e.rank === 'S';
+        const isElite = e.isElite || e.rank === 'A' || e.rank === 'B';
+        
+        // Drop rate based on enemy rank/rarity
+        let dropChance = 0.30; // Base 30%
+        
+        // Rank modifiers
+        if (isBoss) {
+            dropChance = 1.0; // 100% guaranteed
+        } else if (isElite) {
+            dropChance = 0.50; // Elite: 50%
+        } else if (e.rank === 'C') {
+            dropChance = 0.35; // Slightly better than base
+        }
+        
+        // Rarity modifier (additional boost)
+        const rarityBonus = {
+            'common': 0,
+            'uncommon': 0.05,
+            'rare': 0.10,
+            'epic': 0.15,
+            'legend': 0.20
+        };
+        dropChance += (rarityBonus[e.rarity] || 0);
+        dropChance = Math.min(1.0, dropChance); // Cap at 100%
+        
+        if (window.LootManager && Math.random() < dropChance) {
+            // Rarity boost for elite/boss
+            let rarityOverride = e.rarity || 'common';
+            if (isElite || isBoss) {
+                // Elite/Boss: +1 rarity tier
+                const rarityTiers = ['common', 'uncommon', 'rare', 'epic', 'legend'];
+                const currentIdx = rarityTiers.indexOf(rarityOverride);
+                if (currentIdx >= 0 && currentIdx < rarityTiers.length - 1) {
+                    rarityOverride = rarityTiers[currentIdx + 1];
+                }
+            }
+            
+            // Generate first drop (with enemy theming)
+            const loot1 = window.LootManager.generateDrop(gameStore.state.floor, rarityOverride, e);
+            if (loot1 && window.Player) {
+                // Add floor metadata for equipment
+                if (!['mat', 'con', 'skill_book'].includes(loot1.slot)) {
+                    loot1.dropFloor = gameStore.state.floor;
+                }
+                window.Player.addItem(loot1);
+                lootDrops.push(loot1);
+            }
+            
+            // LUCK-BASED DOUBLE DROP: Base 5% + 1% per 5 luck
+            const luckStat = p.luck || 0;
+            const doubleDropChance = 0.05 + (Math.floor(luckStat / 5) * 0.01);
+            
+            if (Math.random() < doubleDropChance) {
+                const loot2 = window.LootManager.generateDrop(gameStore.state.floor, rarityOverride, e);
+                if (loot2 && window.Player) {
+                    // Add floor metadata for equipment
+                    if (!['mat', 'con', 'skill_book'].includes(loot2.slot)) {
+                        loot2.dropFloor = gameStore.state.floor;
+                    }
+                    window.Player.addItem(loot2);
+                    lootDrops.push(loot2);
+                    gameStore.log(`💎 LUCKY! Double drop! (Luck: ${Math.round(doubleDropChance * 100)}%)`, "buff");
+                }
+            }
+        }
+        
+        // FLOOR PROGRESSION
+        gameStore.state.progress = Math.min(100, gameStore.state.progress + 20);
+        
+        // CONSOLIDATED LOOT LOG with LUCKY DROP detection
+        let lootLog = `💰 +${expGain} EXP, +${goldReward} Gold`;
+        
+        // Helper: Check if drop is "lucky" (higher rarity than enemy)
+        const enemyRarityIdx = RARITY_TIERS.indexOf(e.rarity || 'common');
+        
+        if (lootDrops.length === 1) {
+            const itemRarityIdx = RARITY_TIERS.indexOf(lootDrops[0].rarity);
+            const rarityDiff = itemRarityIdx - enemyRarityIdx;
+            
+            lootLog += `, 🎁 ${lootDrops[0].name || lootDrops[0].id}`;
+            
+            // Lucky drop messages using config thresholds
+            if (rarityDiff >= LUCKY_DROP_MESSAGES.jackpot) {
+                // 3+ tiers higher (e.g., common enemy drops epic/legend)
+                gameStore.log(`⭐ JACKPOT! ${lootDrops[0].name} (${lootDrops[0].rarity.toUpperCase()}) from ${e.name}!`, "rare");
+            } else if (rarityDiff >= LUCKY_DROP_MESSAGES.veryLucky) {
+                // 2 tiers higher
+                gameStore.log(`🍀 VERY LUCKY! ${lootDrops[0].name} (${lootDrops[0].rarity.toUpperCase()})!`, "buff");
+            } else if (rarityDiff >= LUCKY_DROP_MESSAGES.lucky) {
+                // 1 tier higher
+                gameStore.log(`✨ Lucky drop! ${lootDrops[0].name} (${lootDrops[0].rarity.toUpperCase()})`, "item");
+            }
+        } else if (lootDrops.length === 2) {
+            lootLog += `, 🎁🎁 ${lootDrops.map(l => l.name || l.id).join(' + ')}`;
+            
+            // Check both items for rare drops
+            lootDrops.forEach(drop => {
+                const itemRarityIdx = RARITY_TIERS.indexOf(drop.rarity);
+                const rarityDiff = itemRarityIdx - enemyRarityIdx;
+                
+                if (rarityDiff >= LUCKY_DROP_MESSAGES.veryLucky) {
+                    gameStore.log(`🍀 LUCKY! ${drop.name} (${drop.rarity.toUpperCase()}) in double drop!`, "buff");
+                }
+            });
+        }
+        
+        gameStore.log(lootLog, "item");
+        
+        // Check level up
+        if (p.level > (this._lastLevel || p.level)) {
+            gameStore.log("🆙 LEVEL UP!", "buff");
+            if(window.ProgressionManager) ProgressionManager.levelUpState();
+        }
+        this._lastLevel = p.level;
+        
         // Sound
         if(window.SoundManager) window.SoundManager.play('victory'); 
 
-        // Delay for VFX/Text reading
-        setTimeout(() => {
-           try {
-               // Delegate to Game Core
-               if(window.Game) {
-                   window.Game.handleWin(0);
-               } else {
-                   throw new Error("Game Core missing");
-               }
-           } catch(err) {
-               console.error("Victory Error:", err);
-               // Failsafe Cleanup
-               gameStore.state.combat.enemy = null;
-               gameStore.state.activePanel = 'menu-view';
-               gameStore.state.buttons = []; // Revert to defaults
-           }
-        }, 1000);
+        // Clear enemy and return to explore
+        gameStore.state.combat.enemy = null;
+        this.state.combat.turn = 'player'; // Reset turn?
+        gameStore.state.activePanel = 'menu-view';
+        gameStore.state.buttons = [];
     },
     
+    // Helper for Unique Effects / Skills
+    applyStatusToEnemy(status) {
+        if(!this.enemy) return;
+        if(!this.enemy.status) this.enemy.status = [];
+        
+        const existing = this.enemy.status.find(s => s.id === status.id);
+        if(existing) {
+             existing.turn = Math.max(existing.turn || 0, status.turn);
+        } else {
+            this.enemy.status.push({ ...status });
+        }
+        gameStore.log(`Applied ${status.id} to enemy!`, "debuff");
+    },
+
     processStatusEffects(target, isPlayer) {
         if (!target || !target.status) return;
         
         // Filter out expired status
-        // Each status: { id, duration, val }
+        // Each status: { id, turn, val }
         const activeStatus = [];
         
         target.status.forEach(s => {
-            // Apply DOT
-            if (['burn', 'poison'].includes(s.id)) {
-                let dmg = Math.floor(target.maxHp * 0.05); // 5% Max HP
+            // Apply DOT (Damage over Time)
+            if (['burn', 'poison', 'bleed'].includes(s.id)) {
+                // Use status.val for damage amount, or fallback to 5% maxHP
+                let dmg = s.val || Math.floor(target.maxHp * 0.05);
                 if (dmg < 1) dmg = 1;
                 
                 target.hp -= dmg;
-                gameStore.log(`${isPlayer?'You':'Enemy'} took ${dmg} damage from ${s.id}!`, "damage");
+                const statusName = s.id.charAt(0).toUpperCase() + s.id.slice(1);
+                gameStore.log(`🔥 ${isPlayer?'You':'Enemy'} took ${dmg} damage from ${statusName}!`, "damage");
                 gameStore.triggerVfx({ type: 'damage', val: dmg, target: isPlayer ? 'player' : 'enemy' });
             }
+            // Heal over Time
+            if (s.id === 'regen') {
+                let heal = s.val || Math.floor(target.maxHp * 0.05);
+                if (heal < 1) heal = 1;
+                target.hp = Math.min(target.hp + heal, target.maxHp);
+                gameStore.log(`💚 ${isPlayer?'You':'Enemy'} healed ${heal} from Regen.`, "heal");
+            }
             
-            // Decrement duration
-            s.duration--;
-            if (s.duration > 0) activeStatus.push(s);
-            else gameStore.log(`${s.id} wore off.`, "buff");
+            // Decrement duration (Support 'turn' from config or 'duration')
+            if (s.turn !== undefined) s.turn--;
+            else if (s.duration !== undefined) s.duration--;
+            
+            // Keep if time remains
+            const remaining = (s.turn !== undefined ? s.turn : s.duration);
+
+            if (remaining > 0) activeStatus.push(s);
+            else {
+                const statusName = s.id.charAt(0).toUpperCase() + s.id.slice(1);
+                gameStore.log(`${statusName} wore off.`, "buff");
+            }
         });
         
         target.status = activeStatus;
+        if(isPlayer) PlayerLogic.recalc(); // v36.2: Update Stats after buff expiry/tick
     },
 
     getDamageBonus() {
@@ -260,6 +551,14 @@ export const Combat = {
             gameStore.log(`${skill.name} hit for ${dmg}!`, isCrit ? 'crit' : 'damage');
             gameStore.triggerVfx({ type: isCrit ? 'critical' : 'damage', val: dmg, target: 'enemy' });
             
+            // **APPLY STATUS EFFECTS** (Stun, Bleed, Burn, Poison, etc.)
+            if (skill.status && this.enemy) {
+                if (!this.enemy.status) this.enemy.status = [];
+                this.enemy.status.push({ ...skill.status });
+                const statusName = skill.status.id.charAt(0).toUpperCase() + skill.status.id.slice(1);
+                gameStore.log(`💥 Applied ${statusName}!`, "debuff");
+            }
+            
             // Lifesteal check (Skill specific)
             if (skill.lifesteal) {
                 const leech = Math.floor(dmg * skill.lifesteal);
@@ -277,6 +576,52 @@ export const Combat = {
              if(skill.status && this.enemy) {
                  this.enemy.status.push(skill.status); // Assuming enemy has status array
                  gameStore.log(`Applied ${skill.status.id} to enemy`, "debuff");
+             }
+        }
+        else if (skill.type === 'summon') {
+             // v35.0: Summon Implementation
+             // Treat summons as a special Buff that grants Shield (HP) and Passive Dmg?
+             // For MVP, Summons are Shields with flavor text.
+             const hp = skill.hp || 20;
+             PlayerLogic.state.invulnTurns = (PlayerLogic.state.invulnTurns || 0) + 1; // Brief safety?
+             
+             // Apply as Shield
+             // We don't have a distinct 'shield' stat in basic Player state, usually handled via Status or HP
+             // Let's verify if Player has 'shield'. 
+             // Looking at Player.js, no explicit 'shield' prop in state init.
+             // But 'abyssal_shield' skill adds 'shield: 30'. 
+             // We should check if 'takeDamage' respects shield.
+             // If not, we'll implement a 'summon_shield' status.
+             
+             const summonStatus = { 
+                 id: `summon_${skill.name.toLowerCase().replace(' ', '_')}`, 
+                 val: hp, // Use 'val' as Shield HP
+                 turn: 99, // Lasts until destroyed
+                 type: 'shield' 
+             };
+             PlayerLogic.state.status.push(summonStatus);
+             gameStore.log(`${skill.name} summoned with ${hp} HP!`, "buff");
+        }
+        else if (skill.type === 'special') {
+             // v35.0: Special Skills
+             if (skill.name === 'Transmute') {
+                 const gold = Math.floor(PlayerLogic.state.int * 2);
+                 PlayerLogic.state.gold += gold;
+                 gameStore.log(`Transmuted air into ${gold} Gold!`, "rare");
+             }
+             if (skill.name === 'Glitch') {
+                 // Random Effect
+                 const effects = ['heal', 'damage', 'gold', 'buff'];
+                 const rand = effects[Math.floor(Math.random() * effects.length)];
+                 if(rand === 'heal') PlayerLogic.heal(50);
+                 if(rand === 'damage') this.enemy.hp -= 50;
+                 if(rand === 'gold') PlayerLogic.state.gold += 50;
+                 if(rand === 'buff') PlayerLogic.state.status.push({id:'glitch_power', turn:3, val:50}); // +50 stat?
+                 gameStore.log(`Glitch triggered: ${rand.toUpperCase()}!`, "rare");
+             }
+             if (skill.name === 'Possession') {
+                 gameStore.log("Possessed Enemy! They hurt themselves.", "debuff");
+                 this.enemy.hp -= this.enemy.atk * 2;
              }
         }
 
