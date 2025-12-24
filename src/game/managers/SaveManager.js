@@ -76,6 +76,12 @@ export const SaveManager = {
                 });
             }
             
+            // v37.3: Repair Stat Point data for legacy saves
+            if (typeof gameStore.state.statPt !== 'number') gameStore.state.statPt = 0;
+            if (!gameStore.state.baseStats) {
+                gameStore.state.baseStats = { STR: 5, VIT: 5, INT: 5 };
+            }
+            
             // 1. Repair Multipliers
             Player.recalc();
             

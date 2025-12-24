@@ -178,7 +178,13 @@ const cleanseItem = (item) => {
 
 // Close panel
 const close = () => {
-  gameStore.state.activePanel = 'menu-view';
+  if (gameStore.state.previousPanel) {
+    const prev = gameStore.state.previousPanel;
+    gameStore.state.previousPanel = null;
+    gameStore.state.activePanel = prev;
+  } else {
+    gameStore.state.activePanel = 'menu-view';
+  }
 };
 </script>
 
@@ -395,9 +401,11 @@ const close = () => {
   background: linear-gradient(135deg, #0a0a0a, #1a0a1a, #0a0a1a);
   color: #fff;
   padding: 20px;
-  min-height: 100%;
+  padding-top: max(20px, env(safe-area-inset-top)); /* Safe area fix */
+  height: 100%; /* Fill container */
   position: relative;
-  overflow: hidden;
+  overflow-y: auto; /* Enable scrolling */
+  overflow-x: hidden;
 }
 
 /* Animated fog background */

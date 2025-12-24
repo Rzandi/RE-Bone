@@ -8,8 +8,17 @@ export const SocketManager = {
   
   // Add sockets to newly generated item
   addSocketsToItem(item) {
-    if (!item || item.slot === 'material' || item.slot === 'consumable') {
-      return item; // Don't socket materials or consumables
+    if (!item) return item;
+    
+    // Only equipment can have sockets (weapon, armor, acc)
+    const validSlots = ['weapon', 'armor', 'acc', 'accessory'];
+    if (!validSlots.includes(item.slot)) {
+      return item; // Don't socket non-equipment items
+    }
+    
+    // Also skip gems and special items
+    if (item.type === 'gem' || item.type === 'material' || item.type === 'skill_book') {
+      return item;
     }
     
     const socketCount = generateSocketCount(item.rarity);
@@ -21,6 +30,7 @@ export const SocketManager = {
     
     return item;
   },
+
   
   // Insert gem into socket (Refactored to use Inventory)
   insertGem(item, socketIndex, gemType) {
@@ -208,12 +218,14 @@ export const SocketManager = {
   // Scale gem stats based on floor
   scaleGemStats(baseBonus, floor) {
     const scaled = {};
+    const safeFloor = floor || 1; // Default to floor 1 if undefined
     Object.entries(baseBonus).forEach(([stat, value]) => {
-      scaled[stat] = Math.floor(value * (1 + floor * 0.05)); // Scale by 5% per floor
+      scaled[stat] = Math.floor(value * (1 + safeFloor * 0.05)); // Scale by 5% per floor
     });
     return scaled;
   },
   
+
   // Generate random gem drop (based on floor)
   generateGemDrop(floor) {
     const roll = Math.random() * 100;

@@ -61,8 +61,40 @@ const curseBuffs = computed(() => {
   return buffs;
 });
 
-const formatItem = (item) =>
-  item ? `${item.name} (+${item.atk || 0} Atk)` : "Empty";
+const formatItem = (item) => {
+  if (!item) return "Empty";
+  
+  // Build stats string based on what the item has
+  const statParts = [];
+  
+  // Primary stats
+  if (item.atk) statParts.push(`+${item.atk} ATK`);
+  if (item.def) statParts.push(`+${item.def} DEF`);
+  if (item.hp) statParts.push(`+${item.hp} HP`);
+  if (item.mp) statParts.push(`+${item.mp} MP`);
+  
+  // Attribute stats
+  if (item.str) statParts.push(`+${item.str} STR`);
+  if (item.vit) statParts.push(`+${item.vit} VIT`);
+  if (item.int) statParts.push(`+${item.int} INT`);
+
+  
+  // Percentage stats (convert to %)
+  if (item.crit) statParts.push(`+${Math.round(item.crit * 100)}% CRIT`);
+  if (item.dodge) statParts.push(`+${Math.round(item.dodge * 100)}% DODGE`);
+  if (item.lifesteal) statParts.push(`+${Math.round(item.lifesteal * 100)}% LSTEAL`);
+  if (item.spellPower) statParts.push(`+${item.spellPower} SPWR`);
+  
+  // Socket info
+  if (item.sockets && item.sockets.length > 0) {
+    const filled = item.sockets.filter(s => s !== null).length;
+    statParts.push(`💎${filled}/${item.sockets.length}`);
+  }
+  
+  const statsStr = statParts.length > 0 ? ` (${statParts.join(', ')})` : '';
+  return `${item.name}${statsStr}`;
+};
+
 
 const rarityColor = (item) => {
   if (!item) return "#555";

@@ -293,97 +293,8 @@ const BIOME_ENEMIES = {
 const ENEMIES_DB = Object.values(BIOME_ENEMIES).flat(); 
 
 const BOSSES_DB = {
-    80: {
-      name: "CRYPT LORD",
-      hp: 250,
-      atk: 16,
-      exp: 200,
-      sprite: {
-        idle: `<span class="pixel-sprite sprite-boss-cryptlord">
-  ▓▓▓▓▓▓
- ▓░▓▓▓░▓
- ▓▓▓▓▓▓
-  ▓▓▓▓
- ▓░▓░▓
- ▓  ▓  ▓</span>`,
-        attack: `<span class="pixel-sprite sprite-boss-cryptlord">
-  ▓▓▓▓▓▓ ☠
- ▓░▓▓▓░▓
- ▓▓▓▓▓▓
-  ▓▓▓▓
- ▓░▓░▓
- ▓  ▓  ▓</span>`,
-        hurt: `<span class="pixel-sprite sprite-boss-cryptlord-hurt">
-  ██████
- █░███░█
-  ██████
-  ████
- █░█░█
- █  █  █</span>`
-      },
-      skills: ["terror", "death_bolt"],
-      passives: ["undying", "undead_mastery"],
-    },
-    
-    // v27.0 Boss
-    70: {
-      name: "PRISM CONSTRUCT",
-      hp: 150,
-      atk: 15,
-      exp: 130,
-      sprite: {
-        idle: `<span class="pixel-sprite sprite-boss-prism">
-  ▄▄▄
- ▄▓▓▓▄
-▄▓░░░▓▄
- ▀▓▓▓▀
-  ▀▀▀</span>`,
-        attack: `<span class="pixel-sprite sprite-boss-prism">
-  ▄▄▄
- ▄▓▓▓▄⚡
-▄▓░░░▓▄
- ▀▓▓▓▀
-  ▀▀▀</span>`,
-        hurt: `<span class="pixel-sprite sprite-boss-prism-hurt">
-  ███
- █░░░█
-█░░░░░█
- ▀███▀
-  ▀▀▀</span>`
-      },
-      skills: ["ice_shard", "smash"],
-      passives: ["thick_skin"],
-    },
-    
-    60: {
-      name: "SHADOW WARDEN",
-      hp: 200,
-      atk: 18,
-      exp: 180,
-      sprite: {
-        idle: `<span class="pixel-sprite sprite-boss-shadow">
-   ░▓▓░
-  ▓▓▓▓▓
- ▓░▓▓▓░▓
-  ▓▓▓▓
-  ▓  ▓</span>`,
-        attack: `<span class="pixel-sprite sprite-boss-shadow">
-   ░▓▓░
-  ▓▓▓▓▓✨
- ▓░▓▓▓░▓
-  ▓▓▓▓
-  ▓  ▓</span>`,
-        hurt: `<span class="pixel-sprite sprite-boss-shadow-hurt">
-   ░██░
-  █████
- █░███░█
-  ████
-  █  █</span>`
-      },
-      skills: ["fireball", "ice_shard", "terror"],
-      passives: ["mana_leech", "ethereal"],
-    },
-    40: {
+    // Floor 20: First Boss (Easy)
+    20: {
       name: "GOBLIN KING",
       hp: 100,
       atk: 10,
@@ -414,10 +325,12 @@ const BOSSES_DB = {
       skills: ["smash", "rend"],
       passives: ["thick_skin"],
     },
-    20: {
+    
+    // Floor 40: Second Boss (Medium)
+    40: {
       name: "STONE TITAN",
-      hp: 300,
-      atk: 12,
+      hp: 200,
+      atk: 15,
       exp: 150,
       sprite: {
         idle: `<span class="pixel-sprite sprite-boss-titan">
@@ -445,10 +358,75 @@ const BOSSES_DB = {
       skills: ["smash", "shield_bash"],
       passives: ["thick_skin", "undying"],
     },
-    1: {
-      name: "HERO PARTY",
-      hp: 400,
+    
+    // Floor 60: Third Boss (Hard)
+    60: {
+      name: "SHADOW WARDEN",
+      hp: 300,
       atk: 20,
+      exp: 200,
+      sprite: {
+        idle: `<span class="pixel-sprite sprite-boss-shadow">
+   ░▓▓░
+  ▓▓▓▓▓
+ ▓░▓▓▓░▓
+  ▓▓▓▓
+  ▓  ▓</span>`,
+        attack: `<span class="pixel-sprite sprite-boss-shadow">
+   ░▓▓░
+  ▓▓▓▓▓✨
+ ▓░▓▓▓░▓
+  ▓▓▓▓
+  ▓  ▓</span>`,
+        hurt: `<span class="pixel-sprite sprite-boss-shadow-hurt">
+   ░██░
+  █████
+ █░███░█
+  ████
+  █  █</span>`
+      },
+      skills: ["fireball", "ice_shard", "terror"],
+      passives: ["mana_leech", "ethereal"],
+    },
+    
+    // Floor 80: Fourth Boss (Very Hard)
+    80: {
+      name: "CRYPT LORD",
+      hp: 400,
+      atk: 25,
+      exp: 300,
+      sprite: {
+        idle: `<span class="pixel-sprite sprite-boss-cryptlord">
+  ▓▓▓▓▓▓
+ ▓░▓▓▓░▓
+ ▓▓▓▓▓▓
+  ▓▓▓▓
+ ▓░▓░▓
+ ▓  ▓  ▓</span>`,
+        attack: `<span class="pixel-sprite sprite-boss-cryptlord">
+  ▓▓▓▓▓▓ ☠
+ ▓░▓▓▓░▓
+ ▓▓▓▓▓▓
+  ▓▓▓▓
+ ▓░▓░▓
+ ▓  ▓  ▓</span>`,
+        hurt: `<span class="pixel-sprite sprite-boss-cryptlord-hurt">
+  ██████
+ █░███░█
+  ██████
+  ████
+ █░█░█
+ █  █  █</span>`
+      },
+      skills: ["terror", "death_bolt"],
+      passives: ["undying", "undead_mastery"],
+    },
+    
+    // Floor 100: Final Boss (Extreme)
+    100: {
+      name: "HERO PARTY",
+      hp: 600,
+      atk: 35,
       exp: 500,
       sprite: {
         idle: `<span class="pixel-sprite sprite-boss-hero">

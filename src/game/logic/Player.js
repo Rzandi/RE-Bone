@@ -59,7 +59,8 @@ export const Player = {
         // Heal to full
         s.hp = s.maxHp;
         s.mp = s.maxMp;
-        s.sp = 0; // Skill Points
+        s.sp = 0; // Skill Points (for unlocking skills)
+        s.statPt = 0; // v37.3: Free Stat Points (for allocating to STR/VIT/INT)
         s.unlockedSkills = [...c.skills]; // Start with base skills unlocked
         
         gameStore.log(`Welcome, ${s.className}!`, "system");
@@ -151,7 +152,6 @@ export const Player = {
             }
         }
         
-        // 2.5 Apply Status Effects (Buffs)
         if (s.status) {
             // Filter expired
             s.status = s.status.filter(b => b.turn > 0);
@@ -173,6 +173,35 @@ export const Player = {
             });
         }
         
+        // 2.6 Apply Passive Skills (v37.2 Fix)
+        if (s.passives) {
+            s.passives.forEach(pid => {
+                const passive = DB.PASSIVES ? DB.PASSIVES[pid] : null;
+                if (passive && passive.stats) {
+                    const st = passive.stats;
+                    
+                    // Multipliers
+                    if (st.hpMult) s.multipliers.hp += st.hpMult;
+                    if (st.atk) s.multipliers.dmg += st.atk; // "atk": 0.20 means +20% dmg
+                    if (st.def) s.bonuses.flatDef += st.def; // Flat Def
+                    if (st.hp) s.bonuses.flatHp = (s.bonuses.flatHp || 0) + st.hp; // Flat HP (Need to handle in step 4)
+                    
+                    // Secondary
+                    if (st.dodge) s.bonuses.dodge += (st.dodge / 100); // DB uses 15 for 15%
+                    if (st.crit) s.bonuses.crit += (st.crit / 100);
+                    if (st.critDmg) s.bonuses.critDmg += st.critDmg; // DB uses 0.50
+                    if (st.lifesteal) s.bonuses.lifesteal += st.lifesteal;
+                    if (st.reflect) s.bonuses.reflect = (s.bonuses.reflect || 0) + st.reflect;
+                    if (st.gold) s.multipliers.gold += st.gold;
+                    if (st.exp) s.multipliers.exp += st.exp;
+                    
+                    // Special
+                    if (st.execute) s.bonuses.execute = st.execute;
+                    if (st.cdr) s.bonuses.cooldownReduction += st.cdr;
+                }
+            });
+        }
+        
         // 3. Calculate Attributes (Base + Level + Bonus)
         const levelBonus = s.level - 1;
         const bonusStr = s.bonuses.str || 0;
@@ -187,7 +216,7 @@ export const Player = {
         // HP
         let equipHp = 0;
         for (let k in s.equip) if (s.equip[k]?.hp) equipHp += s.equip[k].hp;
-        let finalMaxHp = CONSTANTS.BASE_HP + (s.vit * CONSTANTS.HP_PER_VIT) + equipHp;
+        let finalMaxHp = CONSTANTS.BASE_HP + (s.vit * CONSTANTS.HP_PER_VIT) + equipHp + (s.bonuses.flatHp || 0);
         s.maxHp = Math.floor(finalMaxHp * s.multipliers.hp);
         
         // MP
@@ -272,11 +301,19 @@ export const Player = {
         }
     },
     
-    addItem(id) {
-        const t = DB.ITEMS[id];
-        if (t) {
-            this.state.inventory.push({ ...t, id });
-            // gameStore.log(`Got ${t.name}`, "item");
+    addItem(itemOrId) {
+        // Handle both string ID and object item
+        if (typeof itemOrId === 'object' && itemOrId !== null) {
+            // Direct object - push to inventory
+            this.state.inventory.push({ ...itemOrId });
+            // gameStore.log(`Got ${itemOrId.name}`, "item");
+        } else if (typeof itemOrId === 'string') {
+            // String ID - lookup in database
+            const t = DB.ITEMS[itemOrId];
+            if (t) {
+                this.state.inventory.push({ ...t, id: itemOrId });
+                // gameStore.log(`Got ${t.name}`, "item");
+            }
         }
     },
     
@@ -323,7 +360,20 @@ export const Player = {
             return;
         }
         
-        // 3. Normal Use/Equip
+        // 3. Gem Check - Gems cannot be equipped directly
+        if (item.type === 'gem' || item.slot === 'gem') {
+            gameStore.log("💎 Gems must be socketed into equipment! Open an equipped item to socket gems.", "system");
+            if(window.SoundManager) window.SoundManager.play("error");
+            return;
+        }
+        
+        // 4. Material Check - Materials cannot be used
+        if (item.slot === 'mat' || item.type === 'material') {
+            gameStore.log("📦 Materials are for crafting/socketing only.", "system");
+            return;
+        }
+        
+        // 5. Normal Use/Equip
         if (item.slot === 'consumable' || item.slot === 'con') {
             this.useItem(idx);
         } else {
@@ -499,18 +549,50 @@ export const Player = {
             s.level++;
             s.exp -= s.nextExp; // Overflow
             s.nextExp = Math.floor(s.nextExp * 1.5);
-            s.sp = (s.sp || 0) + 2; // v36.7: +2 SP per level
+            s.sp = (s.sp || 0) + 2; // +2 SP for skills
+            s.statPt = (s.statPt || 0) + 3; // v37.3: +3 Stat Points per level
             
-            gameStore.log(`Level Up! Lv.${s.level} (+2 SP)`, "buff");
+            gameStore.log(`Level Up! Lv.${s.level} (+2 SP, +3 Stat Points)`, "buff");
             if(window.SoundManager) window.SoundManager.play("level_up");
             gameStore.triggerShake("medium");
             this.recalc();
             s.hp = s.maxHp;
             s.mp = s.maxMp;
             
+            // v37.3: Show stat allocation panel if has unspent points
+            if (s.statPt > 0) {
+                s.activePanel = 'stat-allocation';
+            }
+            
             // Check Evolution
             this.checkEvolution();
         }
+    },
+    
+    // v37.3: Allocate stat point to a specific stat
+    allocateStat(stat) {
+        const s = this.state;
+        if ((s.statPt || 0) <= 0) {
+            gameStore.log("No stat points available!", "error");
+            return false;
+        }
+        
+        stat = stat.toUpperCase();
+        
+        if (!['STR', 'VIT', 'INT'].includes(stat)) {
+            gameStore.log("Invalid stat!", "error");
+            return false;
+        }
+        
+        // Allocate to base stats
+        s.baseStats[stat] = (s.baseStats[stat] || 0) + 1;
+        s.statPt--;
+        
+        gameStore.log(`+1 ${stat}!`, "buff");
+        if(window.SoundManager) window.SoundManager.play("ui");
+        
+        this.recalc();
+        return true;
     },
 
     checkEvolution() {

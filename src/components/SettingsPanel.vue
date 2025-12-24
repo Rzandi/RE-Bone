@@ -159,16 +159,26 @@ const close = () => {
 .settings-panel {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  height: auto;
+  max-height: 75dvh; /* Max height to avoid clipping */
+  width: 95%;        /* Mobile friendly width */
+  max-width: 500px;
   background: #050505;
   color: #eee;
   font-family: 'Courier New', monospace;
-  border: 2px solid #333;
+  border: 1px solid #333;
+  margin: auto;      /* Center it */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* Start centered */
+  z-index: 100;
+  box-shadow: 0 0 20px rgba(0,0,0,0.8);
 }
 
 .header {
   background: #111;
-  padding: 10px;
+  padding: 15px;
   display: flex;
   justify-content: space-between;
   border-bottom: 2px solid #333;
@@ -176,19 +186,19 @@ const close = () => {
 .header h2 { margin: 0; color: #aaa; }
 
 .content {
-  padding: 20px;
+  padding: 25px;
   flex: 1;
   overflow-y: auto;
 }
 
-.section { margin-bottom: 20px; }
+.section { margin-bottom: 10px; }
 .section h3 { color: var(--c-gold, #ffd700); border-bottom: 1px solid #333; padding-bottom: 5px; }
 
 .row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 15px 0;
+  margin: 5px 0;
 }
 
 .btn-toggle {
@@ -221,15 +231,15 @@ const close = () => {
   background: transparent;
   border: 1px solid #444;
   color: #fff;
-  width: 30px;
+  width: 40px;
   cursor: pointer;
 }
 
 input[type=range] {
-    width: 150px;
+    width: 120px;
 }
 
 hr { border-color: #222; }
 
-.footer { text-align: center; color: #444; margin-top: 40px; }
+.footer { text-align: center; color: #444; margin-top: 20px; }
 </style>

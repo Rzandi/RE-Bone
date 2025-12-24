@@ -96,7 +96,13 @@ const performReforge = () => {
 
 // Close panel
 const close = () => {
-  gameStore.state.activePanel = 'menu-view';
+  if (gameStore.state.previousPanel) {
+    const prev = gameStore.state.previousPanel;
+    gameStore.state.previousPanel = null;
+    gameStore.state.activePanel = prev;
+  } else {
+    gameStore.state.activePanel = 'menu-view';
+  }
 };
 </script>
 
@@ -240,9 +246,15 @@ const close = () => {
   background: #1a1a1a;
   color: #fff;
   padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top)); /* Safe area fix */
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 20px auto; /* Add vertical margin */
   border-radius: 8px;
+  max-height: 90vh; /* Prevent overflow */
+  overflow-y: auto; /* Scroll if needed */
+  position: relative;
+  z-index: 100;
+  border: 1px solid #444;
 }
 
 .panel-header {
@@ -252,6 +264,10 @@ const close = () => {
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 2px solid #f55;
+  position: sticky; /* Keep header visible */
+  top: 0;
+  background: #1a1a1a;
+  z-index: 10;
 }
 
 .panel-header h2 {

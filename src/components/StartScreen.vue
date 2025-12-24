@@ -142,9 +142,11 @@ const showAchievements = () => {
 const showPatchModal = ref(false);
 
 const patchNotes = [
-    { ver: "v37.1.0", date: "2025-12-24", changes: ["🎨 COMPLETE POLISH UPDATE!", "UI: Glass morphism, dynamic sprites & glows", "Sound: 25+ new SFX + Audio Engine upgrade", "Features: Reforge UNDO button, Inflation Cap", "Fixes: Sprite Rendering, Critical Safety Patches", "Accessibility: Reduced motion & Haptics"] },
+    { ver: "v37.3.0", date: "2025-12-24", changes: ["📊 STAT ALLOCATION SYSTEM!", "Free Stat Points (+3/Level) for STR/VIT/INT", "⚔️ COMBAT 2.0: Rich Enemy Animations", "Float, Breathe, Attack Shake, Hit Flash, Boss Aura", "📱 MOBILE OPTIMIZATION for all panels", "Refined Ambush Progress (+10%)", "Bug Fixes: Skill Cooldowns, Save Repairs"] },
+    { ver: "v37.2.0", date: "2025-12-24", changes: ["🔧 ITEM SYSTEM REFACTOR", "Converted static items to dynamic ItemFactory", "30% Reduced Memory Usage for Inventory", "Foundation for Procedural Generation", "Improved Type Safety & Validation"] },
+    { ver: "v37.1.0", date: "2025-12-24", changes: ["🎨 COMPLETE POLISH UPDATE", "Reforge Undo Button (Safe Rerolling)", "Save Preview on Continue Button", "Audio Engine 2.0 (25+ New SFX)", "Visual Overhaul: Glassmorphism & Glows", "Black Market Balance Fixes", "Safety: Global Error Boundary"] },
     { ver: "v37.0.0", date: "2025-12-24", changes: ["⚒️ THE MASTER SMITH!", "Socketing: 60 gems, socket system", "Reforging: Reroll legendary stats", "Black Market: Mystery boxes, cursed items", "Dynamic Economy: Inflation, scarcity, market events", "30+ new achievements"] },
-    { ver: "v36.9.0", date: "2025-12-23", changes: ["📱 MOBILE OPTIMIZATION COMPLETE!", "Touch Controls: 44px+ tap targets, swipe gestures, FAB button", "Responsive Layouts: Vertical stacking, bottom sheets, full-screen details", "Performance: 300ms debounced search, memory leak fixes, optimized repaints", "Edge Cases: Long names truncation, keyboard handling, landscape mode", "15+ mobile-specific features, PWA-ready"] },
+    { ver: "v36.9.0", date: "2025-12-23", changes: ["📱 MOBILE OPTIMIZATION COMPLETE", "Full Touch Support (Tap/Swipe)", "Responsive Layouts (Phone/Tablet)", "Floating Action Button (Skills)", "Performance: Debounced Search & cleanups"] },
     { ver: "v36.8.0", date: "2025-12-23", changes: ["🎨 UI/UX POLISH!", "Status Icons: Emoji icons (🔥☠️⚡) replace text", "Upgrade Badges: ⚡X shows skill investment", "Preview Tooltips: Hover for before/after stats", "Animations: Cooldown ticks, SP pulse, panel transitions", "Advanced: Skill comparison, confirmation modals, search & filter", "Keyboard Shortcuts: ESC, U, 1-5"] },
     { ver: "v36.7.0", date: "2025-12-23", changes: ["🔮 SKILL MANAGEMENT SYSTEM!", "Equip Up to 5 Skills for Combat", "Upgrade Skills with SP (Skill Points)", "Gain +2 SP per Level Up", "SP Cost Scaling: base 3 * 1.5^level", "Upgrade Paths: Power, Cooldown, Ailment boosts", "New Panel: Full skill management UI"] },
     { ver: "v36.6.0", date: "2025-12-23", changes: ["⏱️ SKILL COOLDOWN SYSTEM!", "Per-Skill Cooldown Tracking", "Cooldown Calculation: Upgrades reduce base CD first", "CDR Cap: Maximum 50% reduction", "Minimum CD: Always ≥ 1 turn", "Haste Passive: -20% all cooldowns", "Upgrade foundation for skill progression"] },
@@ -247,7 +249,7 @@ const ascension = computed(() => {
 
     <div class="title-container">
       <h1 class="title-glow">RE:BONE</h1>
-      <p class="version-text">v37.1.0 COMPLETE POLISH 🎨✨</p>
+      <p class="version-text">v37.3.0 STATS & ANIMATION 📊⚔️</p>
       <div v-if="ascension > 0" class="cycle-display">
           ☠️ CYCLE {{ ascension }} ☠️
       </div>
@@ -270,10 +272,22 @@ const ascension = computed(() => {
       <p class="powered-text">Powered by Gemini AI ✨</p>
 
       <div class="extra-menu">
-          <button class="btn-small animate-initial" @click="showLeaderboard">🏆 HALL OF BONES</button>
-          <button class="btn-small animate-initial" @click="showAchievements">🎖️ ACHIEVEMENTS</button>
-          <button class="btn-small animate-initial" @click="showSoulForge">👻 SOUL SHOP</button>
-          <button class="btn-small animate-initial" @click="onNewGame">🌞 DAILY RUN</button>
+          <button class="btn-small animate-initial" @click="showLeaderboard">
+            <span class="btn-icon">🏆</span>
+            <span class="btn-label">HALL OF BONES</span>
+          </button>
+          <button class="btn-small animate-initial" @click="showAchievements">
+            <span class="btn-icon">🎖️</span>
+            <span class="btn-label">ACHIEVEMENTS</span>
+          </button>
+          <button class="btn-small animate-initial" @click="showSoulForge">
+            <span class="btn-icon">👻</span>
+            <span class="btn-label">SOUL SHOP</span>
+          </button>
+          <button class="btn-small animate-initial" @click="onNewGame">
+            <span class="btn-icon">🌞</span>
+            <span class="btn-label">DAILY RUN</span>
+          </button>
       </div>
     </div>
 
@@ -407,14 +421,30 @@ h1 {
 }
 
 .btn-small {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     background: #111;
     border: 1px solid #444;
     color: #aaa;
-    padding: 10px 15px;
-    font-size: 0.9rem;
+    padding: 12px 10px;
+    font-size: 0.75rem;
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.2s;
+    min-width: 70px;
+    text-align: center;
+}
+
+.btn-icon {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+}
+
+.btn-label {
+    font-size: 0.65rem;
+    line-height: 1.2;
 }
 
 .btn-small:hover {

@@ -1,6 +1,6 @@
 # 🎮 Re:BONE - Vue Edition
 
-**Version**: v37.1.0 POLISH COMPLETE 🎨✨  
+**Version**: v37.3.0 STATS & ANIMATION 📊⚔️  
 **Genre**: Pixel Art Dungeon Crawler  
 **Platform**: Web Browser (Desktop + Mobile PWA) 📱  
 **Status**: Production Ready ✅
@@ -18,14 +18,15 @@
 - 🗺️ **100-Floor Dungeon** with 5 distinct biomes (Ruins, Caverns, Dark Dungeon, Crypt, Abyss).
 - 🦸 **6 Unique Character Classes** (Skeleton, Zombie, Ghost, Vampire, Lich, Wraith).
 - ⚔️ **Dynamic Combat**: Turn-based battles with multi-hit attacks, lifesteal, and status effects.
-- 🎨 **Visuals 2.0** (v37.1): Glassmorphism UI, Dynamic Pixel Sprites, Ember VFX.
+- 📊 **Stat Allocation System** (v37.3): Customize build with Free Stat Points (STR/VIT/INT).
+- 🎨 **Visuals 2.0** (v37.3): Rich Enemy Animations (Float, Breathe, Attack Shake), Glassmorphism UI.
 - 🔊 **Audio 2.0** (v37.1): 25+ SFX, Ambient Soundscapes, Smart Audio Engine.
 - ⚒️ **Reforge & Socketing**: Customize gear with Gems and localized Undo logic.
 - 🔮 **Skill Management System** (v36.7): Equip up to 5 skills, upgrade with SP, permanent progression.
 - 💎 **Loot System**: 26 Legendary Items, Set Bonuses, and Rarity Scaling (Common -> Mythic).
 - 🏆 **Endgame Modes**: Boss Rush Mode & Hall of Bones Leaderboard.
 - 💾 **Roguelike Progression**: Permadeath with Sanctuary-based saving.
-- 📱 **Fully Mobile Optimized** (v36.9): Touch controls, responsive layouts, FAB button, swipe gestures.
+- 📱 **Fully Mobile Optimized** (v37.3): Touch controls, responsive layouts per panel, FAB button.
 
 ---
 
@@ -113,4 +114,4 @@ Detailed patch notes and version history can be found in [CHANGELOGS.md](CHANGEL
 **Powered By**: Gemini AI ✨  
 **Engine**: Custom Vue 3 + Vite Engine
 
-_Last updated: v37.1.0 (Dec 2025)_
+_Last updated: v37.3.0 (Dec 2025)_

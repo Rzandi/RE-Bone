@@ -28,6 +28,7 @@ import PauseMenuPanel from "./components/PauseMenuPanel.vue";
 import SkillManagementPanel from "./components/SkillManagementPanel.vue";
 import ReforgePanel from "./components/ReforgePanel.vue"; // v37.0 Phase 2
 import BlackMarketPanel from "./components/BlackMarketPanel.vue"; // v37.0 Phase 3
+import StatAllocationPanel from "./components/StatAllocationPanel.vue"; // v37.3: Free stat points
 import { REALMS } from "./game/config/realms";
 
 const s = gameStore.state;
@@ -154,7 +155,40 @@ const handleAction = (action) => {
     case "settings":
       gameStore.state.activePanel = "settings";
       break;
+    case "resume_combat":
+      gameStore.state.activePanel = "combat";
+      gameStore.state.previousPanel = null;
+      
+      // v37.3 Fix: Restore Frozen Enemy if missing
+      if ((!s.combat || !s.combat.enemy) && window.Game && window.Game._frozenEnemy) {
+          if(!s.combat) s.combat = {};
+          s.combat.enemy = window.Game._frozenEnemy;
+          window.Game.enemy = window.Game._frozenEnemy;
+          // Clear freeze to prevent zombie loops later? No, keep acts as safety until new combat
+      }
+      break;
     case "back":
+      // v37.3 Fix: Context-Aware Return for Inventory Root Only
+      // If we are in Inventory and there is a fight, Back goes to Combat.
+      if (gameStore.state.activePanel === 'inventory') {
+           const storeEnemy = s.combat && s.combat.enemy;
+           const coreEnemy = window.Game && window.Game.enemy;
+           const frozenEnemy = window.Game && window.Game._frozenEnemy;
+           
+           if (storeEnemy || coreEnemy || frozenEnemy) {
+               gameStore.state.activePanel = 'combat';
+               gameStore.state.previousPanel = null;
+               
+               // Restore frozen enemy if needed
+               if (!storeEnemy && !coreEnemy && frozenEnemy) {
+                   if (!s.combat) s.combat = {};
+                   s.combat.enemy = frozenEnemy;
+                   window.Game.enemy = frozenEnemy;
+               }
+               return;
+           }
+      }
+
       // Restore previous panel if it exists, otherwise go to menu
       if (gameStore.state.previousPanel) {
         const prev = gameStore.state.previousPanel;
@@ -224,8 +258,13 @@ if (typeof window !== 'undefined') {
     <template v-else>
       <!-- HEADER v37.1 Enhanced -->
       <header class="game-header">
-        <!-- Left: Resources -->
+        <!-- Left: Settings + Resources -->
         <div class="header-resources">
+          <!-- v37.3: Settings Gear Button -->
+          <button class="gear-btn" @click="s.activePanel = 'pause-menu'" title="Menu">
+            ⚙️
+          </button>
+          
           <div class="stat-block glass-block" :class="{ 'stat-flash': soulFlash }">
             <span class="stat-icon wobble-hover">💀</span>
             <span class="stat-val">{{ formatNumber(s.souls || 0) }}</span>
@@ -299,7 +338,7 @@ if (typeof window !== 'undefined') {
         style="display: flex; flex-direction: column; flex: 1; overflow: hidden"
       >
         <!-- COMBAT HEADER -->
-        <CombatPanel v-if="s.activePanel === 'combat' || s.activePanel === 'combat_skills'" />
+        <CombatPanel v-if="s.activePanel === 'combat' || s.activePanel === 'combat_skills' || s.activePanel === 'skill-selector'" />
 
         <!-- LOGS (Always show in combat/explore/menu) -->
         <LogPanel
@@ -307,7 +346,8 @@ if (typeof window !== 'undefined') {
           v-if="
             !s.activePanel ||
             s.activePanel === 'menu-view' ||
-            s.activePanel === 'combat'
+            s.activePanel === 'combat' ||
+            s.activePanel === 'skill-selector'
           "
         />
 
@@ -319,7 +359,6 @@ if (typeof window !== 'undefined') {
         />
         <MerchantPanel v-if="s.activePanel === 'shop'" />
         <StatsPanel v-if="s.activePanel === 'status'" />
-        <ControlPanel v-if="s.activePanel === 'menu-view'" @action="handleAction" />
       
       <!-- v36.9 Phase 3: Floating Action Button (Mobile Only) -->
       <button 
@@ -354,6 +393,7 @@ if (typeof window !== 'undefined') {
         <EventPanel v-if="s.activePanel === 'event'" />
         <ReforgePanel v-if="s.activePanel === 'reforge'" /> <!-- v37.0 Phase 2 -->
         <BlackMarketPanel v-if="s.activePanel === 'black_market'" /> <!-- v37.0 Phase 3 -->
+        <StatAllocationPanel v-if="s.activePanel === 'stat-allocation'" /> <!-- v37.3: Free stat points -->
 
         <!-- CONTROLS -->
         <ControlPanel @action="handleAction" />
@@ -392,6 +432,31 @@ if (typeof window !== 'undefined') {
 .header-resources {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+/* v37.3: Gear Button for Pause Menu */
+.gear-btn {
+  background: rgba(30, 30, 35, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gear-btn:hover {
+  background: rgba(60, 60, 70, 0.8);
+  border-color: var(--c-gold);
+  transform: rotate(45deg);
+}
+
+.gear-btn:active {
+  transform: rotate(90deg) scale(0.95);
 }
 
 .stat-block.glass-block {

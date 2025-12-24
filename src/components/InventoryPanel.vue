@@ -185,8 +185,8 @@ const getItemIcon = (item) => {
         <h3>BACKPACK <small>({{ props.inventory.length }}/{{ maxInventory }})</small></h3>
         <div class="toolbar">
              <button @click="openCrafting" title="Crafting">🔨</button>
-            <button @click="gameStore.state.activePanel = 'reforge'" class="reforge-btn" title="Reforge">🔥</button>
-            <button @click="gameStore.state.activePanel = 'black_market'" class="market-btn" title="Black Market">☠️</button>
+            <button @click="gameStore.state.previousPanel = 'inventory'; gameStore.state.activePanel = 'reforge'" class="reforge-btn" title="Reforge">🔥</button>
+            <button @click="gameStore.state.previousPanel = 'inventory'; gameStore.state.activePanel = 'black_market'" class="market-btn" title="Black Market">💀</button>
             <button @click="toggleOracle" :class="{ active: s.inspectMode }" title="Inspect">👁️</button>
             <button @click="sortRarity = !sortRarity" :class="{ active: sortRarity }" title="Sort Rarity">💎</button>
         </div>

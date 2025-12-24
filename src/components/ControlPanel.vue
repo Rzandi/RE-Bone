@@ -44,11 +44,16 @@ const buttons = computed(() => {
   const panel = s.activePanel || "menu-view";
 
   if (panel === "menu-view") {
+    // v37.3: Show stat points indicator
+    const statPts = s.statPt || 0;
+    const statsLabel = statPts > 0 ? `📊 STATS (${statPts})` : "📊 STATS";
+    const statsColor = statPts > 0 ? "var(--c-gold)" : undefined;
+    
     return [
       { label: "🔍 EXPLORE", action: "explore", color: "var(--c-gold)" },
-      { label: "⬇️ DESCEND", action: "descend", color: "var(--c-red)" },
+      { label: "💤 REST", action: "rest", color: "var(--c-green)" },
       { label: "🔮 SKILLS", fn: () => s.activePanel = 'skill-management', color: "var(--c-purple)" },
-      { label: "⚙️ MENU", fn: () => s.activePanel = 'pause-menu' },
+      { label: statsLabel, fn: () => s.activePanel = 'stat-allocation', color: statsColor },
     ];
   }
   
@@ -65,7 +70,20 @@ const buttons = computed(() => {
   }
 
   if (panel === "inventory") {
+    // v37.3: Smart Back - Multi-source check for combat state
+    const fromCombat = s.previousPanel === 'combat';
+    const inCombat = s.combat && s.combat.enemy;
+    const coreWasCombat = window.Game && (window.Game._wasInCombat || window.Game._frozenEnemy);
+    
+    if (inCombat || fromCombat || coreWasCombat) {
+        return [{ label: "⚔️ BACK", action: "resume_combat" }, null, null, null];
+    }
     return [{ label: "🔙 BACK", action: "back" }, null, null, null];
+  }
+
+  // v37.1 Fix: Skill Selector Back Button
+  if (panel === "skill-selector" || panel === "reforge" || panel === "black_market" || panel === "crafting") {
+     return [{ label: "🔙 BACK", action: "back" }, null, null, null];
   }
 
   return [{ label: "MENU", action: "menu" }, null, null, null];
@@ -108,6 +126,9 @@ const handleClick = (btn) => {
   gap: 8px;
   padding: 5px;
   margin-top: auto; /* Push to bottom if flex parent */
+  flex-shrink: 0;   /* Prevent shrinking/clipping */
+  z-index: 10;      /* Ensure above other elements */
+  background: var(--bg-primary, #111); /* Safe background */
 }
 
 button {

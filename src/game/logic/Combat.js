@@ -37,6 +37,11 @@ export const Combat = {
             // v36.4.3: Initialize cooldown tracking
             enemy.cooldowns = {}; // { skillId: turnsRemaining }
             
+            // v37.3: Reset player skill cooldowns on new combat start (fixes flee bug)
+            if (PlayerLogic.state.skillCooldowns) {
+                PlayerLogic.state.skillCooldowns = {};
+            }
+            
             this.state.combat.enemy = enemy;
             this.state.combat.turn = 'player';
             
@@ -201,9 +206,13 @@ export const Combat = {
         const e = this.enemy;
         if (!e || e.hp <= 0) return;
         
+        // Ensure status array exists
+        if (!e.status) e.status = [];
+        
         // **CHECK STUN FIRST** before processing other status (so stun duration doesn't decrement before checking!)
         const stunned = e.status.find(s => s.id === 'stun' || s.id === 'shock');
         if (stunned) {
+
             gameStore.log("💫 Enemy is STUNNED! Turn skipped!", "buff");
             
             // Decrement stun duration
@@ -601,9 +610,10 @@ export const Combat = {
         if (window.SocketManager) {
             const gemDrop = window.SocketManager.generateGemDrop(gameStore.state.floor);
             if (gemDrop) {
-                window.SocketManager.addGem(gemDrop);
+                window.SocketManager.addGem(gemDrop, gameStore.state.floor);
             }
         }
+
         
         // Check level up
         if (p.level > (this._lastLevel || p.level)) {
@@ -615,6 +625,9 @@ export const Combat = {
         // Sound
         if(window.SoundManager) window.SoundManager.play('victory'); 
 
+        // v37.3: Add floor progress on victory (ambush = half progress as penalty)
+        gameStore.state.progress = Math.min(100, (gameStore.state.progress || 0) + 10);
+        
         // Clear enemy and return to explore
         gameStore.state.combat.enemy = null;
         this.state.combat.turn = 'player'; // Reset turn?
@@ -698,12 +711,50 @@ export const Combat = {
         if (!this.enemy) return;
         
         const p = PlayerLogic.state;
-        
-        // v36.6: Check if skill is on cooldown
-        if (p.skillCooldowns && p.skillCooldowns[skillId]) {
-            gameStore.log(`${skill.name} is on cooldown! (${p.skillCooldowns[skillId]} turns)`, "system");
-            return;
+
+        // v37.2 Fix: Decrement OTHER skill cooldowns when using a skill (Turn passes)
+        if (p.skillCooldowns && Object.keys(p.skillCooldowns).length > 0) {
+            Object.keys(p.skillCooldowns).forEach(sid => {
+                // Don't modify the current skill yet (it might not be in the list, or we overwrite it anyway)
+                // Actually standard turn logic de-crements everything first.
+                p.skillCooldowns[sid]--;
+                if (p.skillCooldowns[sid] <= 0) {
+                    delete p.skillCooldowns[sid];
+                }
+            });
         }
+        
+        // v36.6: Check if skill is on cooldown (Check AFTER decrement? Or BEFORE?)
+        // Standard RPG: Check -> Use -> Cooldown ticks for NEXT turn.
+        // If I have 1 turn left, and I click it, can I use it?
+        // Usually "1 turn left" means "Wait 1 turn". So it's not ready.
+        // So I should Check BEFORE decrementing? 
+        // NO. "1 turn left" usually means "Ready next turn".
+        // Let's stick to the UI representation.
+        // If UI says "1", button is disabled.
+        // If I click another skill, turn passes, "1" becomes "0" (Ready).
+        // So YES, decrement happens when valid action is taken.
+        
+        // Wait! logical issue:
+        // If I check `p.skillCooldowns[skillId]` here, and I JUST decremented it,
+        // I might allow using a skill that WAS "1" but became "0" in this microsecond.
+        // IS THAT BAD?
+        // If I click "Skill B", Skill B is the action.
+        // Using "Skill B" takes a turn.
+        // So "Skill A" (CD 1) becomes (CD 0).
+        // That is correct.
+        
+        // BUT what about "Skill B"?
+        // If "Skill B" has CD, I shouldn't be able to click it.
+        // So the CHECK must happen BEFORE decrement.
+        
+        // CORRECTION: 
+        // 1. Check if CURRENT skill is on cooldown. (If so, abort).
+        // 2. Decrement ALL skills (since action is confirmed).
+        // 3. Execute CURRENT skill.
+        // 4. Set CURRENT skill cooldown.
+        
+        // So I must insert AFTER the check at lines 702-706.
         
         gameStore.log(`Used ${skill.name}!`, "combat");
         

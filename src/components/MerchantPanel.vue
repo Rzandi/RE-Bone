@@ -259,15 +259,17 @@ const autoSell = (rarityType) => {
         // Safety: Unlocked only
         if (window.Player.lockedItems && window.Player.lockedItems.includes(item.id)) continue;
         
-        // Safety: Equipment Only (Skip Mats/Consumables/Books)
+        // Safety: Skip Gems, Mats, Consumables, Books (valuable crafting materials)
         if (['mat', 'con', 'skill_book'].includes(item.slot)) continue;
+        if (item.type === 'gem') continue; // v37.0: Skip gems
         
         let shouldSell = false;
         if (rarityType === 'common' && item.rarity === 'common') shouldSell = true;
         if (rarityType === 'junk' && (item.rarity === 'common' || item.rarity === 'uncommon')) shouldSell = true;
         
         if (shouldSell) {
-             const price = Math.floor((item.price || 10) / 2);
+             // Use sellPrice if available, otherwise calculate from price
+             const price = item.sellPrice || Math.floor((item.price || 10) / 2);
              earned += price;
              window.Player.inventory.splice(i, 1);
              soldCount++;
@@ -282,6 +284,7 @@ const autoSell = (rarityType) => {
         gameStore.log("No matching items to sell.", "error");
     }
 };
+
 
 const leave = () => {
   if (window.Game) window.Game.exploreState();

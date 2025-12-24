@@ -106,7 +106,7 @@ const getLogStyle = (log) => {
   font-family: "Courier New", Courier, monospace;
   font-size: 0.85rem;
   text-align: left;
-  min-height: 150px;
+  min-height: 60px; /* Reduced from 150px to preventing clipping controls */
   border-radius: 4px;
   box-shadow: inset 0 0 10px #000;
 }

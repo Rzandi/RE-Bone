@@ -80,15 +80,16 @@ const getStatus = (ach) => {
     background: #1a1a25; border: 1px solid #333; padding: 10px;
     display: flex; align-items: center; gap: 10px; opacity: 0.7;
     transition: all 0.3s;
+    overflow: hidden;
 }
 .card.unlocked {
     opacity: 1; border-color: #ffd700; background: #2a2a35;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
 }
 
-.icon { font-size: 2rem; }
-.info { flex: 1; }
-.info h3 { margin: 0; font-size: 1rem; color: #ccc; }
+.icon { font-size: 2rem; flex-shrink: 0; }
+.info { flex: 1; min-width: 0; overflow: hidden; }
+.info h3 { margin: 0; font-size: 1rem; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card.unlocked h3 { color: #ffd700; }
 .info small { color: #888; display: block; margin-bottom: 5px; }
 

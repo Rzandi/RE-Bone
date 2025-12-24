@@ -121,64 +121,118 @@ After the massive content injection of v34/v35, the game will likely be unstable
 
 **Focus**: _Hardcore Risks & High Scores_
 
-- [ ] **1. Run Modifiers (The Pact)**
+- [ ] **1. Technical Debt Cleanup (Legacy Audit)**
+
+  - **Refactor ProgressionManager**: Convert `LevelUp` and `Evolution` panels from raw HTML string injection to proper Vue components (`LevelUpPanel.vue`, `EvolutionPanel.vue`).
+  - **Refactor Skills.js**: Migrate `activeSkills` and `skillTrees` rendering to `SkillTreePanel.vue`.
+  - **Refactor Game.js**: Convert "Boss Rush" screen to `BossRushPanel.vue`.
+  - **Refactor Combat.js & EventManager.js**: Replace `window.*` global dependency chains with proper ES6 Imports and Dependency Injection.
+  - **Refactor VFX.js**: Replace direct `document.getElementById` calls with Vue event bus or store-driven class toggles.
+  - **Remove Global Window Objects**: Minimize reliance on `window.Player` and `window.GameStore` in favor of ES6 imports.
+  - **Refactor Components**: Replace `window.SoundManager` calls in `.vue` files with a `useSound()` composable.
+  - **Refactor Active Configs**: Update `events.js` and other config files to use Dependency Injection context instead of global `window` references in callbacks.
+  - **Standardize Stores**: Ensure all Logic uses `import { gameStore }`.
+  - **Std UX Pattern**: Create `Modal.vue` / `ConfirmDialog.vue` to replace native `alert()`, `confirm()`, and `prompt()` calls.
+  - **Dead Code Removal**: Delete the `legacy_v1` folder and any unused assets found during the audit.
+  - **Hygiene**: Extract inline styles in `StatsPanel` to CSS classes and move magic numbers to `constants.js`.
+  - **Config Extraction**: Move hardcoded game logic formulas from `Combat.js` and `LootManager` to `src/game/config`.
+  - **Localization (i18n)**: Extract hardcoded user-facing strings from `Combat.js` and Components into a translation file.
+  - **CSS Modernization**: Replace hardcoded `px` values with `rem` and CSS variables from `variables.css`.
+  - **Complexity Reduction**: Refactor `Player.js` nested logic into smaller, testable functions (addressing Cyclomatic Complexity).
+  - **Component Splitting**: Refactor "God Components" (`SkillManagement`, `BlackMarket`, `StartScreen`) into smaller sub-components.
+  - **Log Sanitization**: Ensure `LogPanel.vue` sanitizes HTML content or migrates to a safer rendering method.
+  - **Accessibility (A11y)**: Add `aria-label` to icon-only buttons and ensure proper semantic HTML structure.
+  - **Pragmatic Exceptions**: `MobileHandler` (touch events) and `VFX` (screen shake) may retain DOM access but should be modernized where possible.
+
+- [ ] **12. Expanded Stats System (AGI & LUCK)**
+
+  - **AGI (Agility)**:
+
+    - Increases Dodge Chance (+0.5% per point)
+    - Affects Turn Order / Attack Speed
+    - Improves Flee Success Rate
+    - Reduces Skill Cooldowns slightly
+
+  - **LUCK**:
+
+    - Increases Critical Hit Chance (+0.3% per point)
+    - Improves Loot Rarity Rolls
+    - Boosts Gold Drop Amount (+1% per point)
+    - Increases Gem Drop Rates
+    - Affects Chest Loot Quality
+
+  - **Implementation Scope**:
+    - `Player.js`: Add baseStats.AGI/LUCK, recalc logic
+    - `Combat.js`: Integrate AGI (dodge) and LUCK (crit)
+    - `LootManager.js`: LUCK affects drop rates/rarity
+    - `database.js`: Starting stats per class
+    - `evolution.js`: Stat allocation options
+    - `items.js`: Add +AGI/+LUCK to equipment
+    - `gems.js`: Add AGI/LUCK gem types
+    - `StatsPanel.vue`: Display new stats
+    - Balancing pass on all existing content
+
+- [ ] **2. Run Modifiers (The Pact)**
+
   - At the start of a run, choose up to **3 Challenges** from a random pool of 10.
   - **Rewards**: Each Challenge grants **+X% Score** and **+Y% Soul Drops**.
   - **Mechanics**:
     - **Refresh**: 1 Free re-roll of the challenge pool.
     - **Skip**: "No" button to play normally.
     - **Confirm**: Pop-up "CHALLENGE ACCEPTED: DEATH IS THE ONLY OPTION".
-- [ ] **2. The Challenge Pool (Examples)**
+
+- [ ] **3. The Challenge Pool (Examples)**
 
   - _Glass Cannon_: Player HP cap is 1. (+50% Souls)
   - _Broke_: Gold drops are disabled. (+20% Score)
   - _Blind_: Fog of War is permanent. (+30% Souls)
   - _Pacifist_: Cannot use weapons (Skills only). (+100% Score)
 
-- [ ] **3. Dynamic In-Game Challenges**
+- [ ] **4. Dynamic In-Game Challenges**
 
   - Random "Cursed Altars" found in Event Nodes.
   - Accept a mid-run curse for a massive immediate reward (e.g., gain 1000 Gold, but lose 50% Max HP).
 
-- [ ] **4. Dungeon & Raid System**
+- [ ] **5. Dungeon & Raid System**
 
   - **Instanced Dungeons**: Time-limited challenges with unique bosses and exclusive loot.
   - **Raid Bosses**: Massive multi-phase bosses requiring strategic preparation.
   - **Weekly Reset**: Special dungeons that refresh weekly with different modifiers.
 
-- [ ] **5. Multiplayer & Leaderboards**
+- [ ] **6. Multiplayer & Leaderboards**
 
   - **Global Leaderboards**: Compete for highest floor, fastest clear, most souls.
   - **Daily/Weekly Rankings**: Time-limited competitions with exclusive rewards.
   - **Ghost Runs**: Race against replays of top players.
 
-- [ ] **6. Guild System**
+- [ ] **7. Guild System**
 
   - **Create/Join Guilds**: Form alliances with other players.
   - **Guild Raids**: Cooperative boss battles with shared rewards.
   - **Guild Wars**: Competitive events between guilds.
   - **Guild Perks**: Unlock permanent bonuses through guild progression.
 
-- [ ] **7. Pet & Companion System**
+- [ ] **8. Pet & Companion System**
 
   - **Summonable Pets**: Companions that fight alongside you.
   - **Pet Evolution**: Level up and evolve pets into stronger forms.
   - **Pet Abilities**: Unique skills (healing, damage, buffs).
   - **Pet Fusion**: Combine pets for hybrid abilities.
 
-- [ ] **8. Endless Mode**
+- [ ] **9. Endless Mode**
 
   - **Infinite Scaling**: Floors beyond 100 with exponential difficulty.
   - **Prestige System**: Reset with permanent stat bonuses.
   - **Endless Leaderboard**: See who can climb highest.
 
-- [ ] **9. Daily Challenges**
+- [ ] **10. Daily Challenges**
 
   - **Rotating Modifiers**: New challenge conditions every day.
   - **Daily Rewards**: Exclusive items for completing daily runs.
   - **Streak Bonuses**: Consecutive completion rewards.
 
-- [ ] **10. Seasonal Events**
+- [ ] **11. Seasonal Events**
+
   - **Holiday Themes**: Special events for holidays (Halloween, Christmas, etc.).
   - **Limited Items**: Exclusive cosmetics and gear only available during events.
   - **Event Bosses**: Unique seasonal bosses with themed loot.

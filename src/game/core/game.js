@@ -106,23 +106,24 @@ const Game = {
     // Check Gate
     const canNext = this.state.progress >= 100;
     
-    // Prepare UI Buttons
+    // Prepare UI Buttons (2x2 grid)
     const btns = [];
     
-    // [ EXPLORE ] Button (Manual)
-    if (!canNext) {
-        btns.push({ txt: "🔍 EXPLORE", col: "var(--c-green)", fn: () => this.encounterRandom() });
+    // Row 1: EXPLORE | BOSS (or spacer)
+    btns.push({ txt: "🔍 EXPLORE", col: "var(--c-green)", fn: () => this.encounterRandom() });
+    
+    if (canNext) {
+        btns.push({ txt: "👹 BOSS", col: "var(--c-red)", fn: () => this.encounterBoss() });
     } else {
-        // Boss / Next Floor
-        btns.push({ txt: "⚔️ BOSS", col: "var(--c-red)", fn: () => this.encounterBoss() });
+        btns.push({ txt: `📊 ${this.state.progress}%`, col: "var(--c-muted)", fn: null }); // Progress indicator instead of empty
     }
     
-    // Menu / Item
+    // Row 2: ITEM | MENU
     btns.push({ txt: "🎒 ITEM", fn: () => this.invState() });
     btns.push({ txt: "📜 MENU", fn: () => this.menuState() });
-    btns.push(null); // Spacer
 
     UI.setButtons(btns);
+
     
     // MANUAL EXPLORE: No setInterval
     Events.emit("log", `Floor ${this.state.floor} - Explore to find enemies...`);
@@ -180,6 +181,28 @@ const Game = {
     UI.showPanel("shop"); // Added explicit panel show
     Events.emit("log", "You found a travelling Merchant!");
     if(window.Merchant) Merchant.generateStock(this.state.floor);
+  },
+
+  invState() {
+    const wasInCombat = this.currAction === 'combat' || (this.enemy && this.enemy.hp > 0);
+    
+    // v37.3 Fix: Store combat origin flag (persists after currAction changes)
+    this._wasInCombat = wasInCombat;
+    
+    // v37.3 Fix: Freeze Enemy State (Prevent data loss during Inv)
+    if (this.enemy) {
+        this._frozenEnemy = JSON.parse(JSON.stringify(this.enemy));
+    }
+    
+    this.stopLoops();
+    
+    if (wasInCombat) {
+        if(window.GameStore) window.GameStore.state.previousPanel = 'combat';
+    }
+    
+    this.currAction = "inventory";
+    if(window.GameStore) window.GameStore.state.currAction = "inventory";
+    UI.showPanel("inventory");
   },
   
   // Sanctuary: The ONLY place to save manually
@@ -257,7 +280,7 @@ const Game = {
       this.saveGame(); 
       setTimeout(() => {
           this.exploreState();
-      }, 1000);
+      }, 300); // Faster transition
   },
   
   permadeath(forceReload = false) {
@@ -273,7 +296,7 @@ const Game = {
               Events.emit("log_boss", "🆕 NEW CYCLE BEGINS");
               UI.showPanel("menu-view");
           }
-      }, 1000);
+      }, 300); // Faster transition
   },
 
   // Risky Rest from Menu
@@ -887,21 +910,13 @@ const Game = {
   
   skillState() {
       if (this.currAction === 'combat') {
-          UI.showPanel("combat_skills");
+          UI.showPanel("skill-selector");
       } else {
           UI.showPanel("skills");
       }
   },
   
-  invState() {
-     UI.showPanel("inventory");
-     UI.setButtons([
-       { txt: "✨ ORACLE", col: "var(--c-ai)", fn: () => Player.toggleInspect() },
-       null, null,
-       { txt: "BACK", fn: () => { Player.inspectMode = false; this.combatState ? this.exploreState() : this.menuState(); } }
-     ]);
-     UI.renderInv();
-  }
 };
+
 
 window.Game = Game;

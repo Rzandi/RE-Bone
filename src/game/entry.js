@@ -148,6 +148,7 @@ const CompatPlayer = {
     takeDamage: (amt) => PlayerLogic.takeDamage(amt),
     addItem: (id) => PlayerLogic.addItem(id),
     gainStat: (stat, val) => PlayerLogic.gainStat(stat, val),
+    allocateStat: (stat) => PlayerLogic.allocateStat(stat), // v37.3: Stat point allocation
     
     // Todo: Map other methods if Legacy calls them
     getSetBonuses: () => PlayerLogic.getSetBonuses ? PlayerLogic.getSetBonuses() : {},

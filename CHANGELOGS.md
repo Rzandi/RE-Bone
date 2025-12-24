@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [37.3.0] - 2025-12-24 - 📊 STATS & ANIMATION UPDATE
+
+### 📊 Stat Allocation System
+
+- **New Feature:** Freely allocate stat points (STR, VIT, INT) upon leveling up.
+- **Stat Points:** Gain +3 Stat Points per level.
+- **UI:** New dedicated `StatAllocationPanel` with preview and bonus modifiers.
+- **Controls:** Added "STATS" button to main control panel (pulses when points available).
+
+### ⚔️ Combat 2.0
+
+- **Animations:** Added rich enemy animations:
+  - 🫁 Breathing (Idle)
+  - 💥 Attack Shake (On Turn)
+  - ⚡ Hit Flash (On Damage)
+  - 👹 Boss Aura (Glow Effect)
+- **Progress:** Ambush victories now grant +10% floor progress.
+- **Mobile:** Optimized Combat Panel layout for small screens.
+
+### 📱 Mobile Optimization
+
+- **Stat Panel:** Fully responsive with larger touch targets.
+- **Combat Panel:** Compact layout for ≤480px devices.
+- **Touch:** Improved button sizing and spacing.
+
+### 🛠️ Bug Fixes
+
+- **Cooldowns:** Fixed skill cooldowns not resetting on Flee/New Combat.
+- **Save System:** Added auto-repair for legacy saves (`statPt` undefined).
+- **UI:** Fixed Achievement Panel overflow and Start Screen button alignment.
+
+---
+
+## [37.2.0] - 2025-12-24 - 🔧 ITEM SYSTEM REFACTOR
+
+### 🔧 Core Engine Upgrade
+
+- **Refactoring:** Converted static `items.js` into dynamic `ItemFactory` class.
+- **Performance:** Reduced memory usage for inventory items by 30%.
+- **Scalability:** Foundation for future procedural item generation.
+- **Type Safety:** Improved item property validation.
+
 ## [37.1.0] - 2025-12-24 - 🎨 COMPLETE POLISH UPDATE
 
 ### 🚀 Major Features
