@@ -142,7 +142,7 @@ const showAchievements = () => {
 const showPatchModal = ref(false);
 
 const patchNotes = [
-    { ver: "v37.3.0", date: "2025-12-24", changes: ["📊 STAT ALLOCATION SYSTEM!", "Free Stat Points (+3/Level) for STR/VIT/INT", "⚔️ COMBAT 2.0: Rich Enemy Animations", "Float, Breathe, Attack Shake, Hit Flash, Boss Aura", "📱 MOBILE OPTIMIZATION for all panels", "Refined Ambush Progress (+10%)", "Bug Fixes: Skill Cooldowns, Save Repairs"] },
+    { ver: "v37.3.0", date: "2025-12-24", changes: ["📊 STAT ALLOCATION SYSTEM!", "Free Stat Points (+3/Level) for STR/VIT/INT", "⚔️ COMBAT 2.0: Rich Enemy Animations", "Float, Breathe, Attack Shake, Hit Flash, Boss Aura", "📱 PWA & BRANDING UPDATE", "Installable App (Add to Home Screen), New Neon Title", "Refined Ambush Progress (+10%)", "Bug Fixes: Skill Cooldowns, Save Repairs"] },
     { ver: "v37.2.0", date: "2025-12-24", changes: ["🔧 ITEM SYSTEM REFACTOR", "Converted static items to dynamic ItemFactory", "30% Reduced Memory Usage for Inventory", "Foundation for Procedural Generation", "Improved Type Safety & Validation"] },
     { ver: "v37.1.0", date: "2025-12-24", changes: ["🎨 COMPLETE POLISH UPDATE", "Reforge Undo Button (Safe Rerolling)", "Save Preview on Continue Button", "Audio Engine 2.0 (25+ New SFX)", "Visual Overhaul: Glassmorphism & Glows", "Black Market Balance Fixes", "Safety: Global Error Boundary"] },
     { ver: "v37.0.0", date: "2025-12-24", changes: ["⚒️ THE MASTER SMITH!", "Socketing: 60 gems, socket system", "Reforging: Reroll legendary stats", "Black Market: Mystery boxes, cursed items", "Dynamic Economy: Inflation, scarcity, market events", "30+ new achievements"] },
@@ -248,7 +248,11 @@ const ascension = computed(() => {
     </div>
 
     <div class="title-container">
-      <h1 class="title-glow">RE:BONE</h1>
+      <div class="main-title">
+        <span class="title-re">Re:</span>
+        <span class="title-div">|</span>
+        <span class="title-bone">BONE</span>
+      </div>
       <p class="version-text">v37.3.0 STATS & ANIMATION 📊⚔️</p>
       <div v-if="ascension > 0" class="cycle-display">
           ☠️ CYCLE {{ ascension }} ☠️
@@ -346,13 +350,41 @@ const ascension = computed(() => {
   animation: fadeIn 2s;
 }
 
-h1 {
-  font-size: 5rem;
-  margin: 0;
-  color: #d04040; /* Red Serif Tone */
-  font-family: 'Times New Roman', serif;
-  text-shadow: 0 0 10px #500;
-  letter-spacing: 5px;
+/* New Title Styles v37.3 */
+.main-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+
+.title-re {
+  font-family: 'Consolas', 'Monaco', monospace; /* Tech look */
+  font-weight: 700;
+  font-size: 3.5rem;
+  color: #6effda; /* Brighter Cyan/Green */
+  text-shadow: 0 0 10px rgba(110, 255, 218, 0.6), 0 0 20px rgba(110, 255, 218, 0.3);
+  letter-spacing: -2px;
+}
+
+.title-div {
+  font-size: 3.5rem;
+  color: #fff;
+  font-weight: 300;
+  opacity: 0.6;
+  margin: 0 5px;
+  transform: translateY(-2px);
+}
+
+.title-bone {
+  /* Assumes pixel font is global default or 'Courier' fallback */
+  font-family: inherit; 
+  font-weight: 900;
+  font-size: 3.8rem;
+  color: #eec;
+  text-shadow: 3px 3px 0px #222;
+  letter-spacing: 2px;
 }
 
 .version-text {

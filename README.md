@@ -26,7 +26,7 @@
 - 💎 **Loot System**: 26 Legendary Items, Set Bonuses, and Rarity Scaling (Common -> Mythic).
 - 🏆 **Endgame Modes**: Boss Rush Mode & Hall of Bones Leaderboard.
 - 💾 **Roguelike Progression**: Permadeath with Sanctuary-based saving.
-- 📱 **Fully Mobile Optimized** (v37.3): Touch controls, responsive layouts per panel, FAB button.
+- 📱 **Fully Mobile Optimized** (v37.3): Touch controls, PWA Support (Installable App), responsive layouts per panel.
 
 ---
 

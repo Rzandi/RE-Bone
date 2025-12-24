@@ -23,8 +23,10 @@ All notable changes to this project will be documented in this file.
 - **Progress:** Ambush victories now grant +10% floor progress.
 - **Mobile:** Optimized Combat Panel layout for small screens.
 
-### 📱 Mobile Optimization
+### 📱 Mobile Optimization & PWA
 
+- **New Branding:** Re-designed "Re:BONE" title with neon glow aesthetics.
+- **PWA Support:** Game is now installable as an App (Add to Home Screen).
 - **Stat Panel:** Fully responsive with larger touch targets.
 - **Combat Panel:** Compact layout for ≤480px devices.
 - **Touch:** Improved button sizing and spacing.
