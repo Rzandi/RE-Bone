@@ -2,7 +2,11 @@
 import { computed, onMounted } from "vue";
 import { gameStore } from "../game/store.js";
 import { DB } from "../game/config/database.js";
-import { SaveManager } from "../game/managers/SaveManager.js"; // Import SaveManager to check meta
+import { SaveManager } from "../game/managers/SaveManager.js";
+import { Game } from "../game/core/game.js";
+import { Player } from "../game/logic/Player.js";
+import { SoundManager } from "../game/managers/sound.js";
+import { PASSIVES_DB } from "../game/config/skills.js";
 
 const s = gameStore.state;
 const classes = computed(() => DB.CLASSES || {});
@@ -23,8 +27,8 @@ const isUnlocked = (id) => {
 const getLockReason = (id) => {
     if (id === 'ghoul') return "Reach Floor 20";
     if (id === 'phantom') return "Reach Floor 40";
-    if (id === 'vampire') return "Events (Coming Soon)";
-    if (id === 'lich') return "Events (Coming Soon)";
+    if (id === 'vampire') return "Unlock In Souls Shop";
+    if (id === 'lich') return "Unlock In Souls Shop";
     
     // Traitor Classes
     if (id === 'druid') return "Defeat Keeper (Nature's Den)";
@@ -36,25 +40,33 @@ const getLockReason = (id) => {
     return "Locked";
 }
 
+// v38.0: Get passive info for display
+const getPassiveInfo = (passiveId) => {
+    const passive = PASSIVES_DB[passiveId];
+    if (!passive) return { name: passiveId, desc: "" };
+    return passive;
+}
+
 const selectClass = (clsId) => {
     if (!isUnlocked(clsId)) return;
 
     // Determine if this is New Game or Boss Rush
-    if(window.Game && window.Game.state.bossRush.active) {
-        if(window.Player) window.Player.init(clsId);
-        window.Game.bossRushInit(); 
+    if(Game && Game.state.bossRush.active) {
+        if(Player) Player.init(clsId);
+        Game.bossRushInit(); 
     } else {
-        if(window.Player) window.Player.init(clsId);
-        window.Game.exploreState();
+        if(Game && Game.resetRunFlags) Game.resetRunFlags();
+        if(Player) Player.init(clsId);
+        Game.exploreState();
     }
 };
 
 const close = () => {
     // Check if we are in Boss Rush mode (which uses this panel)
-    if (window.Game && window.Game.state.bossRush.active) {
+    if (Game && Game.state.bossRush.active) {
         // Cancel Boss Rush? Go to Menu
         gameStore.state.activePanel = 'menu-view';
-        window.Game.state.bossRush.active = false; // Cancel it
+        Game.state.bossRush.active = false; // Cancel it
     } else {
         gameStore.state.activePanel = 'title';
     }
@@ -87,8 +99,18 @@ const close = () => {
                     <span class="stat-int">INT: {{ cls.attr.INT }}</span>
                 </div>
                 
+                <!-- v38.0: Passives Display -->
+                <div class="passives" v-if="isUnlocked(id) && cls.passives">
+                    <div class="passive-label">PASSIVES:</div>
+                    <div class="passive-list">
+                        <span v-for="pid in cls.passives" :key="pid" class="passive-item" :title="getPassiveInfo(pid).desc">
+                            ⚡ {{ getPassiveInfo(pid).name }}
+                        </span>
+                    </div>
+                </div>
+                
                 <!-- Locked Overlay Text -->
-                <div class="lock-msg" v-else>
+                <div class="lock-msg" v-else-if="!isUnlocked(id)">
                     🔒 {{ getLockReason(id) }}
                 </div>
             </div>
@@ -145,4 +167,22 @@ const close = () => {
 
 .btn-close { background: transparent; border: 1px solid #444; color: #888; padding: 5px 10px; cursor: pointer; }
 .btn-close:hover { color: #fff; border-color: #fff; }
+
+/* v38.0: Passives Display */
+.passives { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #333; }
+.passive-label { color: #888; font-size: 0.7rem; margin-bottom: 4px; letter-spacing: 1px; }
+.passive-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.passive-item {
+    background: linear-gradient(135deg, #2a1f5d, #1a1233);
+    color: #c9b0ff;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    border: 1px solid #5a3d8a;
+    cursor: help;
+}
+.passive-item:hover {
+    background: linear-gradient(135deg, #3d2a7d, #2a1f4d);
+    border-color: #8a6db5;
+}
 </style>

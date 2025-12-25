@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { gameStore } from "../game/store.js";
+import { Player } from "../game/logic/Player.js";
 
 const s = gameStore.state;
 
@@ -39,7 +40,7 @@ const stats = computed(() => [
     color: "#4af",
     bonuses: [
       { icon: "✨", name: "Magic Dmg", val: "+3% per point" },
-      { icon: "💧", name: "Max MP", val: "+3 per point" }
+      { icon: "💧", name: "Max MP", val: "+5 per point" }
     ]
   }
 ]);
@@ -47,13 +48,18 @@ const stats = computed(() => [
 const remainingPoints = computed(() => s.statPt || 0);
 
 const allocate = (stat) => {
-  if (window.Player && window.Player.allocateStat) {
-    window.Player.allocateStat(stat);
+  if (Player && Player.allocateStat) {
+    Player.allocateStat(stat);
   }
 };
 
 const close = () => {
-  gameStore.state.activePanel = 'menu-view';
+  // v38.3: Check if there's a pending evolution to show
+  if (gameStore.state.pendingEvolution && gameStore.state.evolutionOptions?.length > 0) {
+    gameStore.state.activePanel = 'evolution';
+  } else {
+    gameStore.state.activePanel = 'menu-view';
+  }
 };
 
 const allocateAll = (stat) => {
@@ -184,7 +190,7 @@ const allocateAll = (stat) => {
 
 .header h2 {
   margin: 0;
-  color: var(--c-gold, #cfaa4c);
+  color: var(--c-gold);
   font-size: 1.1rem;
   text-shadow: 0 0 10px rgba(207, 170, 76, 0.5);
 }

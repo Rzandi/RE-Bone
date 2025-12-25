@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { gameStore } from "../game/store.js";
 import { SoundManager } from "../game/managers/sound.js";
+import { SaveManager } from "../game/managers/SaveManager.js";
 
 const s = gameStore.state;
 const settings = computed(() => s.settings || { audio: true, volume: 0.5, crt: true });
@@ -67,20 +68,52 @@ const fallbackCopy = (text) => {
     }
 };
 
+import { EndlessMode } from "../game/logic/EndlessMode.js";
+
 const exportSave = () => {
-    if(window.SaveManager) {
-        const str = window.SaveManager.exportSaveString();
-        if(str) {
-            copyToClipboard(str);
+    // v38.6: Block Export in Competitive Modes (Endless / Hardcore)
+    if (EndlessMode.isActive) {
+        alert("🚫 Cannot Export Save during Endless Mode.\nFinish the run or die to export.");
+        if(SoundManager) SoundManager.play('error');
+        return;
+    }
+    
+    // Check Hardcore
+    if (gameStore.state.modifierEffects?.permadeath) {
+        alert("🚫 Cannot Export Save in Hardcore Mode.\nDeath is permanent.");
+        if(SoundManager) SoundManager.play('error');
+        return;
+    }
+
+    console.log("exportSave called, SaveManager:", SaveManager ? "exists" : "missing");
+    
+    if(SaveManager) {
+        try {
+            console.log("Calling SaveManager.exportSaveString()...");
+            const str = SaveManager.exportSaveString();
+            console.log("Result:", str ? str.substring(0, 50) + "..." : "null/undefined");
+            
+            if(str && !str.startsWith("ERROR")) {
+                copyToClipboard(str);
+            } else {
+                // v38.3: Show error if export returned null or error
+                alert("Export failed: " + (str || "no data"));
+                console.error("exportSaveString returned:", str);
+            }
+        } catch (e) {
+            console.error("Export Error:", e);
+            alert("Export failed: " + e.message);
         }
+    } else {
+        alert("SaveManager not available!");
     }
 };
 
 const importSave = () => {
-    if(window.SaveManager) {
+    if(SaveManager) {
         const str = prompt("Paste Save String (Base64):");
         if(str) {
-            const success = window.SaveManager.importSaveString(str);
+            const success = SaveManager.importSaveString(str);
             if(success) {
                 alert("Save Imported Successfully! Reloading...");
                 window.location.reload();
@@ -89,6 +122,18 @@ const importSave = () => {
                 SoundManager.play('error');
             }
         }
+    }
+};
+
+// v38.8: Void Forge Access
+import { EventManager } from "../game/logic/EventManager.js";
+
+const openVoidForge = () => {
+    if (EventManager && EventManager.triggerVoidForge) {
+        EventManager.triggerVoidForge();
+        SoundManager.play('event_bad');
+    } else {
+        alert("Void Forge not available.");
     }
 };
 
@@ -145,6 +190,27 @@ const close = () => {
             </div>
             <div class="row">
                 <button class="btn-wide" @click="importSave">📥 IMPORT FROM CLIPBOARD</button>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- VOID FORGE (v38.8) -->
+        <div class="section" v-if="s.gatekeeper">
+            <h3>VOID FORGE</h3>
+            <div class="row">
+                <span>Limit Break Shards</span>
+                <span class="mat-count">{{ s.gatekeeper.limitBreakShards || 0 }} / 4</span>
+            </div>
+            <div class="row">
+                <span>Void Essence</span>
+                <span class="mat-count">{{ s.gatekeeper.voidEssence || 0 }} / 1</span>
+            </div>
+            <div class="row">
+                <button class="btn-wide btn-void" @click="openVoidForge" 
+                    :disabled="(s.gatekeeper.limitBreakShards || 0) < 4 || (s.gatekeeper.voidEssence || 0) < 1">
+                    ⬛ ENTER THE VOID FORGE
+                </button>
             </div>
         </div>
 

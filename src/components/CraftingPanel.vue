@@ -2,22 +2,53 @@
 import { computed, ref } from "vue";
 import { gameStore } from "../game/store.js";
 import { DB } from "../game/config/database.js";
+import { Crafting } from "../game/managers/crafting.js";
+import { SynthesisManager } from "../game/managers/SynthesisManager.js";
+import { SoundManager } from "../game/managers/sound.js";
 
 const s = gameStore.state;
-const recipes = computed(() => DB.RECIPES || []);
+const recipes = computed(() => {
+    // v38.0: Convert RECIPES object to array for proper iteration
+    const recipeObj = DB.RECIPES || {};
+    return Object.entries(recipeObj).map(([id, recipe]) => ({
+        ...recipe,
+        recipeId: id
+    }));
+});
 
 // v37.0: Synthesis System
 const activeTab = ref('CRAFT'); // CRAFT | SYNTHESIS
 const selectedItems = ref([]); // Array of 3 selected items for synthesis
 
+// v38.0: Count materials helper
+const countMaterial = (matId) => {
+    return s.inventory.filter(item => item.id === matId).length;
+};
+
+// v38.0: Check if can craft with material count display
+const getMaterialStatus = (recipe) => {
+    if (!recipe.inputs) return [];
+    return Object.entries(recipe.inputs).map(([matId, required]) => {
+        const have = countMaterial(matId);
+        return {
+            id: matId,
+            name: matId.replace(/_/g, ' ').toUpperCase(),
+            required,
+            have,
+            enough: have >= required
+        };
+    });
+};
+
 const canCraft = (recipe) => {
-   if(window.Crafting) return Crafting.canCraft(recipe);
+   if(Crafting && recipe.recipeId) return Crafting.canCraft(recipe.recipeId);
    return false; 
 };
 
 const craft = (recipe) => {
-    if(window.Crafting) {
-        Crafting.craft(recipe);
+    if(Crafting && recipe.recipeId) {
+        Crafting.craft(recipe.recipeId);
+        if (SoundManager) SoundManager.play('craft');
     }
 };
 
@@ -51,19 +82,19 @@ const isSelected = (item) => {
 };
 
 const synthesisPreview = computed(() => {
-    if (!window.SynthesisManager) return null;
-    return window.SynthesisManager.getPreview(selectedItems.value);
+    if (!SynthesisManager) return null;
+    return SynthesisManager.getPreview(selectedItems.value);
 });
 
 const canSynthesize = computed(() => {
-    if (!window.SynthesisManager) return false;
-    return window.SynthesisManager.canSynthesize(selectedItems.value);
+    if (!SynthesisManager) return false;
+    return SynthesisManager.canSynthesize(selectedItems.value);
 });
 
 const canAffordEnhanced = computed(() => {
     if (!synthesisPreview.value || !synthesisPreview.value.costs) return false;
     const materials = synthesisPreview.value.costs.materials;
-    const souls = s.souls || 0;
+    const souls = s.meta.souls || 0;
     const essence = s.essence || 0;
     
     if (materials.souls && souls < materials.souls) return false;
@@ -73,17 +104,17 @@ const canAffordEnhanced = computed(() => {
 });
 
 const performSynthesis = () => {
-    if (!window.SynthesisManager || !canSynthesize.value) return;
+    if (!SynthesisManager || !canSynthesize.value) return;
     
     const useEnhanced = synthesisMode.value === 'enhanced';
-    const result = window.SynthesisManager.synthesize(selectedItems.value, useEnhanced);
+    const result = SynthesisManager.synthesize(selectedItems.value, useEnhanced);
     
     if (result.success) {
         // Clear selection
         selectedItems.value = [];
         
         // Show success message
-        if (window.SoundManager) window.SoundManager.play('loot');
+        if (SoundManager) SoundManager.play('loot');
         
         if (useEnhanced) {
           gameStore.log(`⚗️ ENHANCED synthesis! ${result.result.name} has bonus stats!`, 'loot');
@@ -100,14 +131,21 @@ const clearSelection = () => {
 };
 
 const close = () => {
-  gameStore.state.activePanel = "inventory";
+  // v38.8 FIX: Use previousPanel for proper back navigation
+  const prev = gameStore.state.previousPanel;
+  if (prev) {
+    gameStore.state.previousPanel = null;
+    gameStore.state.activePanel = prev;
+  } else {
+    gameStore.state.activePanel = "inventory";
+  }
 };
 </script>
 
 <template>
   <div class="crafting-panel scanline">
     <div class="header">
-      <h2>{{ activeTab === 'CRAFT' ? 'SOUL FORGE' : 'SYNTHESIS LAB' }}</h2>
+      <h2>{{ activeTab === 'CRAFT' ? '🔨 CRAFTING' : '⚗️ SYNTHESIS' }}</h2>
       <button class="btn-close" @click="close">X</button>
     </div>
 
@@ -127,16 +165,26 @@ const close = () => {
 
     <!-- CRAFTING TAB -->
     <div v-if="activeTab === 'CRAFT'" class="recipe-list">
-        <div v-for="(rec, i) in recipes" :key="i" class="recipe-card">
+        <div v-if="recipes.length === 0" class="empty-msg">
+            No recipes available
+        </div>
+        
+        <div v-for="rec in recipes" :key="rec.recipeId" class="recipe-card">
             <div class="rec-header">
                 <h3>{{ rec.name }}</h3>
-                <span class="type-badge">{{ rec.type }}</span>
+                <span class="type-badge">{{ rec.desc }}</span>
             </div>
             
-            <div class="rec-cost">
-                <span v-for="(amt, mat) in rec.cost" :key="mat">
-                    {{ mat }}: {{ amt }} 
-                </span>
+            <!-- v38.0: Improved material display -->
+            <div class="rec-materials">
+                <div 
+                    v-for="mat in getMaterialStatus(rec)" 
+                    :key="mat.id" 
+                    class="material-req"
+                    :class="{ enough: mat.enough, missing: !mat.enough }">
+                    <span class="mat-name">{{ mat.name }}</span>
+                    <span class="mat-count">{{ mat.have }}/{{ mat.required }}</span>
+                </div>
             </div>
             
             <button :disabled="!canCraft(rec)" @click="craft(rec)">
@@ -307,13 +355,71 @@ const close = () => {
 .recipe-list { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
 .recipe-card {
-    background: #222; border: 1px solid #444; padding: 10px;
-    display: flex; justify-content: space-between; align-items: center;
+    background: #222; 
+    border: 1px solid #444; 
+    padding: 15px;
+    border-radius: 8px;
+    display: flex; 
+    flex-direction: column;
+    gap: 10px;
+}
+.rec-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
 }
 .rec-header h3 { margin: 0; color: #fff; font-size: 1rem; }
-.type-badge { font-size: 0.7rem; background: #444; padding: 2px 4px; border-radius: 4px; color: #aaa; }
+.type-badge { font-size: 0.7rem; background: #444; padding: 2px 8px; border-radius: 4px; color: #aaa; }
 
-.rec-cost { font-size: 0.8rem; color: #aaa; }
+/* v38.0: Material requirements display */
+.rec-materials {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.material-req {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    min-width: 120px;
+}
+
+.material-req.enough {
+    background: rgba(0, 170, 0, 0.2);
+    border: 1px solid #0a0;
+    color: #0f0;
+}
+
+.material-req.missing {
+    background: rgba(170, 0, 0, 0.2);
+    border: 1px solid #a00;
+    color: #f55;
+}
+
+.mat-name {
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+.mat-count {
+    font-weight: bold;
+}
+
+.recipe-card button {
+    align-self: flex-end;
+    padding: 8px 20px;
+}
+
+.empty-msg {
+    text-align: center;
+    color: #666;
+    padding: 40px;
+    font-style: italic;
+}
 
 /* Synthesis Panel */
 .synthesis-panel {

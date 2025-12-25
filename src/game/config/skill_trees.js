@@ -2,7 +2,7 @@
    SKILL TREES DATABASE (v28.0)
    ========================================= */
 
-const SKILL_TREES = {
+export const SKILL_TREES = {
   // Skeleton Warrior / General Tree (for now shared?)
   // Ideally per class, but let's start with a shared "Undead Mastery" for basics
   
@@ -54,4 +54,4 @@ const SKILL_TREES = {
   }
 };
 
-window.SKILL_TREES = SKILL_TREES;
+// window.SKILL_TREES = SKILL_TREES;

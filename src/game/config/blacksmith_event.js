@@ -1,3 +1,9 @@
+import { gameStore } from "../store.js";
+import { DB } from "./database.js";
+import { SocketManager } from "../managers/SocketManager.js";
+import { Player } from "../logic/Player.js";
+import { LootManager } from "../managers/loot.js";
+
 // v37.0 Blacksmith Event with Gem Shop & Forge Services
 export const BLACKSMITH_EVENT = {
     id: 'master_blacksmith',
@@ -11,8 +17,8 @@ export const BLACKSMITH_EVENT = {
             resultText: "The blacksmith shows you his gem collection...",
             effect: () => {
                 // Open gem shop interface
-                if (window.SocketManager && window.Player) {
-                    const floor = window.gameStore.state.floor;
+                if (SocketManager && Player) {
+                    const floor = gameStore.state.floor;
                     
                     // Generate 3 random legendary/epic gems
                     const gemTypes = ['bloodstone', 'starstone', 'voidstone', 'diamond', 'onyx', 'topaz', 'moonstone'];
@@ -20,8 +26,8 @@ export const BLACKSMITH_EVENT = {
                     
                     for (let i = 0; i < 3; i++) {
                         const gemType = gemTypes[Math.floor(Math.random() * gemTypes.length)];
-                        const cost = window.SocketManager.getGemValue(
-                            window.DB.GEMS[gemType].rarity, 
+                        const cost = SocketManager.getGemValue(
+                            DB.GEMS[gemType].rarity, 
                             floor
                         ) * 3; // 3x sell price to buy
                         
@@ -29,8 +35,8 @@ export const BLACKSMITH_EVENT = {
                     }
                     
                     // Store in game state for UI access
-                    window.gameStore.state.blacksmithGems = availableGems;
-                    window.gameStore.log("Blacksmith Gems available! Check shop.", "item");
+                    gameStore.state.blacksmithGems = availableGems;
+                    gameStore.log("Blacksmith Gems available! Check shop.", "item");
                 }
             }
         },
@@ -39,18 +45,18 @@ export const BLACKSMITH_EVENT = {
             req: { type: "gold", val: 500 },
             resultText: "The blacksmith offers to socket your best item with a premium gem...",
             effect: () => {
-                if (!window.Player || !window.SocketManager) return;
+                if (!Player || !SocketManager) return;
                 
-                const floor = window.gameStore.state.floor;
+                const floor = gameStore.state.floor;
                 
                 // Find best equipment without full sockets
-                const inventory = window.gameStore.state.inventory || [];
+                const inventory = gameStore.state.inventory || [];
                 const socketable = inventory.filter(item => 
                     item.sockets && item.sockets.some(s => s === null)
                 );
                 
                 if (socketable.length === 0) {
-                    window.gameStore.log("No items with empty sockets!", "error");
+                    gameStore.log("No items with empty sockets!", "error");
                     return;
                 }
                 
@@ -68,10 +74,10 @@ export const BLACKSMITH_EVENT = {
                 
                 if (emptySocketIndex !== -1) {
                     // Create the gem and socket it
-                    window.SocketManager.addGem(randomGem, floor, 1);
+                    SocketManager.addGem(randomGem, floor, 1);
                     
                     // Immediately socket it (simulate insertion)
-                    const gemInInventory = window.gameStore.state.inventory.find(
+                    const gemInInventory = gameStore.state.inventory.find(
                         item => item.gemType === randomGem && item.dropFloor === floor
                     );
                     
@@ -82,12 +88,12 @@ export const BLACKSMITH_EVENT = {
                         if (gemInInventory.qty > 1) {
                             gemInInventory.qty--;
                         } else {
-                            const idx = window.gameStore.state.inventory.indexOf(gemInInventory);
-                            window.gameStore.state.inventory.splice(idx, 1);
+                            const idx = gameStore.state.inventory.indexOf(gemInInventory);
+                            gameStore.state.inventory.splice(idx, 1);
                         }
                         
-                        window.gameStore.state.gold -= 500;
-                        window.gameStore.log(`Blacksmith socketed ${window.DB.GEMS[randomGem].icon} ${window.DB.GEMS[randomGem].name} into ${targetItem.name}!`, "loot");
+                        gameStore.state.gold -= 500;
+                        gameStore.log(`Blacksmith socketed ${DB.GEMS[randomGem].icon} ${DB.GEMS[randomGem].name} into ${targetItem.name}!`, "loot");
                     }
                 }
             }
@@ -97,15 +103,15 @@ export const BLACKSMITH_EVENT = {
             req: { type: "gold", val: 800 },
             resultText: "The blacksmith presents his finest work...",
             effect: () => {
-                if (!window.LootManager || !window.SocketManager) return;
+                if (!LootManager || !SocketManager) return;
                 
-                const floor = window.gameStore.state.floor;
+                const floor = gameStore.state.floor;
                 
                 // Generate random high-tier equipment
                 const rarities = ['rare', 'epic', 'legendary'];
                 const rarity = rarities[Math.floor(Math.random() * rarities.length)];
                 
-                const item = window.LootManager.generateDrop(floor, rarity);
+                const item = LootManager.generateDrop(floor, rarity);
                 
                 if (item) {
                     // Force add sockets (2-3)
@@ -121,11 +127,11 @@ export const BLACKSMITH_EVENT = {
                     }
                     
                     item.dropFloor = floor;
-                    window.Player.addItem(item);
-                    window.gameStore.state.gold -= 800;
+                    Player.addItem(item);
+                    gameStore.state.gold -= 800;
                     
-                    const gemIcons = item.sockets.map(g => window.DB.GEMS[g].icon).join('');
-                    window.gameStore.log(`Bought ${item.name} ${gemIcons}!`, "loot");
+                    const gemIcons = item.sockets.map(g => DB.GEMS[g].icon).join('');
+                    gameStore.log(`Bought ${item.name} ${gemIcons}!`, "loot");
                 }
             }
         },

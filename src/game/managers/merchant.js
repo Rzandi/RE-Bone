@@ -1,6 +1,8 @@
 import { gameStore } from "../store.js";
 import { DB } from "../config/database.js";
 import { CONSTANTS } from "../config/constants.js";
+import { Player } from "../logic/Player.js";
+import { SoundManager } from "./sound.js";
 
 /* =========================================
    MERCHANT MANAGER
@@ -66,8 +68,8 @@ const Merchant = {
         }
         
         // Sync to Store for Vue UI
-        if(window.gameStore) {
-            window.gameStore.state.merchantStock = [...this.stock];
+        if(gameStore) {
+            gameStore.state.merchantStock = [...this.stock];
         }
 
         this.render();
@@ -91,17 +93,18 @@ const Merchant = {
             Player.addItem(key); 
             
             // Log & Sound
-            if(window.gameStore) window.gameStore.log(`Bought ${item.name}`, "shop");
-            if(window.SoundManager) window.SoundManager.play("buy"); // Use 'buy' if exists
+            if(gameStore) gameStore.log(`Bought ${item.name}`, "shop");
+            if(SoundManager) SoundManager.play("buy"); // Use 'buy' if exists
             
             // Re-render handled by Reactivity usually, but if manual:
             this.render(); 
         } else {
             // UI.toast is likely deprecated or not linked
-            if(window.gameStore) window.gameStore.log("Not enough Gold!", "error");
+            if(gameStore) gameStore.log("Not enough Gold!", "error");
         }
     }
 };
 
-window.Merchant = Merchant;
+// Export to global scope - REMOVED v38.0
+// window.Merchant = Merchant;
 export { Merchant };

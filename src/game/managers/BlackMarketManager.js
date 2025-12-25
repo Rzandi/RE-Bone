@@ -3,6 +3,12 @@
 
 import { gameStore } from '../store.js';
 import { CURSED_ITEMS, getRandomCursedItems, getCursedItemsList } from '../config/cursed_items.js';
+import { Player } from '../logic/Player.js';
+import { SoundManager } from './sound.js';
+import { LootManager } from './loot.js';
+import { SocketManager } from './SocketManager.js';
+import { Achievements } from './achievements.js';
+import { SaveManager } from './SaveManager.js';
 
 export const BlackMarketManager = {
   
@@ -127,7 +133,7 @@ export const BlackMarketManager = {
     const s = gameStore.state;
     const cost = this.calculateBoxCost(boxConfig);
     if (boxConfig.currency === 'souls') {
-      return (Number(s.souls) || 0) >= cost;
+      return (s.meta.souls || 0) >= cost;
     } else {
       return s.gold >= cost;
     }
@@ -151,7 +157,8 @@ export const BlackMarketManager = {
     const actualCost = this.calculateBoxCost(boxConfig);
     
     if (boxConfig.currency === 'souls') {
-      s.souls = (Number(s.souls) || 0) - actualCost;
+      s.meta.souls = (s.meta.souls || 0) - actualCost;
+      SaveManager.saveMeta();
     } else {
       s.gold -= actualCost;
     }
@@ -199,9 +206,9 @@ export const BlackMarketManager = {
     }
     
     // Generate normal item if not cursed
-    if (!item && window.LootManager) {
+    if (!item && LootManager) {
       const slot = ['weapon', 'armor', 'acc'][Math.floor(Math.random() * 3)];
-      item = window.LootManager.generateDrop(floor, rarity, slot);
+      item = LootManager.generateDrop(floor, rarity, slot);
       item.fromBox = true;
     }
     
@@ -209,22 +216,20 @@ export const BlackMarketManager = {
     const gemCount = Math.floor(Math.random() * (boxConfig.gemCount[1] - boxConfig.gemCount[0] + 1)) + boxConfig.gemCount[0];
     const gems = [];
     for (let i = 0; i < gemCount; i++) {
-      if (window.SocketManager) {
-        const gem = window.SocketManager.generateGemDrop(floor);
+        const gem = SocketManager.generateGemDrop(floor);
         if (gem) gems.push(gem);
-      }
     }
     
     // Add to inventory
-    if (item && window.Player) {
-      window.Player.addItem(item);
+    if (item && Player) {
+      Player.addItem(item);
     }
     
     gameStore.log(`📦 Opened ${boxConfig.name}: ${item?.name || 'nothing'}!`, 'loot');
     
     // Track for achievements
-    if (window.Achievements) {
-      window.Achievements.addProgress('mystery_opener', 1);
+    if (Achievements) {
+      Achievements.addProgress('mystery_opener', 1);
     }
     
     return { 
@@ -604,7 +609,7 @@ export const BlackMarketManager = {
     if (!costs) return false;
     
     if (useSouls) {
-      return (Number(s.souls) || 0) >= costs.souls;
+      return (s.meta.souls || 0) >= costs.souls;
     } else {
       return s.gold >= costs.gold;
     }
@@ -621,7 +626,8 @@ export const BlackMarketManager = {
     
     // Deduct cost
     if (useSouls) {
-      s.souls = (Number(s.souls) || 0) - costs.souls;
+      s.meta.souls = (s.meta.souls || 0) - costs.souls;
+      SaveManager.saveMeta();
     } else {
       s.gold -= costs.gold;
     }
@@ -675,12 +681,13 @@ export const BlackMarketManager = {
       const cost = this.getCleanseCost(item);
       const s = gameStore.state;
       
-      if ((Number(s.souls) || 0) < cost) {
+      if ((s.meta.souls || 0) < cost) {
           return { success: false, error: "Not enough Souls" };
       }
       
       // Deduct cost
-      s.souls -= cost;
+      s.meta.souls -= cost;
+      SaveManager.saveMeta();
       
       // Remove curses property
       delete item.curses;
@@ -689,11 +696,11 @@ export const BlackMarketManager = {
       if (item.desc) item.desc += " (Cleansed)";
       
       gameStore.log(`Cleansed ${item.name}!`, "buff");
-      if (window.SoundManager) window.SoundManager.play('relic'); 
+      if (SoundManager) SoundManager.play('relic'); 
       
       return { success: true };
   }
 };
 
-// Global export
-window.BlackMarketManager = BlackMarketManager;
+// Global export - REMOVED v38.0
+// window.BlackMarketManager = BlackMarketManager;

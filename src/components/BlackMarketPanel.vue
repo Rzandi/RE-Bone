@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { gameStore } from '../game/store.js';
+import { BlackMarketManager } from '../game/managers/BlackMarketManager.js';
+import { SoundManager } from '../game/managers/sound.js';
+import { Player } from '../game/logic/Player.js';
 
 const s = gameStore.state;
 const activeTab = ref('boxes'); // 'boxes' | 'cursed' | 'services'
@@ -12,14 +15,14 @@ const viewMode = ref('default'); // 'default' | 'cleanse'
 
 // Get dealer reputation
 const dealerRep = computed(() => {
-  if (!window.BlackMarketManager) return 0;
-  return window.BlackMarketManager.getDealerReputation();
+  if (!BlackMarketManager) return 0;
+  return BlackMarketManager.getDealerReputation();
 });
 
 // Get discount
 const discount = computed(() => {
-  if (!window.BlackMarketManager) return 0;
-  return window.BlackMarketManager.getDiscount();
+  if (!BlackMarketManager) return 0;
+  return BlackMarketManager.getDiscount();
 });
 
 // Available boxes based on reputation
@@ -28,13 +31,13 @@ const availableBoxes = computed(() => {
   const boxes = [];
   
   if (boxCurrency.value === 'soul') {
-    boxes.push({ key: 'small', ...window.BlackMarketManager?.soulBoxes?.small });
-    if (rep >= 2) boxes.push({ key: 'medium', ...window.BlackMarketManager?.soulBoxes?.medium });
-    if (rep >= 3) boxes.push({ key: 'large', ...window.BlackMarketManager?.soulBoxes?.large });
+    boxes.push({ key: 'small', ...BlackMarketManager?.soulBoxes?.small });
+    if (rep >= 2) boxes.push({ key: 'medium', ...BlackMarketManager?.soulBoxes?.medium });
+    if (rep >= 3) boxes.push({ key: 'large', ...BlackMarketManager?.soulBoxes?.large });
   } else {
-    boxes.push({ key: 'bronze', ...window.BlackMarketManager?.goldBoxes?.bronze });
-    if (rep >= 2) boxes.push({ key: 'silver', ...window.BlackMarketManager?.goldBoxes?.silver });
-    if (rep >= 3) boxes.push({ key: 'gold', ...window.BlackMarketManager?.goldBoxes?.gold });
+    boxes.push({ key: 'bronze', ...BlackMarketManager?.goldBoxes?.bronze });
+    if (rep >= 2) boxes.push({ key: 'silver', ...BlackMarketManager?.goldBoxes?.silver });
+    if (rep >= 3) boxes.push({ key: 'gold', ...BlackMarketManager?.goldBoxes?.gold });
   }
   
   return boxes;
@@ -42,9 +45,8 @@ const availableBoxes = computed(() => {
 
 // Cursed items for sale
 const cursedStock = computed(() => {
-  if (!window.BlackMarketManager) return [];
-  return window.BlackMarketManager.generateDealerStock(s.floor || 1).cursedItems;
-  return window.BlackMarketManager.generateDealerStock(s.floor || 1).cursedItems;
+  if (!BlackMarketManager) return [];
+  return BlackMarketManager.generateDealerStock(s.floor || 1).cursedItems;
 });
 
 // Player's cursed items for cleansing
@@ -80,14 +82,14 @@ const canAffordBox = (box) => {
   if (!box) return false;
   const cost = getBoxCost(box);
   if (boxCurrency.value === 'soul') {
-    return (Number(s.souls) || 0) >= cost;
+    return (s.meta.souls || 0) >= cost;
   }
   return s.gold >= cost;
 };
 
 // Open mystery box
 const openBox = async (box) => {
-  if (!window.BlackMarketManager || isOpening.value) return;
+  if (!BlackMarketManager || isOpening.value) return;
   
   isOpening.value = true;
   lastResult.value = null;
@@ -96,11 +98,11 @@ const openBox = async (box) => {
   // Animate delay
   await new Promise(r => setTimeout(r, 1500));
   
-  const result = window.BlackMarketManager.openBox(box.key, boxCurrency.value);
+  const result = BlackMarketManager.openBox(box.key, boxCurrency.value);
   
   if (result.success) {
     lastResult.value = result;
-    if (window.SoundManager) window.SoundManager.play('loot');
+    if (SoundManager) SoundManager.play('loot');
   } else {
     gameStore.log(result.error, 'error');
   }
@@ -123,8 +125,8 @@ const buyCursedItem = (item) => {
   
   // Create copy of item for inventory
   const newItem = { ...item };
-  if (window.Player) {
-    window.Player.addItem(newItem);
+  if (Player) {
+    Player.addItem(newItem);
   } else {
     s.inventory.push(newItem);
   }
@@ -135,12 +137,12 @@ const buyCursedItem = (item) => {
     s.cursedItemsOwned.push(item.id);
   }
   
-  if (window.BlackMarketManager) {
-    window.BlackMarketManager.recordPurchase();
+  if (BlackMarketManager) {
+    BlackMarketManager.recordPurchase();
   }
   
   gameStore.log(`☠️ Purchased ${item.name}!`, 'danger');
-  if (window.SoundManager) window.SoundManager.play('buy');
+  if (SoundManager) SoundManager.play('buy');
 };
 
 // Get rarity color
@@ -166,9 +168,9 @@ const handleService = (service) => {
 
 // Cleanse item
 const cleanseItem = (item) => {
-  if (!window.BlackMarketManager) return;
+  if (!BlackMarketManager) return;
   
-  const result = window.BlackMarketManager.cleanseCurse(item);
+  const result = BlackMarketManager.cleanseCurse(item);
   if (result.success) {
     viewMode.value = 'default';
   } else {
@@ -193,16 +195,21 @@ const close = () => {
     <!-- Header -->
     <div class="panel-header">
       <h2>☠️ THE BLACK MARKET</h2>
-      <div class="reputation">
-        <span>Rep: {{ dealerRep }}/5</span>
-        <span v-if="discount > 0" class="discount">-{{ Math.round(discount * 100) }}%</span>
+      <div class="reputation-container" title="Higher reputation unlocks better items and services">
+        <div class="rep-text">
+            <span>Reputation Lv.{{ dealerRep }}</span>
+            <span v-if="discount > 0" class="discount">(-{{ Math.round(discount * 100) }}%)</span>
+        </div>
+        <div class="rep-bar-track">
+            <div class="rep-bar-fill" :style="{ width: (dealerRep / 5) * 100 + '%' }"></div>
+        </div>
       </div>
       <button class="close-btn" @click="close">✖</button>
     </div>
 
     <!-- Currency Display -->
     <div class="currency-bar">
-      <span class="currency souls">💀 {{ s.souls || 0 }} Souls</span>
+      <span class="currency souls">💀 {{ s.meta.souls || 0 }} Souls</span>
       <span class="currency gold">💰 {{ s.gold }} Gold</span>
     </div>
 
@@ -386,8 +393,8 @@ const close = () => {
             <div class="service-icon">{{ service.icon }}</div>
             <div class="service-name">{{ service.name }}</div>
             <div class="service-costs">
-              <span>💀 {{ window.BlackMarketManager?.serviceCosts?.[service.key]?.souls || '?' }} Souls</span>
-              <span>💰 {{ window.BlackMarketManager?.serviceCosts?.[service.key]?.gold || '?' }} Gold</span>
+              <span>💀 {{ BlackMarketManager?.serviceCosts?.[service.key]?.souls || '?' }} Souls</span>
+              <span>💰 {{ BlackMarketManager?.serviceCosts?.[service.key]?.gold || '?' }} Gold</span>
             </div>
           </div>
         </div>
@@ -483,10 +490,33 @@ const close = () => {
   100% { text-shadow: 0 0 20px rgba(255,0,0,0.8), 0 0 40px rgba(255,0,0,0.5), 0 0 60px rgba(139,0,0,0.3); }
 }
 
-.reputation {
+.reputation-container {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 2px;
+  width: 150px;
+}
+
+.rep-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
   color: #aaa;
+}
+
+.rep-bar-track {
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #555;
+}
+
+.rep-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b0000, #ff4444);
+  box-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+  transition: width 0.5s ease-out;
 }
 
 .discount {

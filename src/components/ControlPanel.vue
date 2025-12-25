@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from "vue";
+
 import { gameStore } from "../game/store.js";
+import { Game } from "../game/core/game.js";
 
 const emit = defineEmits(["action"]);
 
@@ -73,7 +75,7 @@ const buttons = computed(() => {
     // v37.3: Smart Back - Multi-source check for combat state
     const fromCombat = s.previousPanel === 'combat';
     const inCombat = s.combat && s.combat.enemy;
-    const coreWasCombat = window.Game && (window.Game._wasInCombat || window.Game._frozenEnemy);
+    const coreWasCombat = Game && (Game._wasInCombat || Game._frozenEnemy);
     
     if (inCombat || fromCombat || coreWasCombat) {
         return [{ label: "⚔️ BACK", action: "resume_combat" }, null, null, null];
@@ -82,7 +84,11 @@ const buttons = computed(() => {
   }
 
   // v37.1 Fix: Skill Selector Back Button
-  if (panel === "skill-selector" || panel === "reforge" || panel === "black_market" || panel === "crafting") {
+  // v38.8 FIX: Added all secondary panels that should show BACK
+  if (panel === "skill-selector" || panel === "reforge" || panel === "black_market" || 
+      panel === "crafting" || panel === "run-setup" || panel === "achievements" || 
+      panel === "leaderboard" || panel === "shop-ascension" || panel === "daily" ||
+      panel === "socketing" || panel === "settings") {
      return [{ label: "🔙 BACK", action: "back" }, null, null, null];
   }
 

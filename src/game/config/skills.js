@@ -142,6 +142,180 @@ const PASSIVES_DB = {
     god_of_void: { name: "God of Void", desc: "Ignore 100% DEF, +20% Magic Dmg", stats: { ignoreDef: 1.0, mag: 0.2 } },
     god_of_war: { name: "God of War", desc: "+100% Physical Dmg, +1000 HP", stats: { phys: 1.0, hp: 1000 } },
 
+    // v38.0: Missing Passives from evolution.js
+    int_boost: { name: "Intelligence Up", desc: "INT +5", stats: { int: 5 } },
+    assassination: { name: "Assassination", desc: "+50% crit damage from stealth", stats: { stealthCritDmg: 0.50 } },
+    immune_cc: { name: "Crowd Control Immunity", desc: "Immune to Stun/Slow/Root" },
+    reflect: { name: "Reflect", desc: "Reflect 10% damage", stats: { reflect: 0.10 } },
+    dodge: { name: "Dodge Up", desc: "+10% Dodge", stats: { dodge: 0.10 } },
+
+    // ======================================
+    // v38.3: UNIQUE PASSIVES (From Evolution)
+    // ======================================
+    
+    // SKELETON TREE
+    berserker_rage: { name: "Berserker Rage", desc: "+50% ATK when HP < 30%", stats: { lowHpAtkBonus: 0.50 } },
+    eagle_eye: { name: "Eagle Eye", desc: "+15% Crit Chance", stats: { crit: 0.15 } },
+    arcane_mastery: { name: "Arcane Mastery", desc: "+25% Magic Dmg", stats: { mag: 0.25 } },
+    death_immunity: { name: "Death Immunity", desc: "Immune to instant death, Dmg +20%", stats: { immuneDeath: true, dmg: 0.20 } },
+    shadow_mastery: { name: "Shadow Mastery", desc: "+30% Crit, +20% Dodge", stats: { crit: 0.30, dodge: 0.20 } },
+    mana_storm: { name: "Mana Storm", desc: "Skills cost 50% less MP", stats: { mpCostMult: 0.50 } },
+    warlord_aura: { name: "Warlord Aura", desc: "+50% All Stats to self", stats: { allStats: 0.50 } },
+    reaper_soul: { name: "Reaper's Soul", desc: "Kills restore 10% HP/MP", stats: { killRestore: 0.10 } },
+    lich_phylactery: { name: "Lich Phylactery", desc: "Revive 3x per run", stats: { reviveCount: 3 } },
+
+    // GHOUL TREE  
+    savage_hunger: { name: "Savage Hunger", desc: "+30% Lifesteal", stats: { lifesteal: 0.30 } },
+    corpse_eater: { name: "Corpse Eater", desc: "Heal 15% HP on kill", stats: { killHeal: 0.15 } },
+    plague_carrier: { name: "Plague Carrier", desc: "Attacks spread poison", stats: { poisonSpread: true } },
+    endless_hunger: { name: "Endless Hunger", desc: "+50% Lifesteal, no cap", stats: { lifesteal: 0.50, noLifestealCap: true } },
+    rot_walker: { name: "Rot Walker", desc: "Immune to poison, +50% poison dmg", stats: { immunePoison: true, poisonDmg: 0.50 } },
+    death_speaker: { name: "Death Speaker", desc: "Summons +100% HP/Dmg", stats: { summonBonus: 1.0 } },
+    abomination_form: { name: "Abomination", desc: "+100% HP, +50% ATK, -30% Speed", stats: { hp: 1.0, atk: 0.50, speed: -0.30 } },
+    pandemic: { name: "Pandemic", desc: "Poison deals 3x dmg", stats: { poisonMult: 3 } },
+    corpse_lord: { name: "Corpse Lord", desc: "Revive with 100% HP once", stats: { fullRevive: true } },
+
+    // PHANTOM TREE
+    spectral_wrath: { name: "Spectral Wrath", desc: "+30% Magic Dmg", stats: { mag: 0.30 } },
+    cloak_of_shadows: { name: "Cloak of Shadows", desc: "Start combat stealthed", stats: { startStealth: true } },
+    telekinesis: { name: "Telekinesis", desc: "Attacks hit twice (50% dmg)", stats: { doubleHit: 0.50 } },
+    death_wail: { name: "Death Wail", desc: "Kills fear nearby enemies", stats: { killFear: true } },
+    phase_assassin: { name: "Phase Assassin", desc: "Crit = phase through attacks", stats: { critPhase: true } },
+    dread_aura: { name: "Dread Aura", desc: "Enemies -30% ATK", stats: { enemyAtkDebuff: 0.30 } },
+    pure_energy: { name: "Pure Energy", desc: "MP = Damage boost", stats: { mpDmgScale: true } },
+    nightmare_realm: { name: "Nightmare Realm", desc: "Fear = 2x damage", stats: { fearDmgBonus: 2.0 } },
+    void_existence: { name: "Void Existence", desc: "50% chance to negate damage", stats: { dmgNegate: 0.50 } },
+
+    // VAMPIRE TREE
+    noble_blood: { name: "Noble Blood", desc: "+20% all stats when full HP", stats: { fullHpBonus: 0.20 } },
+    beast_form: { name: "Beast Form", desc: "+50% ATK, -25% DEF", stats: { atk: 0.50, def: -0.25 } },
+    blood_magic: { name: "Blood Magic", desc: "Spells heal 25% of dmg", stats: { spellLifesteal: 0.25 } },
+    immortal_blood: { name: "Immortal Blood", desc: "Cannot die from DoT", stats: { immuneDoTDeath: true } },
+    hunter_instinct: { name: "Hunter Instinct", desc: "+50% dmg from stealth", stats: { stealthDmg: 0.50 } },
+    castle_master: { name: "Castle Master", desc: "Summons +50%, Shield +50%", stats: { summonBonus: 0.50, shieldBonus: 0.50 } },
+    true_immortal: { name: "True Immortal", desc: "Revive with 50% HP (3x)", stats: { reviveHp: 0.50, reviveCount: 3 } },
+    eternal_thirst: { name: "Eternal Thirst", desc: "+100% Lifesteal", stats: { lifesteal: 1.0 } },
+    crimson_divinity: { name: "Crimson Divinity", desc: "All damage heals", stats: { allDmgHeal: true } },
+
+    // LICH TREE
+    raise_dead: { name: "Raise Dead", desc: "Killed enemies become allies", stats: { raiseChance: 0.30 } },
+    frozen_soul: { name: "Frozen Soul", desc: "Attacks slow enemies", stats: { attackSlow: true } },
+    bone_armor: { name: "Bone Armor", desc: "Start with 30 Shield", stats: { startShield: 30 } },
+    army_commander: { name: "Army Commander", desc: "Summons attack twice", stats: { summonDoubleAtk: true } },
+    frost_dominion: { name: "Frost Dominion", desc: "Frozen enemies take 2x dmg", stats: { frozenDmgBonus: 2.0 } },
+    arcane_tome: { name: "Arcane Tome", desc: "Skills +50% power", stats: { skillPower: 0.50 } },
+    death_incarnate: { name: "Death Incarnate", desc: "Execute < 25% HP", stats: { executeThreshold: 0.25 } },
+    reality_warp: { name: "Reality Warp", desc: "Dodge = counter attack", stats: { dodgeCounter: true } },
+    endless_legion: { name: "Endless Legion", desc: "Summons revive when killed", stats: { summonRevive: true } },
+
+    // WRAITH TREE
+    phase_shift: { name: "Phase Shift", desc: "25% chance dodge all", stats: { phaseChance: 0.25 } },
+    ghost_blade: { name: "Ghost Blade", desc: "Attacks ignore DEF", stats: { ignoreDef: 1.0 } },
+    haunted_presence: { name: "Haunted Presence", desc: "Debuffs last 2x longer", stats: { debuffDuration: 2 } },
+    untouchable: { name: "Untouchable", desc: "+50% Dodge", stats: { dodge: 0.50 } },
+    shadow_reign: { name: "Shadow Reign", desc: "Crits apply fear", stats: { critFear: true } },
+    mind_shatter: { name: "Mind Shatter", desc: "Attacks reduce enemy MP", stats: { mpDrain: true } },
+    entropy_field: { name: "Entropy Field", desc: "Enemies lose 5% HP/turn", stats: { enemyHpDrain: 0.05 } },
+    erase_existence: { name: "Erase Existence", desc: "Kills prevent revive", stats: { preventRevive: true } },
+    spectral_godhood: { name: "Spectral Godhood", desc: "Immune to phys damage", stats: { immunePhys: true } },
+
+    // DARK KNIGHT TREE
+    chaos_strike: { name: "Chaos Strike", desc: "Random +0-100% dmg", stats: { chaosDmg: true } },
+    void_armor: { name: "Void Armor", desc: "50% dmg to shield first", stats: { dmgToShield: 0.50 } },
+    doom_blade: { name: "Doom Blade", desc: "+100% dmg vs < 50% HP", stats: { lowHpDmg: 1.0 } },
+    hellfire: { name: "Hellfire", desc: "Attacks burn for 10 dmg", stats: { burnDmg: 10 } },
+    void_bulwark: { name: "Void Bulwark", desc: "Shield regen 10/turn", stats: { shieldRegen: 10 } },
+    death_charge: { name: "Death Charge", desc: "First hit crits", stats: { firstCrit: true } },
+    chaos_incarnate: { name: "Chaos Incarnate", desc: "Random buff each turn", stats: { randomBuff: true } },
+    void_champion: { name: "Void Champion", desc: "Cannot be crit", stats: { immuneCrit: true } },
+    world_ender: { name: "World Ender", desc: "Attacks hit all enemies", stats: { aoeAttacks: true } },
+
+    // NECRO PRIEST TREE
+    dark_blessing: { name: "Dark Blessing", desc: "Heals also damage", stats: { healDmg: true } },
+    unholy_mending: { name: "Unholy Mending", desc: "+50% Heal power", stats: { healPower: 0.50 } },
+    mind_flay: { name: "Mind Flay", desc: "Attacks drain MP", stats: { mpDrain: 5 } },
+    cult_leader: { name: "Cult Leader", desc: "Allies +30% all stats", stats: { allyBonus: 0.30 } },
+    death_oracle: { name: "Death Oracle", desc: "See enemy moves", stats: { seeEnemy: true } },
+    cardinal_sin: { name: "Cardinal Sin", desc: "Dmg = self heal", stats: { dmgSelfHeal: 0.30 } },
+    unholy_avatar: { name: "Unholy Avatar", desc: "Immune while healing", stats: { healInvuln: true } },
+    corrupted_halo: { name: "Corrupted Halo", desc: "Holy dmg = Lifesteal", stats: { holyLifesteal: true } },
+    eldritch_presence: { name: "Eldritch Presence", desc: "Enemies go insane", stats: { insanity: true } },
+
+    // SHADOW ASSASSIN TREE
+    shadow_step: { name: "Shadow Step", desc: "+30% Dodge, +20% Crit", stats: { dodge: 0.30, crit: 0.20 } },
+    ambush: { name: "Ambush", desc: "First hit +100% dmg", stats: { firstHitDmg: 1.0 } },
+    predator: { name: "Predator", desc: "+50% dmg vs debuffed", stats: { debuffDmgBonus: 0.50 } },
+    true_invisibility: { name: "True Invisibility", desc: "Stealth until attack", stats: { permaStealth: true } },
+    one_with_dark: { name: "One with Dark", desc: "+50% Dodge at night", stats: { nightDodge: 0.50 } },
+    killing_edge: { name: "Killing Edge", desc: "Crits deal 3x dmg", stats: { critMult: 3.0 } },
+    shadow_deity: { name: "Shadow Deity", desc: "Dodge = free attack", stats: { dodgeAttack: true } },
+    dimension_shift: { name: "Dimension Shift", desc: "50% chance to negate hit", stats: { negateHit: 0.50 } },
+    death_touch: { name: "Death Touch", desc: "10% instant kill", stats: { instantKill: 0.10 } },
+
+    // PALADIN TREE
+    holy_fervor: { name: "Holy Fervor", desc: "Attacks heal 10%", stats: { atkHeal: 0.10 } },
+    divine_barrier: { name: "Divine Barrier", desc: "Start with 50 Shield", stats: { startShield: 50 } },
+    holy_light: { name: "Holy Light", desc: "Heals remove debuffs", stats: { healCleanse: true } },
+    righteous_fury: { name: "Righteous Fury", desc: "+50% dmg vs undead", stats: { undeadDmg: 0.50 } },
+    swift_justice: { name: "Swift Justice", desc: "First turn = double act", stats: { firstDouble: true } },
+    blessed_aura: { name: "Blessed Aura", desc: "Allies heal 5 HP/turn", stats: { allyRegen: 5 } },
+    divine_radiance: { name: "Divine Radiance", desc: "Blind enemies on hit", stats: { hitBlind: true } },
+    eternal_shield: { name: "Eternal Shield", desc: "Shield never breaks", stats: { unbreakShield: true } },
+    final_judgment: { name: "Final Judgment", desc: "Execute < 30% HP", stats: { executeThreshold: 0.30 } },
+
+    // DRUID TREE
+    ursine_might: { name: "Ursine Might", desc: "+50% HP, +30% DEF", stats: { hp: 0.50, def: 0.30 } },
+    pack_hunter: { name: "Pack Hunter", desc: "+30% dmg per ally", stats: { allyDmgBonus: 0.30 } },
+    root_network: { name: "Root Network", desc: "HP regen +10/turn", stats: { hpRegen: 10 } },
+    colossal_form: { name: "Colossal Form", desc: "+100% HP, +50% ATK", stats: { hp: 1.0, atk: 0.50 } },
+    apex_predator: { name: "Apex Predator", desc: "Crits heal 30%", stats: { critHeal: 0.30 } },
+    ancient_wisdom: { name: "Ancient Wisdom", desc: "Skills +100% power", stats: { skillPower: 1.0 } },
+    nature_incarnate: { name: "Nature Incarnate", desc: "Immune to debuffs", stats: { immuneDebuff: true } },
+    ragnarok: { name: "Ragnarok", desc: "Kills = full heal", stats: { killFullHeal: true } },
+    storm_lord: { name: "Storm Lord", desc: "Lightning on crit", stats: { critLightning: true } },
+
+    // BERSERKER TREE
+    primal_rage: { name: "Primal Rage", desc: "+10% ATK per hit taken", stats: { hitAtkBonus: 0.10 } },
+    bloodlust: { name: "Bloodlust", desc: "Kills = +50% ATK (stacks)", stats: { killAtkStack: 0.50 } },
+    valhalla: { name: "Valhalla", desc: "Revive with rage buff", stats: { reviveRage: true } },
+    warlord: { name: "Warlord", desc: "+50% all dmg", stats: { allDmg: 0.50 } },
+    sundering_blow: { name: "Sundering Blow", desc: "Attacks remove armor", stats: { removeArmor: true } },
+    unstoppable_force: { name: "Unstoppable Force", desc: "Immune to CC", stats: { immuneCC: true } },
+    spartan_rage: { name: "Spartan Rage", desc: "+200% ATK when < 25% HP", stats: { lowHpAtk: 2.0 } },
+    six_arms: { name: "Six Arms", desc: "Attacks hit 3x", stats: { multiHit: 3 } },
+    world_breaker: { name: "World Breaker", desc: "AoE all attacks", stats: { aoeAll: true } },
+
+    // MECHANIST TREE
+    locked_on: { name: "Locked On", desc: "Never miss", stats: { neverMiss: true } },
+    gadgeteer: { name: "Gadgeteer", desc: "Items +100% effect", stats: { itemBonus: 1.0 } },
+    turret_master: { name: "Turret Master", desc: "Turrets +100% dmg", stats: { turretDmg: 1.0 } },
+    headhunter: { name: "Headhunter", desc: "Crit = instant kill < 20% HP", stats: { critExecute: 0.20 } },
+    pilot_mode: { name: "Pilot Mode", desc: "+50% all stats in mech", stats: { mechBonus: 0.50 } },
+    mad_genius: { name: "Mad Genius", desc: "Random skill free/turn", stats: { freeSkill: true } },
+    fusion_core: { name: "Fusion Core", desc: "MP = +1% dmg each", stats: { mpDmgBonus: 0.01 } },
+    heavy_armor: { name: "Heavy Armor", desc: "Dmg cap at 25", stats: { dmgCap: 25 } },
+    digital_god: { name: "Digital God", desc: "Hack reality", stats: { hackReality: true } },
+
+    // ======================================
+    // v38.3: MISSING PASSIVES (From Evolution.js Audit)
+    // ======================================
+    
+    // SKELETON Tier 2-3 Missing
+    death_grip: { name: "Death Grip", desc: "Attacks root enemies", stats: { attackRoot: true } },
+    death_mark: { name: "Death Mark", desc: "Marked enemies take 2x crit dmg", stats: { markCritBonus: 2.0 } },
+    spell_echo: { name: "Spell Echo", desc: "Spells hit twice (50% dmg)", stats: { spellDoubleHit: 0.50 } },
+    army_of_dead: { name: "Army of Dead", desc: "Summons +200% stats", stats: { summonBonus: 2.0 } },
+    death_sentence: { name: "Death Sentence", desc: "Execute < 35% HP", stats: { executeThreshold: 0.35 } },
+    infinite_mana: { name: "Infinite Mana", desc: "MP costs reduced 75%", stats: { mpCostMult: 0.25 } },
+
+    // GHOUL Tier 1-2-3 Missing
+    unstoppable: { name: "Unstoppable", desc: "Immune to slow/root", stats: { immuneSlow: true, immuneRoot: true } },
+    toxic_blood: { name: "Toxic Blood", desc: "Attackers take poison", stats: { poisonReflect: true } },
+    stitched_horror: { name: "Stitched Horror", desc: "+75% HP, -25% Speed", stats: { hp: 0.75, speed: -0.25 } },
+    consume_all: { name: "Consume All", desc: "Kills restore 25% HP", stats: { killHeal: 0.25 } },
+    mountain_flesh: { name: "Mountain Flesh", desc: "+100% HP, DEF +20", stats: { hp: 1.0, def: 20 } },
+    world_eater: { name: "World Eater", desc: "Devour heals 100%", stats: { devourHeal: 1.0 } }
+
 };
 const SKILLS_DB = {
     smash: {
@@ -655,8 +829,108 @@ const SKILLS_DB = {
     artillery: { name: "Artillery", cost: 12, type: "phys", power: 4.0, desc: "Long Range", req: { str: 30 } },
     hack: { name: "Hack", cost: 10, type: "debuff", status: { id: "stun", turn: 3, val: 0 }, desc: "Stun Robot", req: { int: 40 } },
     download: { name: "Download", cost: 10, type: "buff", desc: "Download RAM (MP)", req: { int: 45 } },
-    glitch: { name: "Glitch", cost: 20, type: "special", desc: "Random Effect", req: { int: 50 } }
+    glitch: { name: "Glitch", cost: 20, type: "special", desc: "Random Effect", req: { int: 50 } },
+
+    // v38.0: Missing Skills from evolution.js
+    executing_strike: { 
+        name: "Executing Strike", 
+        cost: 10, 
+        cooldown: 4,
+        type: "phys", 
+        power: 2.0, 
+        desc: "+200% dmg vs low HP", 
+        req: { str: 15 },
+        executeBonus: 3.0 // 3x damage on targets < 30% HP
+    },
+    death_bolt: { 
+        name: "Death Bolt", 
+        cost: 8, 
+        cooldown: 2,
+        type: "mag", 
+        power: 2.0, 
+        desc: "Dark Magic Dmg", 
+        req: { int: 10 } 
+    },
+    regrowth: { 
+        name: "Regrowth", 
+        cost: 8, 
+        cooldown: 3,
+        type: "heal", 
+        power: 0.8, 
+        status: { id: "regen", turn: 4, val: 5 },
+        desc: "Heal + Regen", 
+        req: { int: 8 } 
+    },
+    entangle: { 
+        name: "Entangle", 
+        cost: 6, 
+        cooldown: 3,
+        type: "debuff", 
+        status: { id: "root", turn: 2, val: 0 },
+        desc: "Root Enemy", 
+        req: { int: 5 } 
+    },
+    thorns: { 
+        name: "Thorn Shield", 
+        cost: 6, 
+        cooldown: 4,
+        type: "buff", 
+        status: { id: "thorns", turn: 3, val: 5 },
+        desc: "Reflect 5 dmg/hit", 
+        req: { vit: 6 } 
+    },
+    rocket_salvo: { 
+        name: "Rocket Salvo", 
+        cost: 12, 
+        cooldown: 3,
+        type: "phys", 
+        power: 1.0, 
+        hits: 3,
+        desc: "3 Rockets", 
+        req: { int: 8 } 
+    },
+    overclock: { 
+        name: "Overclock", 
+        cost: 15, 
+        cooldown: 5,
+        type: "buff", 
+        status: { id: "haste", turn: 3, val: 50 },
+        desc: "+50% Speed 3 turns", 
+        req: { int: 10 } 
+    },
+    mend: { 
+        name: "Mend", 
+        cost: 5, 
+        cooldown: 3,
+        type: "heal", 
+        power: 0.5, 
+        desc: "Basic Heal", 
+        req: { int: 5 } 
+    },
+    whirlwind_atk: { 
+        name: "Whirlwind Attack", 
+        cost: 8, 
+        cooldown: 3,
+        type: "phys", 
+        power: 0.6, 
+        hits: 4,
+        desc: "4-Hit Spin", 
+        req: { str: 10 } 
+    },
+    
+    // v38.0: soul_siphon used as skill in Wraith evolutions
+    soul_siphon: { 
+        name: "Soul Siphon", 
+        cost: 10, 
+        cooldown: 3,
+        type: "mag", 
+        power: 1.5,
+        lifesteal: 0.5,
+        desc: "Drain life force (+50% Lifesteal)", 
+        req: { int: 8 } 
+    }
 };
+
 
 const SKILL_TREES = {
     st_basic: {

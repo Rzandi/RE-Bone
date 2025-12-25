@@ -11,9 +11,9 @@ export const EconomyManager = {
   
   MAX_GOLD: 999999,
   MAX_STOCK: 10,
-  MAX_INFLATION: 2.0,
-  MAX_SCARCITY: 2.0,
-  MAX_COMBINED: 3.0,
+  MAX_INFLATION: 10.0,
+  MAX_SCARCITY: 5.0,
+  MAX_COMBINED: 1000.0, // Uncapped for Epic Mode (was 3.0)
   MIN_SELL_MULT: 0.25,
   MIN_BUY_MULT: 0.5,
   
@@ -115,7 +115,9 @@ export const EconomyManager = {
   
   getFloorMult() {
     const floor = gameStore.state.floor || 1;
-    return 1 + (floor * 0.02);
+    // v38.7: Epic Mode Scaling (0.5 per floor)
+    // Floor 500 = 250x Prices. Matches Gold Income (~500x).
+    return 1 + (floor * 0.5);
   },
   
   getMerchantDiscount() {
@@ -575,4 +577,5 @@ export const EconomyManager = {
 };
 
 // Global export
-window.EconomyManager = EconomyManager;
+// Global export REMOVED
+// window.EconomyManager = EconomyManager;

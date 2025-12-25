@@ -1,15 +1,19 @@
 /* =========================================
    GEMINI AI MANAGER
    ========================================= */
+   
+import { gameStore } from '../store.js';
+import { SECRETS } from '../config/secrets.js';
+// import { UI } from '../core/ui_bridge.js'; // REMOVED v38.0
 
 export const Gemini = {
-  apiKey: window.SECRETS ? window.SECRETS.GEMINI_API_KEY : "",
+  apiKey: SECRETS ? SECRETS.GEMINI_API_KEY : "",
   isLoading: false,
   
   async call(prompt) {
     if (this.isLoading) return;
     this.isLoading = true;
-    UI.log("✨ Oracle menerawang...", "ai-loading");
+    gameStore.log("✨ Oracle menerawang...", "ai-loading");
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.apiKey}`;
       const response = await fetch(url, {
@@ -30,15 +34,15 @@ export const Gemini = {
   },
   
   async generateLore(item) {
-    if(window.GameStore) {
-        window.GameStore.state.lore.active = true;
-        window.GameStore.state.lore.title = item;
-        window.GameStore.state.lore.text = "Reading ancient inscriptions...";
+    if(gameStore) {
+        gameStore.state.lore.active = true;
+        gameStore.state.lore.title = item;
+        gameStore.state.lore.text = "Reading ancient inscriptions...";
     }
     const r = await this.call(`Lore singkat item "${item}" RPG. Indo. Max 20 words.`);
     
-    if(window.GameStore) {
-        window.GameStore.state.lore.text = r;
+    if(gameStore) {
+        gameStore.state.lore.text = r;
     }
   },
   
@@ -49,13 +53,13 @@ export const Gemini = {
     // Display visual speech bubble if SpriteManager exists
     // For Vue, we can just use the game log with a special type OR a store state for speech bubbles
     // Let's use log for simplicity as "Speech Bubble" component isn't strictly necessary if log is visible
-    if(window.GameStore) {
-        window.GameStore.log(`"${r}"`, "boss");
+    if(gameStore) {
+        gameStore.log(`"${r}"`, "boss");
         // Or if we want a popup:
-        // window.GameStore.state.vfx.push({ type: 'text', val: r, target: 'mob' });
+        // gameStore.state.vfx.push({ type: 'text', val: r, target: 'mob' });
     }
   },
   // No extra character here
 };
 
-window.Gemini = Gemini; // Expose globally
+// window.Gemini = Gemini; // REMOVED v38.0

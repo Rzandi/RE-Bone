@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { gameStore } from '../game/store.js';
 import { DB } from '../game/config/database.js';
+import { SoundManager } from '../game/managers/sound.js';
 import ConfirmModal from './ConfirmModal.vue';
 
 const s = gameStore.state;
@@ -83,21 +84,21 @@ const availableList = computed(() => unlockedSkills.value.filter(sk => !sk.isEqu
 // Select skill
 const selectSkill = (skill) => {
   selected.value = skill;
-  if (window.SoundManager) window.SoundManager.play('click');
+  if (SoundManager) SoundManager.play('click');
 };
 
 // Equip skill
 const equipSkill = (skillId) => {
   if (s.equippedSkills.length >= MAX_SLOTS) {
     gameStore.log("All slots full! Unequip a skill first.", "error");
-    if (window.SoundManager) window.SoundManager.play('error');
+    if (SoundManager) SoundManager.play('error');
     return;
   }
   
   if (!s.equippedSkills.includes(skillId)) {
     s.equippedSkills.push(skillId);
     gameStore.log(`Equipped ${DB.SKILLS[skillId].name}!`, "buff");
-    if (window.SoundManager) window.SoundManager.play('item_equip');
+    if (SoundManager) SoundManager.play('item_equip');
   }
 };
 
@@ -107,7 +108,7 @@ const unequipSkill = (skillId) => {
   if (idx !== -1) {
     s.equippedSkills.splice(idx, 1);
     gameStore.log(`Unequipped ${DB.SKILLS[skillId].name}.`, "system");
-    if (window.SoundManager) window.SoundManager.play('sell');
+    if (SoundManager) SoundManager.play('sell');
   }
 };
 
@@ -173,7 +174,7 @@ const performUpgrade = (skillId, cost, currentLevel) => {
   }
   
   gameStore.log(`Upgraded ${skill.name}! (Level ${s.skillUpgrades[skillId].level})`, "buff");
-  if (window.SoundManager) window.SoundManager.play('success');
+  if (SoundManager) SoundManager.play('success');
   
   // Refresh selected
   if (selected.value && selected.value.id === skillId) {
@@ -532,12 +533,12 @@ onUnmounted(() => {
   display: flex; justify-content: space-between; align-items: center;
   padding: 15px; 
   background: linear-gradient(135deg, rgba(20, 15, 30, 0.9), rgba(10, 5, 15, 0.95));
-  border-bottom: 2px solid var(--c-gold, #cfaa4c);
+  border-bottom: 2px solid var(--c-gold);
 }
 
 .header h2 { 
   margin: 0; 
-  color: var(--c-gold, #cfaa4c); 
+  color: var(--c-gold); 
   font-size: 1.2rem;
   text-shadow: 0 0 10px rgba(207, 170, 76, 0.4);
 }
@@ -702,7 +703,7 @@ onUnmounted(() => {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 .skill-card.selected { 
-  border-color: var(--c-gold, #cfaa4c); 
+  border-color: var(--c-gold); 
   background: linear-gradient(135deg, rgba(42, 42, 58, 0.95), rgba(32, 32, 48, 0.98));
   box-shadow: 0 0 15px rgba(207, 170, 76, 0.2);
 }

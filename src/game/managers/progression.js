@@ -1,24 +1,14 @@
+import { Player } from '../logic/Player.js';
+import { Game } from '../core/game.js';
+import { gameStore } from '../store.js';
+import { EVOLUTIONS, CLASS_TREES } from '../config/evolution.js';
+import { VFX } from './vfx.js';
+
 const ProgressionManager = {
     levelUpState() {
-        UI.showPanel("levelup");
-        const p = document.getElementById("panel-levelup");
-        if(p) {
-            p.innerHTML = `
-              <h2 style="text-align: center; color: var(--c-gold)">LEVEL UP!</h2>
-              <p style="text-align: center; margin-bottom: 20px;">Choose a stat to increase:</p>
-              <div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
-                <button id="btn-up-str" style="width:200px; padding:10px; border-color:var(--c-red); color:#fff;">STR +1 <br><small>(Current: ${Player.attr.STR})</small></button>
-                <button id="btn-up-vit" style="width:200px; padding:10px; border-color:var(--c-green); color:#fff;">VIT +1 <br><small>(Current: ${Player.attr.VIT})</small></button>
-                <button id="btn-up-int" style="width:200px; padding:10px; border-color:var(--c-blue); color:#fff;">INT +1 <br><small>(Current: ${Player.attr.INT})</small></button>
-              </div>
-            `;
-        
-            if(document.getElementById("btn-up-str")) document.getElementById("btn-up-str").onclick = () => this.applyLevelUp("STR");
-            if(document.getElementById("btn-up-vit")) document.getElementById("btn-up-vit").onclick = () => this.applyLevelUp("VIT");
-            if(document.getElementById("btn-up-int")) document.getElementById("btn-up-int").onclick = () => this.applyLevelUp("INT");
-        }
-    
-        UI.setButtons([null, null, null, null]);
+        gameStore.state.activePanel = 'levelup'; 
+        // Vue LevelUpPanel.vue handles the UI rendering
+        if(gameStore) gameStore.state.buttons = [];
     },
 
     applyLevelUp(stat) {
@@ -26,20 +16,20 @@ const ProgressionManager = {
         Player.recalc();
         Player.hp = Player.maxHp; // Full heal on level up
         Player.mp = Player.maxMp;
-        UI.log(`${stat} Increased! Full Heal!`, "log item");
+        gameStore.log(`${stat} Increased! Full Heal!`, "item"); // UI.log replacement
         
         // Check for Class Mutation (Level 20, 50, 80)
         // Use Player.classTree to identify the evolution path
         const baseClass = Player.classTree || "skeleton"; 
         
         if ((Player.level === 20 || Player.level === 50 || Player.level === 80) && 
-            window.CLASS_TREES && CLASS_TREES[baseClass] && CLASS_TREES[baseClass][Player.level]) {
+            CLASS_TREES && CLASS_TREES[baseClass] && CLASS_TREES[baseClass][Player.level]) {
             this.mutationState(baseClass, Player.level);
             return;
         }
     
         // Check for Evolution (Level 5 & 10)
-        if ((Player.level === 5 || Player.level === 10) && window.EVOLUTIONS && EVOLUTIONS[Player.level]) {
+        if ((Player.level === 5 || Player.level === 10) && EVOLUTIONS && EVOLUTIONS[Player.level]) {
             this.evolutionState(Player.level);
         } else {
             Game.exploreState();
@@ -47,80 +37,26 @@ const ProgressionManager = {
     },
 
     evolutionState(tier) {
-        UI.showPanel("evo");
-        const list = document.getElementById("evo-list");
-        if(list) {
-            list.innerHTML = "";
-            
-            // Add Tier Title
-            const title = document.createElement("div");
-            title.style.cssText = "text-align:center; color:var(--c-gold); margin-bottom:10px;";
-            title.innerText = tier === 5 ? "Tier 1 Evolution (Lv.5)" : "Tier 2 Evolution (Lv.10)";
-            list.appendChild(title);
-            
-            const options = EVOLUTIONS[tier];
-            if (!options) return Game.exploreState();
-            
-            options.forEach(opt => {
-                const btn = document.createElement("div");
-                btn.className = "shop-item"; // Reuse shop styling
-                btn.style.cssText = "padding:15px; margin:10px 0; border:1px solid #444; cursor:pointer; text-align:center;";
-                btn.innerHTML = `
-                    <strong style="color:var(--c-cyan)">${opt.name}</strong><br>
-                    <small>${opt.desc}</small>
-                `;
-                btn.onclick = () => this.applyEvolution(opt.id);
-                list.appendChild(btn);
-            });
-        }
-        
-        UI.setButtons([null, null, null, null]);
+        // Prepare data for Vue Component
+        gameStore.state.evolutionOptions = EVOLUTIONS[tier] || [];
+        gameStore.state.activePanel = 'evo';
+        if(gameStore) gameStore.state.buttons = [];
     },
 
     mutationState(baseClass, tier) {
-        UI.showPanel("evo");
-        const list = document.getElementById("evo-list");
-        if(list) {
-            list.innerHTML = "";
-            
-            // Add Tier Title
-            const title = document.createElement("div");
-            title.style.cssText = "text-align:center; color:var(--c-red); margin-bottom:10px; font-size:1.2rem;";
-            title.innerText = `CLASS MUTATION (Lv.${tier})`;
-            list.appendChild(title);
-            
-            const options = CLASS_TREES[baseClass][tier];
-            if (!options) return Game.exploreState();
-            
-            options.forEach(opt => {
-                const btn = document.createElement("div");
-                btn.className = "shop-item"; 
-                btn.style.cssText = "padding:15px; margin:10px 0; border:1px solid #444; cursor:pointer; text-align:center;";
-                
-                // Sprite Preview
-                let spriteHtml = opt.sprite || "";
-                
-                btn.innerHTML = `
-                    <div style="margin-bottom:10px;">${spriteHtml}</div>
-                    <strong style="color:var(--c-gold); font-size:1.1rem;">${opt.name}</strong><br>
-                    <small style="color:#aaa">${opt.desc}</small><br>
-                    <div style="margin-top:5px; font-size:0.8rem; color:var(--c-cyan)">
-                        STR +${opt.stats.str} | VIT +${opt.stats.vit} | INT +${opt.stats.int}
-                    </div>
-                `;
-                btn.onclick = () => this.applyMutation(opt);
-                list.appendChild(btn);
-            });
-        }
-        
-        UI.setButtons([null, null, null, null]);
+        // Prepare data for Vue
+        const options = CLASS_TREES[baseClass] && CLASS_TREES[baseClass][tier] ? CLASS_TREES[baseClass][tier] : [];
+        gameStore.state.evolutionOptions = options; // Reuse evolution options state or create new one
+        gameStore.state.subPanel = 'mutation'; // Flag for Vue to know it's mutation
+        gameStore.state.activePanel = 'evo';
+        if(gameStore) gameStore.state.buttons = [];
     },
 
     applyMutation(opt) {
         Player.mutate(opt);
         
-        UI.log(`Mutated into ${opt.name}!`, "log item");
-        VFX.showSkillEffect("Evolution", "mob-sprite");
+        gameStore.log(`Mutated into ${opt.name}!`, "item");
+        if(VFX) VFX.showSkillEffect("Evolution", "mob-sprite");
         
         Game.exploreState();
     },
@@ -131,11 +67,13 @@ const ProgressionManager = {
         Player.evolutions.push(id);
         Player.recalc(); 
         
-        UI.log("Evolution Complete!", "log item");
-        VFX.showSkillEffect("Evolution", "mob-sprite"); 
+        gameStore.log("Evolution Complete!", "item");
+        if(VFX) VFX.showSkillEffect("Evolution", "mob-sprite"); 
         
         Game.exploreState();
     }
 };
 
-window.ProgressionManager = ProgressionManager;
+// Global export REMOVED
+// window.ProgressionManager = ProgressionManager;
+export { ProgressionManager };

@@ -2,13 +2,20 @@
 import { ref, computed, onMounted } from "vue";
 import { gameStore } from "../game/store.js";
 import { GEMS } from "../game/config/gems.js";
+import { DB } from "../game/config/database.js";
+import { Player } from "../game/logic/Player.js";
+import { SoundManager } from "../game/managers/sound.js";
+import { LootManager } from "../game/managers/loot.js";
+import { SocketManager } from "../game/managers/SocketManager.js";
+import { EconomyManager } from "../game/managers/EconomyManager.js";
+import { Game } from "../game/core/game.js";
 
 const s = gameStore.state;
 const shopTab = ref("ITEMS"); // ITEMS | GEMS
 
 // v37.1: Play sound helper
 const playSound = (soundName) => {
-  if (window.SoundManager) window.SoundManager.play(soundName);
+  if (SoundManager) SoundManager.play(soundName);
 };
 
 // v37.1: Switch tab with sound
@@ -22,8 +29,8 @@ const switchTab = (tab) => {
 // Initialize merchant stock if empty
 onMounted(() => {
   if (!s.merchantStock || s.merchantStock.length === 0) {
-    if (window.LootManager) {
-      const newStock = window.LootManager.generateMerchantStock(s.floor || 1);
+    if (LootManager) {
+      const newStock = LootManager.generateMerchantStock(s.floor || 1);
       s.merchantStock = newStock;
     }
   }
@@ -44,7 +51,7 @@ const shopStock = computed(() => {
   // If it contains ID strings (legacy/merchant), map them.
   return s.merchantStock.map(item => {
       if(typeof item === 'string') {
-           return window.DB.ITEMS ? window.DB.ITEMS[item] : { name: item, price: 0 };
+           return DB.ITEMS ? DB.ITEMS[item] : { name: item, price: 0 };
       }
       return item;
   }).filter(i => i);
@@ -67,9 +74,9 @@ const generateGemStock = () => {
   for (let i = 0; i < stockSize; i++) {
     const randomGem = availableGems[Math.floor(Math.random() * availableGems.length)];
     
-    if (randomGem && window.SocketManager) {
-      const scaledBonus = window.SocketManager.scaleGemStats(randomGem.bonus, floor);
-      const basePrice = window.SocketManager.getGemValue(randomGem.rarity, floor);
+    if (randomGem && SocketManager) {
+      const scaledBonus = SocketManager.scaleGemStats(randomGem.bonus, floor);
+      const basePrice = SocketManager.getGemValue(randomGem.rarity, floor);
       
       gemStock.push({
         id: randomGem.id,
@@ -97,8 +104,8 @@ const gemStock = computed(() => {
 
 // v37.0 Phase 4: Economy Integration
 const inflation = computed(() => {
-  if (!window.EconomyManager) return 0;
-  return window.EconomyManager.getInflationPercent();
+  if (!EconomyManager) return 0;
+  return EconomyManager.getInflationPercent();
 });
 
 const activeEvent = computed(() => {
@@ -111,22 +118,22 @@ const isShopClosed = computed(() => {
 
 // Get dynamic price for item
 const getDynamicPrice = (item) => {
-  if (!window.EconomyManager) return item.price || 0;
-  return window.EconomyManager.calculateBuyPrice(item.price || 0, item.id);
+  if (!EconomyManager) return item.price || 0;
+  return EconomyManager.calculateBuyPrice(item.price || 0, item.id);
 };
 
 // Get stock badge for item (only if tracked)
 const getStockBadge = (itemId) => {
-  if (!window.EconomyManager) return null;
+  if (!EconomyManager) return null;
   // Only show badge if item has been purchased before
   if (!s.economy?.itemStock?.[itemId] && s.economy?.itemStock?.[itemId] !== 0) return null;
-  return window.EconomyManager.getStockBadge(itemId);
+  return EconomyManager.getStockBadge(itemId);
 };
 
 // Check if out of stock
 const isOutOfStock = (itemId) => {
-  if (!window.EconomyManager) return false;
-  return window.EconomyManager.getStockLevel(itemId) <= 0;
+  if (!EconomyManager) return false;
+  return EconomyManager.getStockLevel(itemId) <= 0;
 };
 
 const canAfford = (item) => {
@@ -158,19 +165,19 @@ const buyItem = (item) => {
     s.gold -= price;
     
     // Add to inventory
-    if (window.Player) {
-      window.Player.addItem({ ...item });
+    if (Player) {
+      Player.addItem({ ...item });
     } else {
       s.inventory.push({ ...item });
     }
     
     // Track purchase for economy
-    if (window.EconomyManager) {
-      window.EconomyManager.recordPurchase(item.id, price);
+    if (EconomyManager) {
+      EconomyManager.recordPurchase(item.id, price);
     }
     
     gameStore.log(`Bought ${item.name} for ${price}g!`, 'loot');
-    if(window.SoundManager) window.SoundManager.play("shop_buy");
+    if(SoundManager) SoundManager.play("shop_buy");
 };
 
 // v37.0: Buy gem
@@ -182,8 +189,8 @@ const buyGem = (gem) => {
   }
   
   const basePrice = gem.price || 0;
-  const dynamicPrice = window.EconomyManager ? 
-    window.EconomyManager.calculateBuyPrice(basePrice, gem.gemType) : basePrice;
+  const dynamicPrice = EconomyManager ? 
+    EconomyManager.calculateBuyPrice(basePrice, gem.gemType) : basePrice;
   
   if (!gem || s.gold < dynamicPrice) {
     gameStore.log("Not enough gold!", "error");
@@ -195,7 +202,7 @@ const buyGem = (gem) => {
   s.gold -= dynamicPrice;
   
   // Add gem to inventory via Player
-  if (window.Player) {
+  if (Player) {
     const gemItem = {
       id: `${gem.gemType}_fl${gem.dropFloor}_${Date.now()}`,
       name: gem.name,
@@ -211,32 +218,32 @@ const buyGem = (gem) => {
       sellPrice: Math.floor(dynamicPrice / 2)
     };
     
-    window.Player.addItem(gemItem);
+    Player.addItem(gemItem);
     
     // Track purchase
-    if (window.EconomyManager) {
-      window.EconomyManager.recordPurchase(gem.gemType, dynamicPrice);
+    if (EconomyManager) {
+      EconomyManager.recordPurchase(gem.gemType, dynamicPrice);
     }
     
     gameStore.log(`Bought ${gem.icon} ${gem.name}!`, "loot");
-    if(window.SoundManager) window.SoundManager.play("shop_buy");
+    if(SoundManager) SoundManager.play("shop_buy");
   }
 };
 
 const refreshShop = () => {
     if (s.gold >= 50) {
-        if(window.LootManager) {
+        if(LootManager) {
             s.gold -= 50;
             // Generate IDs
-            const newStockIds = window.LootManager.generateMerchantStock(s.floor || 1);
+            const newStockIds = LootManager.generateMerchantStock(s.floor || 1);
             s.merchantStock = newStockIds;
             
             // v37.0: Also refresh gem stock
             s.merchantGemStock = generateGemStock();
 
             // v37.1 E4.7: Reset scarcity on shop refresh
-            if (window.EconomyManager) {
-                window.EconomyManager.resetScarcity();
+            if (EconomyManager) {
+                EconomyManager.resetScarcity();
             }
             
             gameStore.log("Merchant stock refreshed!", "system");
@@ -247,17 +254,17 @@ const refreshShop = () => {
 };
 
 const autoSell = (rarityType) => {
-    if (!window.Player || !window.Player.inventory) return;
+    if (!Player || !Player.inventory) return;
     
     let soldCount = 0;
     let earned = 0;
     
     // Reverse loop
-    for (let i = window.Player.inventory.length - 1; i >= 0; i--) {
-        const item = window.Player.inventory[i];
+    for (let i = Player.inventory.length - 1; i >= 0; i--) {
+        const item = Player.inventory[i];
         
         // Safety: Unlocked only
-        if (window.Player.lockedItems && window.Player.lockedItems.includes(item.id)) continue;
+        if (Player.lockedItems && Player.lockedItems.includes(item.id)) continue;
         
         // Safety: Skip Gems, Mats, Consumables, Books (valuable crafting materials)
         if (['mat', 'con', 'skill_book'].includes(item.slot)) continue;
@@ -271,14 +278,14 @@ const autoSell = (rarityType) => {
              // Use sellPrice if available, otherwise calculate from price
              const price = item.sellPrice || Math.floor((item.price || 10) / 2);
              earned += price;
-             window.Player.inventory.splice(i, 1);
+             Player.inventory.splice(i, 1);
              soldCount++;
         }
     }
     
     if (soldCount > 0) {
         s.gold += earned;
-        if(window.SoundManager) window.SoundManager.play("sell");
+        if(SoundManager) SoundManager.play("sell");
         gameStore.log(`Auto-Sold ${soldCount} items for ${earned} G`, "buff");
     } else {
         gameStore.log("No matching items to sell.", "error");
@@ -287,7 +294,7 @@ const autoSell = (rarityType) => {
 
 
 const leave = () => {
-  if (window.Game) window.Game.exploreState();
+  if (Game) Game.exploreState();
 };
 </script>
 
@@ -411,7 +418,7 @@ const leave = () => {
 <style scoped>
 .merchant-panel {
     padding: 15px; 
-    background: var(--glass-bg, rgba(17, 17, 17, 0.95));
+    background: var(--bg-panel);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     height: 100%; 
@@ -428,12 +435,12 @@ const leave = () => {
     margin-bottom: 12px;
 }
 .header h3 { 
-    color: var(--c-gold, #cfaa4c); 
+    color: var(--c-gold); 
     margin: 0;
     text-shadow: 0 0 10px rgba(207, 170, 76, 0.3);
 }
 .header h3 small {
-    color: #4f4;
+    color: var(--c-green);
     margin-left: 10px;
     font-size: 0.9rem;
 }
@@ -448,7 +455,7 @@ const leave = () => {
 }
 .refresh-btn:hover { 
     background: linear-gradient(135deg, #3a3a45, #2a2a35);
-    border-color: var(--c-gold, #cfaa4c);
+    border-color: var(--c-gold);
     box-shadow: 0 0 10px rgba(207, 170, 76, 0.2);
 }
 
@@ -471,8 +478,8 @@ const leave = () => {
 }
 .shop-tabs button.active {
   background: linear-gradient(135deg, #2a2535, #1a1525);
-  border-color: var(--c-gold, #cfaa4c);
-  color: var(--c-gold, #cfaa4c);
+  border-color: var(--c-gold);
+  color: var(--c-gold);
   box-shadow: 0 0 15px rgba(255, 215, 0, 0.25), inset 0 0 10px rgba(255, 215, 0, 0.05);
 }
 .shop-tabs button:hover:not(.active) {
@@ -498,7 +505,7 @@ const leave = () => {
 }
 .shop-item:hover {
     background: linear-gradient(135deg, rgba(40, 40, 50, 0.9), rgba(30, 30, 40, 0.95));
-    border-color: var(--c-gold, #cfaa4c);
+    border-color: var(--c-gold);
     box-shadow: 0 0 15px rgba(207, 170, 76, 0.2);
     transform: translateY(-2px);
 }
@@ -570,8 +577,8 @@ const leave = () => {
 
 .name { font-weight: bold; margin-bottom: 5px; }
 .price { color: var(--c-gold); font-weight: bold; font-size: 1.1rem; }
-.price.red { color: #f44; }
-.desc { font-size: 0.8rem; color: #888; clear: both; }
+.price.red { color: var(--c-red-bright); }
+.desc { font-size: 0.8rem; color: var(--text-muted); clear: both; }
 
 /* Rarity Colors */
 .common { color: #ccc; }
@@ -622,11 +629,11 @@ const leave = () => {
 }
 
 .inflation {
-  color: #4f4;
+  color: var(--c-green);
 }
 
 .inflation.high {
-  color: #f44;
+  color: var(--c-red-bright);
   animation: inflation-pulse 1s infinite;
 }
 
@@ -636,7 +643,7 @@ const leave = () => {
 }
 
 .merchant-rep {
-  color: #fa0;
+  color: var(--rare-legend);
 }
 
 .event-banner {

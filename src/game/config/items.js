@@ -25,7 +25,7 @@ export const ITEMS_DB = {
     rusty_knife: { name: "Rusty Knife", slot: "weapon", atk: 3, price: 10, desc: "Better than fists.", rarity: "common" },
     iron_sword: { name: "Iron Sword", slot: "weapon", atk: 8, price: 50, desc: "Standard issue.", rarity: "common" },
     leather_armor: { name: "Leather Armor", slot: "armor", def: 2, hp: 10, price: 15, desc: "Basic protection.", rarity: "common" },
-    smoke_bomb: { name: "Smoke Bomb", slot: "acc", def: 0, price: 80, desc: "Emergency escape.", rarity: "common", uniqueEffect: "dodge_10" },
+    smoke_bomb: { name: "Smoke Bomb", slot: "acc", def: 0, agi: 2, price: 80, desc: "Emergency escape. +2 AGI", rarity: "common", uniqueEffect: "dodge_10" },
 
     // Books
     book_smash: { name: "Book: Smash", slot: "skill_book", skillId: "smash", price: 50, rarity: "common", desc: "Learn Smash" },
@@ -48,7 +48,7 @@ export const ITEMS_DB = {
     steel_axe: { name: "Steel Axe", slot: "weapon", atk: 12, price: 120, desc: "Sharp and heavy.", rarity: "uncommon" },
     chainmail: { name: "Chainmail", slot: "armor", def: 5, hp: 20, price: 80, desc: "Interlinked rings.", rarity: "uncommon" },
     bark_shield: { name: "Bark Shield", slot: "acc", def: 5, hp: 30, price: 100, desc: "Nature's guard.", rarity: "uncommon" },
-    rogue_hood: { name: "Rogue Hood", slot: "armor", def: 3, hp: 20, price: 120, desc: "Hides your face.", rarity: "uncommon", uniqueEffect: "dodge_5" },
+    rogue_hood: { name: "Rogue Hood", slot: "armor", def: 3, hp: 20, agi: 3, price: 120, desc: "Hides your face. +3 AGI", rarity: "uncommon", uniqueEffect: "dodge_5" },
     blessed_robe: { name: "Blessed Robe", slot: "armor", def: 5, hp: 30, int: 5, price: 150, desc: "Woven with light.", rarity: "uncommon" },
     wizard_hat: { name: "Wizard Hat", slot: "armor", def: 2, mp: 50, int: 8, price: 180, desc: "Classic look.", rarity: "uncommon" },
 
@@ -80,7 +80,7 @@ export const ITEMS_DB = {
     // Legacy Rares (Preserved)
     bone_sword: { name: "Bone Sword", slot: "weapon", atk: 6, price: 30, desc: "ATK+6", rarity: "rare" },
     bone_mail: { name: "Bone Mail", slot: "armor", def: 4, hp: 15, price: 40, desc: "DEF+4, HP+15", rarity: "rare" },
-    silver_ring: { name: "Silver Ring", slot: "acc", atk: 3, int: 3, price: 50, desc: "ATK+3, INT+3", rarity: "rare" },
+    silver_ring: { name: "Silver Ring", slot: "acc", atk: 3, int: 3, luck: 2, price: 50, desc: "ATK+3, INT+3, +2 LCK", rarity: "rare" },
 
     // Books
     book_fireball: { name: "Book: Fireball", slot: "skill_book", skillId: "fireball", price: 100, rarity: "rare", desc: "Learn Fireball" },
@@ -107,14 +107,14 @@ export const ITEMS_DB = {
     scroll_haste: { name: "Scroll of Haste", slot: "con", buff: { id: "buff_dodge", turn: 5, val: 20 }, price: 200, desc: "+20% Dodge (5 Turns)", rarity: "epic" },
 
     // Equipment
-    shadow_blade: { name: "Shadow Blade", slot: "weapon", atk: 15, price: 1000, desc: "Silent killer.", rarity: "epic" },
+    shadow_blade: { name: "Shadow Blade", slot: "weapon", atk: 15, agi: 3, price: 1000, desc: "Silent killer. +3 AGI", rarity: "epic" },
     paladin_hammer: { name: "Paladin Hammer", slot: "weapon", atk: 20, vit: 5, price: 1200, desc: "Smite evil.", rarity: "epic" },
     heavy_hammer: { name: "Heavy Hammer", slot: "weapon", atk: 25, price: 1200, desc: "Crushes armor.", rarity: "epic" },
     
     // Legacy Epics
     dragonbone_axe: { name: "Dragonbone Axe", slot: "weapon", atk: 10, int: 3, price: 800, desc: "ATK+10, INT+3", rarity: "epic" },
     obsidian_plate: { name: "Obsidian Plate", slot: "armor", def: 8, hp: 25, price: 900, desc: "DEF+8, HP+25", rarity: "epic" },
-    arcane_amulet: { name: "Arcane Amulet", slot: "acc", int: 8, mp: 15, price: 800, desc: "INT+8, MP+15", rarity: "epic" },
+    arcane_amulet: { name: "Arcane Amulet", slot: "acc", int: 8, mp: 15, luck: 5, price: 800, desc: "INT+8, MP+15, +5 LCK", rarity: "epic" },
 
     // Books
     book_terror: { name: "Book: Terror", slot: "skill_book", skillId: "terror", price: 120, rarity: "epic", desc: "Learn Terror" },
@@ -151,7 +151,7 @@ export const ITEMS_DB = {
     
     // Poison/Slime themed
     poison_dagger: { name: "Poison Dagger", slot: "weapon", atk: 6, price: 100, desc: "+6 ATK. Poisons enemies on hit.", rarity: "uncommon", uniqueEffect: "poison_hit" },
-    slimy_boots: { name: "Slimy Boots", slot: "armor", def: 2, hp: 15, price: 60, desc: "+2 DEF, +15 HP, +5% Dodge. Slippery movement.", rarity: "common", uniqueEffect: "dodge_5" },
+    slimy_boots: { name: "Slimy Boots", slot: "armor", def: 2, hp: 15, agi: 2, price: 60, desc: "+2 DEF, +15 HP, +2 AGI, +5% Dodge. Slippery movement.", rarity: "common", uniqueEffect: "dodge_5" },
     toxic_ring: { name: "Toxic Ring", slot: "acc", def: 2, price: 80, desc: "+2 DEF. Grants poison immunity.", rarity: "uncommon" },
     
     // Spider themed
@@ -160,7 +160,7 @@ export const ITEMS_DB = {
     spider_ring: { name: "Spider Ring", slot: "acc", atk: 3, price: 70, desc: "+3 ATK. Eight-legged luck.", rarity: "uncommon" },
     
     // Thief/Rogue themed
-    thief_ring: { name: "Thief's Ring", slot: "acc", atk: 4, price: 90, desc: "+4 ATK. Stolen from the rich.", rarity: "uncommon" },
+    thief_ring: { name: "Thief's Ring", slot: "acc", atk: 4, luck: 4, price: 90, desc: "+4 ATK, +4 LCK. Stolen from the rich.", rarity: "uncommon" },
     
     // Golem/Stone themed
     stone_gauntlet: { name: "Stone Gauntlet", slot: "weapon", atk: 12, def: 3, price: 150, desc: "+12 ATK, +3 DEF. Rocky crushing fists.", rarity: "rare" },
@@ -194,8 +194,8 @@ export const ITEMS_DB = {
     fire_ring: { name: "Fire Ring", slot: "acc", int: 8, atk: 5, price: 200, desc: "+5 ATK, +8 INT. Molten core within.", rarity: "epic" },
     
     // Shadow/Void themed (EPIC)
-    shadow_blade: { name: "Shadow Blade", slot: "weapon", atk: 15, price: 240, desc: "+15 ATK. +10% Crit chance. Cuts through light.", rarity: "epic", uniqueEffect: "crit_10" },
-    dark_cloak: { name: "Dark Cloak", slot: "armor", def: 5, hp: 35, price: 220, desc: "+5 DEF, +35 HP, +10% Dodge. Absorbs shadows.", rarity: "epic", uniqueEffect: "dodge_10" },
+    shadow_blade: { name: "Shadow Blade", slot: "weapon", atk: 15, agi: 5, price: 240, desc: "+15 ATK, +5 AGI, +10% Crit chance. Cuts through light.", rarity: "epic", uniqueEffect: "crit_10" },
+    dark_cloak: { name: "Dark Cloak", slot: "armor", def: 5, hp: 35, agi: 4, price: 220, desc: "+5 DEF, +35 HP, +4 AGI, +10% Dodge. Absorbs shadows.", rarity: "epic", uniqueEffect: "dodge_10" },
     void_ring: { name: "Void Ring", slot: "acc", int: 10, price: 250, desc: "+10 INT. Endless darkness.", rarity: "epic" },
     
     // Items from legendary_items.js go here (Usually Soul Weapons or Boss Drops)
@@ -237,10 +237,82 @@ export const ITEMS_DB = {
        desc: "v30.0 MYTHIC. Start of the endless cycle."
     },
 
+    // v38.4: AGI/LUCK Focused Items
+    swift_boots: { name: "Swift Boots", slot: "armor", def: 3, agi: 6, price: 300, desc: "+3 DEF, +6 AGI. Light as a feather.", rarity: "rare" },
+    lucky_charm: { name: "Lucky Charm", slot: "acc", luck: 8, price: 350, desc: "+8 LCK. Fortune smiles upon you.", rarity: "rare" },
+    assassin_dagger: { name: "Assassin Dagger", slot: "weapon", atk: 12, agi: 8, crit: 0.05, price: 500, desc: "+12 ATK, +8 AGI, +5% Crit. Swift death.", rarity: "epic" },
+    fortune_amulet: { name: "Fortune Amulet", slot: "acc", luck: 12, price: 600, desc: "+12 LCK. Riches await.", rarity: "epic" },
+    wind_cloak: { name: "Wind Cloak", slot: "armor", def: 4, agi: 10, price: 700, desc: "+4 DEF, +10 AGI. Move like the wind.", rarity: "epic" },
+    gamblers_ring: { name: "Gambler's Ring", slot: "acc", luck: 15, crit: 0.10, price: 800, desc: "+15 LCK, +10% Crit. High risk, high reward.", rarity: "epic" },
+
     // --- REALM BOSS ARTIFACTS (Soul Weapons) ---
     wrath_of_nature: { name: "Wrath of Nature", type: "weapon", rarity: "mythic", atk: 120, str: 20, vit: 20, desc: "Living wood that pulses with rage. (Thorns +100%)", uniqueEffect: "thorns_boost", slot: "weapon" },
     nightfall_blade: { name: "Nightfall Blade", type: "weapon", rarity: "mythic", atk: 110, agi: 30, crit: 0.25, desc: "A blade made of solidified shadow. (Execute < 30% HP)", uniqueEffect: "execute_30", slot: "weapon" },
     excalibur: { name: "Excalibur", type: "weapon", rarity: "mythic", atk: 130, str: 25, def: 20, desc: "The holy sword. (Smite on Hit)", uniqueEffect: "smite_on_hit", slot: "weapon" },
     chronos_staff: { name: "Chronos Staff", type: "weapon", rarity: "mythic", atk: 100, int: 50, mp: 100, desc: "Warps time itself. (Extra Turn Chance)", uniqueEffect: "extra_turn_10", slot: "weapon" },
-    ragnarok: { name: "Ragnarok", type: "weapon", rarity: "mythic", atk: 150, str: 40, desc: "The end of all things. (Splash Damage)", uniqueEffect: "splash_50", slot: "weapon" }
+    ragnarok: { name: "Ragnarok", type: "weapon", rarity: "mythic", atk: 150, str: 40, desc: "The end of all things. (Splash Damage)", uniqueEffect: "splash_50", slot: "weapon" },
+
+    // =========================================
+    // v38.8: GATEKEEPER BOSS REWARDS
+    // =========================================
+    
+    // --- Crafting Materials ---
+    limit_break_shard: { 
+        name: "Limit Break Shard", 
+        slot: "mat", 
+        price: 0, 
+        rarity: "mythic", 
+        desc: "A shard of transcendence. Dropped by Gatekeeper Bosses. Collect 4 to craft Void Set items.",
+        cannotSell: true
+    },
+    void_essence: { 
+        name: "Void Essence", 
+        slot: "mat", 
+        price: 0, 
+        rarity: "mythic", 
+        desc: "Pure emptiness given form. Dropped by THE VOID. Required to unlock the Void Set.",
+        cannotSell: true
+    },
+
+    // --- THE VOID SET (Mythic with Curses) ---
+    void_edge: { 
+        name: "Void Edge", 
+        slot: "weapon", 
+        atk: 100, 
+        price: 0, 
+        rarity: "mythic", 
+        desc: "ATK +100, 20% Lifesteal. CURSE: -15% Max HP. Forged from nothingness.",
+        uniqueEffect: "lifesteal_20",
+        curse: { maxHp: -0.15 }
+    },
+    abyssal_plate: { 
+        name: "Abyssal Plate", 
+        slot: "armor", 
+        def: 50,
+        hp: 200, 
+        price: 0, 
+        rarity: "mythic", 
+        desc: "DEF +50, HP +200, 30% Damage Reduction. CURSE: -30% Healing.",
+        uniqueEffect: "dr_30",
+        curse: { healingReduction: -0.30 }
+    },
+    chaos_ring: { 
+        name: "Chaos Ring", 
+        slot: "acc", 
+        crit: 0.15,
+        agi: 20, 
+        price: 0, 
+        rarity: "mythic", 
+        desc: "+15% Crit, +20 AGI. CURSE: -10% ATK. The ring whispers madness.",
+        curse: { atk: -0.10 }
+    },
+    null_shard: { 
+        name: "Null Shard", 
+        slot: "gem", 
+        price: 0, 
+        rarity: "mythic", 
+        desc: "Immune to 1 status effect per fight. CURSE: -5% All Stats. A piece of oblivion.",
+        uniqueEffect: "status_immunity_1",
+        curse: { allStats: -0.05 }
+    }
 };

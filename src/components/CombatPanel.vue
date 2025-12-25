@@ -2,6 +2,9 @@
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { gameStore } from "../game/store.js";
 import { REALMS } from "../game/config/realms";
+import { SpriteManager } from "../game/managers/sprite.js";
+import { DB } from "../game/config/database.js";
+import { Combat } from "../game/logic/Combat.js";
 
 const s = gameStore.state;
 const enemy = computed(() => s.combat.enemy);
@@ -10,6 +13,7 @@ const activeRealm = computed(() => s.world.activeRealm);
 // v37.3: Animation states
 const isAttacking = ref(false);
 const isHit = ref(false);
+const spriteState = ref('idle'); // v38.2: Track sprite frame (idle, attack, hurt)
 const lastEnemyHp = ref(0);
 
 // Watch for enemy HP changes to trigger hit animation
@@ -17,7 +21,11 @@ watch(() => enemy.value?.hp, (newHp, oldHp) => {
   if (newHp !== undefined && oldHp !== undefined && newHp < oldHp) {
     // Enemy took damage - trigger hit flash
     isHit.value = true;
-    setTimeout(() => isHit.value = false, 300);
+    spriteState.value = 'hurt'; // Switch to hurt frame
+    setTimeout(() => {
+        isHit.value = false;
+        spriteState.value = 'idle'; // Revert
+    }, 300);
   }
   lastEnemyHp.value = newHp || 0;
 }, { immediate: true });
@@ -26,7 +34,11 @@ watch(() => enemy.value?.hp, (newHp, oldHp) => {
 watch(() => s.combat.turn, (turn) => {
   if (turn === 'enemy') {
     isAttacking.value = true;
-    setTimeout(() => isAttacking.value = false, 400);
+    spriteState.value = 'attack'; // Switch to attack frame
+    setTimeout(() => {
+        isAttacking.value = false;
+        spriteState.value = 'idle'; // Revert
+    }, 400);
   }
 });
 
@@ -65,10 +77,14 @@ const hpColor = computed(() => {
   return "#f44";
 });
 
+
+
+// ... (in const spriteHtml)
 const spriteHtml = computed(() => {
   if (!enemy.value) return "";
-  if (window.SpriteManager) {
-      return window.SpriteManager.render(enemy.value.sprite || "👹");
+  if (SpriteManager) {
+      // v38.2: Use active sprite state (idle/attack/hurt)
+      return SpriteManager.render(enemy.value.sprite || "👹", spriteState.value);
   }
   return enemy.value.sprite || "👹";
 });
@@ -120,6 +136,49 @@ const getStatusIcon = (statusId) => {
 const getStatusName = (statusId) => {
   return statusNames[statusId] || statusId;
 };
+
+// v38.2: Mobile Quick Select Logic
+const quickSkills = computed(() => {
+    if (!DB || !DB.SKILLS) return [];
+    return (s.equippedSkills || []).map(id => {
+        const skill = DB.SKILLS[id];
+        return skill ? { id, ...skill } : null;
+    }).filter(s => s);
+});
+
+const useQuickSkill = (skill) => {
+    if (!Combat) {
+        console.error("Combat module not loaded!");
+        return;
+    }
+    // Check Cooldown
+    if (s.skillCooldowns && s.skillCooldowns[skill.id] > 0) {
+        gameStore.log(`${skill.name} is on cooldown!`, "warning");
+        return;
+    }
+    // Check MP
+    const cost = skill.cost || 0; 
+    if (s.mp < cost) {
+         gameStore.log("Not enough MP!", "warning");
+         return;
+    }
+    
+    // Execute
+    try {
+        if (typeof Combat.executeSkill === 'function') {
+            Combat.executeSkill(skill.id, skill);
+        } else {
+            console.error("Combat.executeSkill is not a function", Combat);
+        }
+    } catch (e) {
+        console.error("Quick Skill Error:", e);
+    }
+};
+
+const getCooldown = (id) => {
+    return s.skillCooldowns ? (s.skillCooldowns[id] || 0) : 0;
+};
+
 </script>
 
 <template>
@@ -180,6 +239,19 @@ const getStatusName = (statusId) => {
         {{ getStatusIcon(st.id) }}
       </span>
     </div>
+    <!-- MOBILE QUICK SKILL BAR (v38.2) -->
+    <div class="mobile-quick-bar" v-if="quickSkills.length > 0">
+        <div 
+            v-for="skill in quickSkills" 
+            :key="skill.id" 
+            class="quick-btn"
+            :class="{ 'on-cd': getCooldown(skill.id) > 0, 'no-mp': s.mp < (skill.cost || 0) }"
+            @click="useQuickSkill(skill)"
+        >
+            <span class="q-icon">{{ skill.icon || '⚡' }}</span>
+            <span v-if="getCooldown(skill.id) > 0" class="q-cd">{{ getCooldown(skill.id) }}</span>
+        </div>
+    </div>
   </div>
   <div v-else class="combat-empty">Searching for enemies...</div>
 </template>
@@ -190,7 +262,7 @@ const getStatusName = (statusId) => {
   flex-direction: column;
   align-items: center;
   padding: 5px; /* Reduced from 15px */
-  background: var(--glass-bg, rgba(20, 10, 10, 0.9));
+  background: var(--glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(80, 30, 30, 0.6);
@@ -207,7 +279,7 @@ const getStatusName = (statusId) => {
 .enemy-header h2 {
   margin: 0;
   font-size: 1.1rem; /* Reduced from 1.2rem */
-  color: #fff;
+  color: var(--text-primary);
   text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
 }
 .enemy-header h2.boss {
@@ -221,7 +293,7 @@ const getStatusName = (statusId) => {
   50% { text-shadow: 0 0 20px rgba(255, 85, 85, 0.9), 0 0 40px rgba(255, 0, 0, 0.5); }
 }
 .enemy-type {
-  color: #aaa;
+  color: var(--text-secondary);
   font-style: italic;
   font-size: 0.75rem; /* Reduced from 0.8rem */
 }
@@ -452,6 +524,51 @@ const getStatusName = (statusId) => {
     padding: 3px 6px;
     font-size: 12px;
   }
+}
+
+/* QUICK BAR STYLES (Mobile Only) (v38.2) */
+.mobile-quick-bar {
+    display: none; /* Hidden on Desktop */
+    width: 100%;
+    margin-top: 10px;
+    gap: 8px;
+    flex-wrap: wrap; /* Safety for many skills */
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .mobile-quick-bar {
+        display: flex;
+    }
+}
+
+.quick-btn {
+    width: 50px; height: 50px; /* Increased from 44px for better touch reliability */
+    background: #2a2a2a;
+    border: 1px solid #555;
+    border-radius: 8px; /* Slightly rounder */
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.6rem;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    transition: transform 0.1s;
+    touch-action: manipulation; /* Prevent zoom */
+}
+
+.quick-btn:active { transform: scale(0.95); background: #333; }
+.quick-btn.on-cd { opacity: 0.5; background: #111; cursor: not-allowed; }
+.quick-btn.no-mp { filter: grayscale(1); border-color: #500; }
+
+.q-cd {
+    position: absolute;
+    background: rgba(0,0,0,0.8);
+    color: #ffd700;
+    font-size: 0.8rem;
+    width: 100%; height: 100%;
+    display: flex; justify-content: center; align-items: center;
+    border-radius: 6px;
+    font-weight: bold;
 }
 
 /* Reduced motion support */

@@ -121,7 +121,7 @@ After the massive content injection of v34/v35, the game will likely be unstable
 
 **Focus**: _Hardcore Risks & High Scores_
 
-- [ ] **1. Technical Debt Cleanup (Legacy Audit)**
+- [x] **1. Technical Debt Cleanup (Legacy Audit)**
 
   - **Refactor ProgressionManager**: Convert `LevelUp` and `Evolution` panels from raw HTML string injection to proper Vue components (`LevelUpPanel.vue`, `EvolutionPanel.vue`).
   - **Refactor Skills.js**: Migrate `activeSkills` and `skillTrees` rendering to `SkillTreePanel.vue`.
@@ -144,35 +144,7 @@ After the massive content injection of v34/v35, the game will likely be unstable
   - **Accessibility (A11y)**: Add `aria-label` to icon-only buttons and ensure proper semantic HTML structure.
   - **Pragmatic Exceptions**: `MobileHandler` (touch events) and `VFX` (screen shake) may retain DOM access but should be modernized where possible.
 
-- [ ] **12. Expanded Stats System (AGI & LUCK)**
-
-  - **AGI (Agility)**:
-
-    - Increases Dodge Chance (+0.5% per point)
-    - Affects Turn Order / Attack Speed
-    - Improves Flee Success Rate
-    - Reduces Skill Cooldowns slightly
-
-  - **LUCK**:
-
-    - Increases Critical Hit Chance (+0.3% per point)
-    - Improves Loot Rarity Rolls
-    - Boosts Gold Drop Amount (+1% per point)
-    - Increases Gem Drop Rates
-    - Affects Chest Loot Quality
-
-  - **Implementation Scope**:
-    - `Player.js`: Add baseStats.AGI/LUCK, recalc logic
-    - `Combat.js`: Integrate AGI (dodge) and LUCK (crit)
-    - `LootManager.js`: LUCK affects drop rates/rarity
-    - `database.js`: Starting stats per class
-    - `evolution.js`: Stat allocation options
-    - `items.js`: Add +AGI/+LUCK to equipment
-    - `gems.js`: Add AGI/LUCK gem types
-    - `StatsPanel.vue`: Display new stats
-    - Balancing pass on all existing content
-
-- [ ] **2. Run Modifiers (The Pact)**
+- [x] **2. Run Modifiers (The Pact)**
 
   - At the start of a run, choose up to **3 Challenges** from a random pool of 10.
   - **Rewards**: Each Challenge grants **+X% Score** and **+Y% Soul Drops**.
@@ -181,62 +153,90 @@ After the massive content injection of v34/v35, the game will likely be unstable
     - **Skip**: "No" button to play normally.
     - **Confirm**: Pop-up "CHALLENGE ACCEPTED: DEATH IS THE ONLY OPTION".
 
-- [ ] **3. The Challenge Pool (Examples)**
+- [x] **3. The Challenge Pool**
 
   - _Glass Cannon_: Player HP cap is 1. (+50% Souls)
   - _Broke_: Gold drops are disabled. (+20% Score)
   - _Blind_: Fog of War is permanent. (+30% Souls)
   - _Pacifist_: Cannot use weapons (Skills only). (+100% Score)
 
-- [ ] **4. Dynamic In-Game Challenges**
+- [x] **4. Dynamic In-Game Challenges**
 
   - Random "Cursed Altars" found in Event Nodes.
   - Accept a mid-run curse for a massive immediate reward (e.g., gain 1000 Gold, but lose 50% Max HP).
 
-- [ ] **5. Dungeon & Raid System**
+- [ ] **5. Dungeon & Raid System**(optional)
 
   - **Instanced Dungeons**: Time-limited challenges with unique bosses and exclusive loot.
   - **Raid Bosses**: Massive multi-phase bosses requiring strategic preparation.
   - **Weekly Reset**: Special dungeons that refresh weekly with different modifiers.
 
-- [ ] **6. Multiplayer & Leaderboards**
+- [ ] **6. Multiplayer & Leaderboards**(optional)
 
   - **Global Leaderboards**: Compete for highest floor, fastest clear, most souls.
   - **Daily/Weekly Rankings**: Time-limited competitions with exclusive rewards.
   - **Ghost Runs**: Race against replays of top players.
 
-- [ ] **7. Guild System**
+- [ ] **7. Guild System**(optional)
 
   - **Create/Join Guilds**: Form alliances with other players.
   - **Guild Raids**: Cooperative boss battles with shared rewards.
   - **Guild Wars**: Competitive events between guilds.
   - **Guild Perks**: Unlock permanent bonuses through guild progression.
 
-- [ ] **8. Pet & Companion System**
+- [ ] **8. Pet & Companion System**(optional)
 
   - **Summonable Pets**: Companions that fight alongside you.
   - **Pet Evolution**: Level up and evolve pets into stronger forms.
   - **Pet Abilities**: Unique skills (healing, damage, buffs).
   - **Pet Fusion**: Combine pets for hybrid abilities.
 
-- [ ] **9. Endless Mode**
+- [x] **9. Endless Mode**
 
   - **Infinite Scaling**: Floors beyond 100 with exponential difficulty.
   - **Prestige System**: Reset with permanent stat bonuses.
   - **Endless Leaderboard**: See who can climb highest.
 
-- [ ] **10. Daily Challenges**
+- [x] **10. Daily Challenges**(enhance)
 
   - **Rotating Modifiers**: New challenge conditions every day.
   - **Daily Rewards**: Exclusive items for completing daily runs.
   - **Streak Bonuses**: Consecutive completion rewards.
 
-- [ ] **11. Seasonal Events**
+- [x] **11. Seasonal Events**(make more event to populate event pool)
 
   - **Holiday Themes**: Special events for holidays (Halloween, Christmas, etc.).
   - **Limited Items**: Exclusive cosmetics and gear only available during events.
   - **Event Bosses**: Unique seasonal bosses with themed loot.
   - **Event Shop**: Spend event currency on exclusive rewards.
+
+- [x] **12. Expanded Stats System (AGI & LUCK)** (make more stat)
+
+- **AGI (Agility)**:
+
+  - Increases Dodge Chance (+0.5% per point)
+  - Affects Turn Order / Attack Speed
+  - Improves Flee Success Rate
+  - Reduces Skill Cooldowns slightly
+
+- **LUCK**:
+
+  - Increases Critical Hit Chance (+0.3% per point)
+  - Improves Loot Rarity Rolls
+  - Boosts Gold Drop Amount (+1% per point)
+  - Increases Gem Drop Rates
+  - Affects Chest Loot Quality
+
+- **Implementation Scope**:
+  - `Player.js`: Add baseStats.AGI/LUCK, recalc logic
+  - `Combat.js`: Integrate AGI (dodge) and LUCK (crit)
+  - `LootManager.js`: LUCK affects drop rates/rarity
+  - `database.js`: Starting stats per class
+  - `evolution.js`: Stat allocation options
+  - `items.js`: Add +AGI/+LUCK to equipment
+  - `gems.js`: Add AGI/LUCK gem types
+  - `StatsPanel.vue`: Display new stats
+  - Balancing pass on all existing content
 
 ---
 
@@ -274,7 +274,19 @@ After the massive content injection of v34/v35, the game will likely be unstable
     - **Paladin (Redemption)**: You rebuild the Order of Light from the ashes.
     - **Berserker (Revenge)**: You destroy everything, leaving only a barren wasteland.
 
-- [ ] **6. The Final Secret (Hidden Class)**
+- [ ] **6. The Visual Overhaul (Immersive Update)**
+
+  - **2D Pixel Art Sprites**: Replace CSS blocks/text with animated pixel art for Player/Enemies.
+    - _Tech_: Use GIF or Sprite Sheets with CSS steps().
+  - **Cinematic Experience**:
+    - **Opening Teaser**: Play a short video/animation on New Game.
+    - **Cutscenes**: In-engine event scenes (Dialogue + Character Portraits).
+    - **Ending Cinematics**: Unique video/visual sequence for each Ending.
+  - **Audio/Visual Depth**:
+    - Ambient Soundscapes (Rain, Dungeon Echoes).
+    - Camera Shake/Zoom effects during Boss Intros.
+
+- [ ] **7. The Final Secret (Hidden Class)**
   - **Class**: **The World Eater** 🌌
   - **Unlock Condition**: Complete the game once & collect 5 _Eater Fragments_ (Hidden in each Realm).
   - **Playstyle**: Overpowered. Uses "Void Energy". Can consume enemies to gain their stats permanently.

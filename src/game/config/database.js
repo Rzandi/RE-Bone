@@ -42,6 +42,4 @@ export const DB = {
 
 // v37.0 Socket Generation Helper (Export for use in loot)
 export { generateSocketCount, getGemTierInfo };
-
-// Legacy Compatibility (Optional, can be removed later)
-window.DB = DB;
+ 

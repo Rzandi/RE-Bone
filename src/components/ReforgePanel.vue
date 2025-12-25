@@ -1,11 +1,14 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { gameStore } from '../game/store.js';
+import { ReforgeManager } from '../game/managers/ReforgeManager.js';
+import { SoundManager } from '../game/managers/sound.js';
 
 const s = gameStore.state;
 const selectedItem = ref(null);
 const reforgeMode = ref('gold'); // 'gold' | 'soul'
 const isReforging = ref(false); // Prevent spam clicks
+const activeTab = ref('REFORGE'); // 'REFORGE' | 'UPGRADE'
 
 // Get reforgeable items (equipment only, no legendary)
 const reforgeableItems = computed(() => {
@@ -31,7 +34,7 @@ const undoReforge = () => {
   // Restore stats from backup
   Object.assign(selectedItem.value, JSON.parse(previousItemState.value));
   
-  if (window.SoundManager) window.SoundManager.play('ui_back');
+  if (SoundManager) SoundManager.play('ui_back');
   gameStore.log('Reforge undone.', 'neural');
   
   // Clear backup to prevent multiple undos
@@ -40,30 +43,46 @@ const undoReforge = () => {
 
 // Get costs for selected item
 const costs = computed(() => {
-  if (!selectedItem.value || !window.ReforgeManager) return null;
-  return window.ReforgeManager.getCosts(selectedItem.value.rarity);
+  if (!selectedItem.value || !ReforgeManager) return null;
+  return ReforgeManager.getCosts(selectedItem.value.rarity);
+});
+
+// Get upgrade costs
+const upgradeCost = computed(() => {
+  if (!selectedItem.value || !ReforgeManager) return null;
+  if (!ReforgeManager.getUpgradeCost) return null; // Safety
+  return ReforgeManager.getUpgradeCost(selectedItem.value);
 });
 
 // Get stat ranges for preview
 const statRanges = computed(() => {
-  if (!selectedItem.value || !window.ReforgeManager) return null;
-  return window.ReforgeManager.getStatRange(selectedItem.value, reforgeMode.value);
+  if (!selectedItem.value || !ReforgeManager) return null;
+  return ReforgeManager.getStatRange(selectedItem.value, reforgeMode.value);
 });
 
 // Can afford check
 const canAfford = computed(() => {
-  if (!selectedItem.value || !costs.value) return false;
+  if (!selectedItem.value) return false;
+  
+  if (activeTab.value === 'UPGRADE') {
+      if (!upgradeCost.value) return false;
+      const cost = upgradeCost.value.val;
+      if (upgradeCost.value.type === 'gold') return s.gold >= cost;
+      return (s.meta.souls || 0) >= cost;
+  }
+  
+  if (!costs.value) return false;
   
   if (reforgeMode.value === 'gold') {
     return s.gold >= costs.value.gold;
   } else {
-    return (Number(s.souls) || 0) >= costs.value.souls;
+    return (s.meta.souls || 0) >= costs.value.souls;
   }
 });
 
 // Perform reforge
 const performReforge = () => {
-  if (!selectedItem.value || !window.ReforgeManager || isReforging.value) return;
+  if (!selectedItem.value || !ReforgeManager || isReforging.value) return;
   
   // Prevent concurrent reforges (potential issue #4)
   isReforging.value = true;
@@ -73,22 +92,38 @@ const performReforge = () => {
   
   let result;
   if (reforgeMode.value === 'gold') {
-    result = window.ReforgeManager.reforgeGold(selectedItem.value);
+    result = ReforgeManager.reforgeGold(selectedItem.value);
   } else {
-    result = window.ReforgeManager.reforgeSoul(selectedItem.value);
+    result = ReforgeManager.reforgeSoul(selectedItem.value);
   }
   
   if (result.success) {
     // Keep item selected to see changes
-    if (window.SoundManager) window.SoundManager.play('loot');
+    if (SoundManager) SoundManager.play('loot');
   } else {
     gameStore.log(result.error, 'error');
-    if (window.SoundManager) window.SoundManager.play('error');
+    if (SoundManager) SoundManager.play('error');
     // Clear undo if failed (nothing changed)
     previousItemState.value = null;
   }
   
   // Re-enable after short delay
+  setTimeout(() => {
+    isReforging.value = false;
+  }, 500);
+};
+
+const performUpgrade = () => {
+  if (!selectedItem.value || !ReforgeManager || isReforging.value) return;
+  
+  isReforging.value = true;
+  const result = ReforgeManager.upgradeItem(selectedItem.value);
+  
+  if (!result.success) {
+      gameStore.log(result.error || "Failed", 'error');
+      if (SoundManager) SoundManager.play('error');
+  }
+  
   setTimeout(() => {
     isReforging.value = false;
   }, 500);
@@ -143,8 +178,41 @@ const close = () => {
 
       <!-- Right: Reforge Interface -->
       <div class="reforge-workspace" v-if="selectedItem">
+        
+        <!-- HEADER -->
         <h3>{{ selectedItem.name }}</h3>
         <p class="rarity-badge" :class="selectedItem.rarity">{{ selectedItem.rarity.toUpperCase() }}</p>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <div class="tab" :class="{active: activeTab==='REFORGE'}" @click="activeTab='REFORGE'">🎲 RE-ROLL</div>
+            <div class="tab" :class="{active: activeTab==='UPGRADE'}" @click="activeTab='UPGRADE'">⚒️ UPGRADE</div>
+        </div>
+        
+        <!-- UPGRADE TAB -->
+        <div v-if="activeTab === 'UPGRADE'" class="upgrade-view">
+             <div class="current-stats">
+                 <h4>Level Up ({{ selectedItem.plus || 0 }} → {{ (selectedItem.plus || 0) + 1 }})</h4>
+                 <div class="stat-row" v-if="selectedItem.atk"><span class="stat-label">ATK:</span> {{ selectedItem.atk }} <span class="upgrade-arrow">→</span> <span class="upgrade-val">{{ Math.floor(selectedItem.atk * 1.06) }}</span></div>
+                 <div class="stat-row" v-if="selectedItem.def"><span class="stat-label">DEF:</span> {{ selectedItem.def }} <span class="upgrade-arrow">→</span> <span class="upgrade-val">{{ Math.floor(selectedItem.def * 1.06) }}</span></div>
+             </div>
+             
+             <div v-if="upgradeCost" class="cost-display">
+                 <span v-if="upgradeCost.type === 'gold'" class="gold-cost">💰 {{ upgradeCost.val }} Gold</span>
+                 <span v-else class="soul-cost">👻 {{ upgradeCost.val }} Souls</span>
+             </div>
+             
+             <div v-else class="max-level">
+                 MAX LEVEL
+             </div>
+             
+             <button class="btn-reforge" @click="performUpgrade" :disabled="!canAfford || isReforging || !upgradeCost">
+                 UPGRADE ITEM
+             </button>
+        </div>
+
+        <!-- REFORGE TAB CONTENT -->
+        <div v-else class="reforge-view">
         
         <!-- Current Stats -->
         <div class="current-stats">
@@ -176,7 +244,7 @@ const close = () => {
           </button>
           <button 
             :class="['mode-btn', { active: reforgeMode === 'soul' }]"
-            :disabled="!s.souls || !costs || s.souls < costs.souls"
+            :disabled="!s.meta.souls || !costs || s.meta.souls < costs.souls"
             @click="reforgeMode = 'soul'">
             👻 SOUL
           </button>
@@ -229,8 +297,9 @@ const close = () => {
         </div>
 
         <div v-if="!canAfford" class="error-msg">
-          ❌ Not enough {{ reforgeMode === 'gold' ? 'gold' : 'souls' }}!
+          ❌ Not enough resources!
         </div>
+      </div>
       </div>
 
       <!-- Empty state if no selection -->
@@ -548,4 +617,19 @@ const close = () => {
   background: #0a0a0a;
   border-radius: 4px;
 }
+
+/* TABS */
+.tabs {
+    display: flex; margin-bottom: 15px; border-bottom: 1px solid #444;
+}
+.tab {
+    flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #777; font-weight: bold;
+}
+.tab:hover { color: #ccc; background: rgba(255,255,255,0.05); }
+.tab.active { color: #f55; border-bottom: 3px solid #f55; background: rgba(255, 85, 85, 0.1); }
+
+.upgrade-arrow { color: #777; margin: 0 10px; }
+.upgrade-val { color: #4f4; font-weight: bold; }
+.gold-cost { color: #fa0; font-size: 1.2rem; font-weight: bold; }
+.soul-cost { color: #d0d; font-size: 1.2rem; font-weight: bold; }
 </style>

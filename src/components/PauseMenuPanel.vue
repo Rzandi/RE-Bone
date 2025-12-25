@@ -1,5 +1,9 @@
 <script setup>
+import { computed } from "vue";
 import { gameStore } from "../game/store.js";
+import { Game } from "../game/core/game.js";
+import { SaveManager } from "../game/managers/SaveManager.js";
+import { EndlessMode } from "../game/logic/EndlessMode.js";
 
 const goToStatus = () => {
   gameStore.state.activePanel = "status";
@@ -9,10 +13,29 @@ const goToSettings = () => {
   gameStore.state.activePanel = "settings";
 };
 
+const saveGame = () => {
+  if (EndlessMode.isActive) {
+      alert("⚠️ SAVE DISABLED IN ENDLESS MODE!\nFind a Sanctuary node or Checkpoint (Every 50 floors) to save.");
+      return;
+  }
+  if (SaveManager) {
+    SaveManager.saveGame();
+  }
+};
+
 const goBack = () => {
   // Return to menu-view (main game screen)
-  if (window.Game) window.Game.menuState();
+  if (Game) Game.menuState();
 };
+
+const runTimeFormatted = computed(() => {
+  const s = gameStore.state.runTime || 0;
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+});
+
 </script>
 
 <template>
@@ -20,6 +43,10 @@ const goBack = () => {
     <div class="pause-content">
       <h2>⏸️ PAUSE MENU</h2>
       
+      <div class="run-time">
+        ⏱️ Time: {{ runTimeFormatted }}
+      </div>
+
       <div class="menu-buttons">
         <button @click="goToStatus" class="menu-btn">
           👤 CHARACTER STATUS
@@ -27,6 +54,10 @@ const goBack = () => {
         
         <button @click="goToSettings" class="menu-btn">
           ⚙️ OPTIONS
+        </button>
+
+        <button @click="saveGame" class="menu-btn save-btn">
+          💾 SAVE GAME
         </button>
         
         <button @click="goBack" class="menu-btn back-btn">
@@ -67,6 +98,21 @@ h2 {
   margin: 0 0 30px 0;
   font-size: 1.8rem;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.run-time {
+  text-align: center;
+  color: #0bd; /* Cyan glow */
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  background: #000;
+  border: 2px solid #333;
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 10px rgba(0, 187, 221, 0.2);
+  text-shadow: 0 0 5px rgba(0, 187, 221, 0.5);
 }
 
 .menu-buttons {
@@ -111,6 +157,16 @@ h2 {
 
 .back-btn:hover {
   background: linear-gradient(to bottom, #2a5d2a, #1d361d);
+}
+
+.save-btn {
+  border-color: var(--c-blue);
+  color: var(--c-blue);
+}
+
+.save-btn:hover {
+  background: linear-gradient(to bottom, #1a3a5a, #0d1a2d);
+  box-shadow: 0 0 10px rgba(77, 136, 255, 0.4);
 }
 
 

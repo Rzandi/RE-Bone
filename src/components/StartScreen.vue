@@ -1,8 +1,13 @@
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from "vue";
+import { ref, onMounted, computed, onUnmounted, toRaw } from "vue";
 import { gameStore } from "../game/store.js";
 import { SaveManager } from "../game/managers/SaveManager.js";
 import { initGame } from "../game/entry.js";
+import { SoundManager } from "../game/managers/sound.js";
+import { Game } from "../game/core/game.js";
+import { SocialManager } from "../game/managers/social.js";
+import { Ascension } from "../game/managers/ascension.js";
+import { Achievements } from "../game/managers/achievements.js";
 
 const hasSave = ref(false);
 
@@ -75,7 +80,8 @@ const onNewGame = () => {
   }
   
   // Play sound
-  if (window.SoundManager) window.SoundManager.play('menu_open');
+  // Play sound
+  if (SoundManager) SoundManager.play('menu_open');
 
   SaveManager.clearSave();
   gameStore.state.logs = [];
@@ -84,90 +90,93 @@ const onNewGame = () => {
 
 const onContinue = () => {
   // Play sound
-  if (window.SoundManager) window.SoundManager.play('success');
+  // Play sound
+  if (SoundManager) SoundManager.play('success');
   
   if (SaveManager.loadGame()) {
     SaveManager.initAutoSave(); // Start Autosave
     
     // Resume Game Loop
-    if(window.Game) {
+    if(Game) {
+        // v38.5: Sync Game State (Fixes Floor 1 Regression Bug)
+        if(Game.syncStateFromStore) Game.syncStateFromStore();
+
+        // v38.4: Restart Global Timer (it stops on app reload)
+        Game.startGlobalTimer();
+        
         if(gameStore.state.activePanel === 'combat') {
              // If we were in combat/explore, we need to restart the loop
              // But Game.exploreState() resets UI...
              if(gameStore.state.combat && gameStore.state.combat.enemy) {
-                 window.Game.combatState(); // Resume combat
+                 Game.combatState(); // Resume combat
              } else {
-                 window.Game.exploreState(); // Resume explore
+                 Game.exploreState(); // Resume explore
              }
         } else {
-             window.Game.menuState();
+             Game.menuState();
         }
     }
   } else {
-    if (window.SoundManager) window.SoundManager.play('error');
+    if (SoundManager) SoundManager.play('error');
     alert("Failed to load save!");
   }
 };
 
 const showLeaderboard = () => {
-    if(!window.Social) { 
+    if(!SocialManager) { 
         console.error("Social Manager missing");
         alert("Error: Social Manager not loaded. Please refresh.");
         return; 
     }
-    if (window.SoundManager) window.SoundManager.play('menu_open');
+    if (SoundManager) SoundManager.play('menu_open');
+    gameStore.state.previousPanel = 'title'; // v38.0: Track where we came from
     gameStore.state.activePanel = "leaderboard";
 };
 
 const showSoulForge = () => {
-    if(!window.Ascension) { 
+    if(!Ascension) { 
         console.error("Ascension Manager missing");
         alert("Error: Ascension Manager not loaded. Please refresh.");
         return; 
     }
-    if (window.SoundManager) window.SoundManager.play('menu_open');
+    if (SoundManager) SoundManager.play('menu_open');
+    gameStore.state.previousPanel = 'title'; // v38.0: Track where we came from
     gameStore.state.activePanel = "shop-ascension";
 };
 
 const showAchievements = () => {
-    if(!window.Achievements) { 
+    if(!Achievements) { 
         console.error("Achievements Manager missing");
         alert("Error: Achievements Manager not loaded. Please refresh.");
         return; 
     }
-    if (window.SoundManager) window.SoundManager.play('menu_open');
+    if (SoundManager) SoundManager.play('menu_open');
+    gameStore.state.previousPanel = 'title'; // v38.0: Track where we came from
     gameStore.state.activePanel = "achievements";
+};
+
+// v38.4: Show Challenge Modifiers panel
+const showChallengeModifiers = () => {
+    if (SoundManager) SoundManager.play('menu_open');
+    gameStore.state.previousPanel = 'title';
+    gameStore.state.activePanel = "run-setup";
+};
+
+// v38.5: Daily Challenge
+const showDailyChallenge = () => {
+    if (SoundManager) SoundManager.play('menu_open');
+    gameStore.state.previousPanel = 'title';
+    gameStore.state.activePanel = "daily";
 };
 
 const showPatchModal = ref(false);
 
-const patchNotes = [
-    { ver: "v37.3.0", date: "2025-12-24", changes: ["📊 STAT ALLOCATION SYSTEM!", "Free Stat Points (+3/Level) for STR/VIT/INT", "⚔️ COMBAT 2.0: Rich Enemy Animations", "Float, Breathe, Attack Shake, Hit Flash, Boss Aura", "📱 PWA & BRANDING UPDATE", "Installable App (Add to Home Screen), New Neon Title", "Refined Ambush Progress (+10%)", "Bug Fixes: Skill Cooldowns, Save Repairs"] },
-    { ver: "v37.2.0", date: "2025-12-24", changes: ["🔧 ITEM SYSTEM REFACTOR", "Converted static items to dynamic ItemFactory", "30% Reduced Memory Usage for Inventory", "Foundation for Procedural Generation", "Improved Type Safety & Validation"] },
-    { ver: "v37.1.0", date: "2025-12-24", changes: ["🎨 COMPLETE POLISH UPDATE", "Reforge Undo Button (Safe Rerolling)", "Save Preview on Continue Button", "Audio Engine 2.0 (25+ New SFX)", "Visual Overhaul: Glassmorphism & Glows", "Black Market Balance Fixes", "Safety: Global Error Boundary"] },
-    { ver: "v37.0.0", date: "2025-12-24", changes: ["⚒️ THE MASTER SMITH!", "Socketing: 60 gems, socket system", "Reforging: Reroll legendary stats", "Black Market: Mystery boxes, cursed items", "Dynamic Economy: Inflation, scarcity, market events", "30+ new achievements"] },
-    { ver: "v36.9.0", date: "2025-12-23", changes: ["📱 MOBILE OPTIMIZATION COMPLETE", "Full Touch Support (Tap/Swipe)", "Responsive Layouts (Phone/Tablet)", "Floating Action Button (Skills)", "Performance: Debounced Search & cleanups"] },
-    { ver: "v36.8.0", date: "2025-12-23", changes: ["🎨 UI/UX POLISH!", "Status Icons: Emoji icons (🔥☠️⚡) replace text", "Upgrade Badges: ⚡X shows skill investment", "Preview Tooltips: Hover for before/after stats", "Animations: Cooldown ticks, SP pulse, panel transitions", "Advanced: Skill comparison, confirmation modals, search & filter", "Keyboard Shortcuts: ESC, U, 1-5"] },
-    { ver: "v36.7.0", date: "2025-12-23", changes: ["🔮 SKILL MANAGEMENT SYSTEM!", "Equip Up to 5 Skills for Combat", "Upgrade Skills with SP (Skill Points)", "Gain +2 SP per Level Up", "SP Cost Scaling: base 3 * 1.5^level", "Upgrade Paths: Power, Cooldown, Ailment boosts", "New Panel: Full skill management UI"] },
-    { ver: "v36.6.0", date: "2025-12-23", changes: ["⏱️ SKILL COOLDOWN SYSTEM!", "Per-Skill Cooldown Tracking", "Cooldown Calculation: Upgrades reduce base CD first", "CDR Cap: Maximum 50% reduction", "Minimum CD: Always ≥ 1 turn", "Haste Passive: -20% all cooldowns", "Upgrade foundation for skill progression"] },
-    { ver: "v36.5.0", date: "2025-12-23", changes: ["🤖 ENEMY AI REVOLUTION!", "Enemies use SKILLS intelligently (Heal, Buff, Attack)", "MP System: Enemies manage resources (+5 MP/turn)", "Cooldowns: Skills have 1-4 turn cooldowns", "UI: Enemy MP bar in combat", "Logs: Enhanced skill detection (🔮 icon)", "7 Bug Fixes: Floor progress, Combat nav, Flee %, Item turns, Rest button, Pause menu, Import save"] },
-    { ver: "v36.4.2", date: "2025-12-23", changes: ["CRITICAL FIX: Soul Forge Crash (Shop Init)", "CRITICAL FIX: Mobile Clipboard (Export Save)", "UI: Class Selector Grid & Scroll Padding", "UI: Patch Notes Pagination (Readable!)"] },
-    { ver: "v36.4.1", date: "2025-12-23", changes: ["MOBILE LAYOUT FIXED 📱", "Fixed 'Cut Off' UI Buttons on Mobile Browsers", "Implemented Dynamic Viewport (100dvh)", "Added Safe Area Padding for iPhone/Android Gestures"] },
-    { ver: "v36.4", date: "2025-12-23", changes: ["UI OPTIMIZATION 🎨", "Mobile Layout & Buttons (Retro 3D)", "New Class Icons in Status Panel (🧙‍♂️/🛡️)", "Inventory Visuals: Item Icons & Badges", "Combat: Floating Enemy & HP Animation", "Polished Log Panel (Text & Contrast)"] },
-    { ver: "v36.3", date: "2025-12-23", changes: ["Weighted Loot Rarity (Bell Curve)", "40+ Enemy-Themed Items", "Lucky Drop Notifications (✨/🍀/⭐)", "Floor Tracking Badges", "Fixed Victory Rewards (EXP/Gold/Loot)", "Fixed Merchant Stock Issues", "Luck Stat Boosts Double Drops"] },
-    { ver: "v36.0", date: "2025-12-23", changes: ["THE GREAT STABILIZATION 🛡️", "Deep Code Audit & cleanup", "Fixed Ghost Enemy & Render Glitches", "Restored & Verified UI Components", "Performance Optimization"] },
-    { ver: "v35.0", date: "2025-12-22", changes: ["THE ARSENAL OF VENGEANCE ⚔️", "NEW: Relic System (Global Passives)", "NEW: Relic Hunting Events", "NEW: Achievements (Relic Hunter)", "Items: Assassin Cloak, Cursed Skull"] },
-    { ver: "v34.0", date: "2025-12-21", changes: ["World Map: 5 Realms to Explore", "Node System: Navigate Combat, Events, & Rest", "Visual Polish: Dynamic Backgrounds & Transitions", "Audio: Realm Ambience"] },
-    { ver: "v33.1", date: "2025-12-21", changes: ["Audio Expansion: Level Up, Victory, Ascend Sounds", "VFX Juice: Screen Shake & Blood Particles", "Optimized Codebase"] },
-    { ver: "v33.0", date: "2025-12-21", changes: ["New Game+: Endless Ascension Cycles", "Soft Reset: Keep Souls & Unlocks", "Difficulty Scaling (+20% per Cycle)"] },
-    { ver: "v32.2", date: "2025-12-21", changes: ["Inventory Overhaul: Item Details & Safe Use", "Loot Upgrade: Gold Drops & Consolidated Logs", "UI Fixes: Auto-Scroll Logs, Boss Button Fix","Minor Bugs Fixed"] },
-    { ver: "v32.1", date: "2025-12-19", changes: ["Roguelike Mode: Permadeath & Sanctuary Saving", "New Content: God-Tier Passives", "UI Polish: Start Screen Remaster"] },
-    { ver: "v32.0", date: "2025-12-18", changes: ["Vue 3 Migration Complete", "Performance Optimization", "Mobile Controls"] },
-    { ver: "v31.0", date: "2025-12-10", changes: ["Boss Rush Mode Added", "New Classes: Dark Knight, Necro Priest", "Balance Changes"] }
-];
+import { PATCH_NOTES } from "../game/config/patch_notes.js";
+
+const patchNotes = PATCH_NOTES;
 
 const togglePatchNotes = () => {
-    if (window.SoundManager) window.SoundManager.play('tab_switch');
+    if (SoundManager) SoundManager.play('tab_switch');
     showPatchModal.value = !showPatchModal.value;
 };
 
@@ -198,7 +207,7 @@ const onImportSave = () => {
     const success = SaveManager.importSaveString(saveString);
     
     if (success) {
-      if (window.SoundManager) window.SoundManager.play('success');
+      if (SoundManager) SoundManager.play('success');
       alert("✅ Save imported successfully! Click Continue to load."); 
       hasSave.value = true; // Show Continue button
       
@@ -218,10 +227,33 @@ const onImportSave = () => {
         savePreview.value = null;
       }
     } else {
-      if (window.SoundManager) window.SoundManager.play('error');
+      if (SoundManager) SoundManager.play('error');
       alert("❌ Import failed! Invalid save string.");
     }
   }
+};
+
+const installAvailable = computed(() => {
+    return gameStore.state.installPrompt !== null;
+});
+
+const installApp = async () => {
+    try {
+        const prompt = toRaw(gameStore.state.installPrompt);
+        if (!prompt) return;
+        
+        await prompt.prompt();
+        
+        const { outcome } = await prompt.userChoice;
+        console.log(`User  Choice: ${outcome}`);
+        
+        if (outcome === 'accepted') {
+            gameStore.state.installPrompt = null;
+        }
+    } catch (err) {
+        console.error("Install prompt error:", err);
+        alert("Install error: " + err.message);
+    }
 };
 
 const ascension = computed(() => {
@@ -253,7 +285,14 @@ const ascension = computed(() => {
         <span class="title-div">|</span>
         <span class="title-bone">BONE</span>
       </div>
-      <p class="version-text">v37.3.0 STATS & ANIMATION 📊⚔️</p>
+      <p class="version-text">v38.9 PWA Ready</p>
+      
+      <div class="future-focus-container">
+          <span class="focus-label">🔮 NEXT UPDATE FOCUS:</span>
+          <div class="focus-items">
+              <span>Story</span> • <span>Narrative</span> • <span>Immersive Depth</span> • <span>2D Pixel Sprites</span> • <span>Cinematics/Video</span>
+          </div>
+      </div>
       <div v-if="ascension > 0" class="cycle-display">
           ☠️ CYCLE {{ ascension }} ☠️
       </div>
@@ -270,6 +309,13 @@ const ascension = computed(() => {
              </span>
            </button>
            <button class="btn-main btn-start animate-initial" @click="onNewGame">[ NEW GAME ]</button>
+           
+           <!-- v38.9: PWA Install Button -->
+           <button v-if="installAvailable" class="btn-main btn-install animate-initial" @click="installApp" style="color:var(--c-gold)">
+             [ 📥 INSTALL APP ]
+           </button>
+
+           <button class="btn-main btn-daily animate-initial" @click="showDailyChallenge">[ 🌞 DAILY RUN ]</button>
            <button class="btn-main btn-import animate-initial" @click="onImportSave">[ IMPORT SAVE ]</button>
       </div>
       
@@ -288,9 +334,10 @@ const ascension = computed(() => {
             <span class="btn-icon">👻</span>
             <span class="btn-label">SOUL SHOP</span>
           </button>
-          <button class="btn-small animate-initial" @click="onNewGame">
-            <span class="btn-icon">🌞</span>
-            <span class="btn-label">DAILY RUN</span>
+          <!-- v38.4: Challenge Modifiers -->
+          <button class="btn-small btn-challenge animate-initial" @click="showChallengeModifiers">
+            <span class="btn-icon">🎲</span>
+            <span class="btn-label">CHALLENGE</span>
           </button>
       </div>
     </div>
@@ -394,6 +441,30 @@ const ascension = computed(() => {
   opacity: 0.7;
 }
 
+.future-focus-container {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    animation: fadeIn 2.5s;
+}
+
+.focus-label {
+    color: var(--c-gold);
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    font-weight: bold;
+    opacity: 0.8;
+}
+
+.focus-items {
+    color: #888;
+    font-size: 0.75rem;
+    font-family: 'Consolas', monospace;
+    opacity: 0.7;
+}
+
 .menu {
   display: flex;
   flex-direction: column;
@@ -436,6 +507,16 @@ const ascension = computed(() => {
 .btn-import:hover {
     color: #8df !important;
     text-shadow: 0 0 10px #5bf !important;
+}
+
+.btn-daily {
+    color: #fca !important;
+    border-color: #f75 !important;
+}
+.btn-daily:hover {
+    color: #fff !important;
+    text-shadow: 0 0 10px #f55 !important;
+    background: rgba(255, 100, 0, 0.1) !important;
 }
 
 .powered-text {
@@ -675,7 +756,7 @@ const ascension = computed(() => {
 .save-preview {
   display: block;
   font-size: 0.7rem;
-  color: var(--c-gold, #cfaa4c);
+  color: var(--c-gold);
   margin-top: 4px;
   font-weight: normal;
   opacity: 0.9;
@@ -687,12 +768,12 @@ const ascension = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: var(--c-gold, #cfaa4c) !important;
+  color: var(--c-gold) !important;
 }
 
 .btn-continue:hover {
   transform: scale(1.08);
-  text-shadow: 0 0 15px var(--c-gold, #cfaa4c);
+  text-shadow: 0 0 15px var(--c-gold);
 }
 
 /* Staggered menu animation */

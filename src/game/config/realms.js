@@ -7,9 +7,10 @@ export const REALMS = {
     nature_den: {
         id: 'nature_den',
         name: "Nature's Den",
-        desc: "A sprawling ancient forest reclaimed by the wild.",
+        desc: "An ancient, suffocating woodland where nature aggressively reclaims the dead.",
         color: '#2ecc71',
         icon: '🌳',
+        range: [1, 100], // v38.6 Epix Mode
         biomes: [
             { id: 'swamp', name: 'Toxic Swamp', effect: 'Poison' },
             { id: 'deep_forest', name: 'Deep Forest', effect: 'Fog' },
@@ -20,7 +21,7 @@ export const REALMS = {
         boss: {
             name: "Keeper of the Den",
             sprite: "druid_boss",
-            hp: 2500, // Balanced Tier 1 (was 5000)
+            hp: 2500, 
             unlockClass: "druid",
             drop: "wrath_of_nature"
         }
@@ -29,9 +30,10 @@ export const REALMS = {
     shadow_guild: {
         id: 'shadow_guild',
         name: "Shadow Guild",
-        desc: "A labyrinth of alleys and hidden passages.",
+        desc: "A subterranean labyrinth of thieves, assassins, and secrets better left buried.",
         color: '#9b59b6',
         icon: '🗡️',
+        range: [101, 200],
         biomes: [
             { id: 'sewers', name: 'The Sewers', effect: 'Stench' },
             { id: 'rooftops', name: 'Midnight Rooftops', effect: 'Wind' },
@@ -42,7 +44,7 @@ export const REALMS = {
         boss: {
             name: "Grandmaster Rogue",
             sprite: "rogue_boss",
-            hp: 5000, // Balanced Tier 2 (was 4500)
+            hp: 5000,
             unlockClass: "shadow_assassin",
             drop: "nightfall_blade"
         }
@@ -51,9 +53,10 @@ export const REALMS = {
     light_castle: {
         id: 'light_castle',
         name: "Castle of Light",
-        desc: "The pristine citadel of the Holy Order.",
+        desc: "The blinding citadel of a fallen order, preserved in pristine, hollow silence.",
         color: '#f1c40f',
         icon: '🏰',
+        range: [201, 300],
         biomes: [
             { id: 'courtyard', name: 'Grand Courtyard', effect: 'Blinding' },
             { id: 'cathedral', name: 'Crystal Cathedral', effect: 'Holy' },
@@ -64,7 +67,7 @@ export const REALMS = {
         boss: {
             name: "High Lord Paladin",
             sprite: "paladin_boss",
-            hp: 10000, // Balanced Tier 3 (was 8000)
+            hp: 10000,
             unlockClass: "paladin",
             drop: "excalibur"
         }
@@ -73,9 +76,10 @@ export const REALMS = {
     arcane_tower: {
         id: 'arcane_tower',
         name: "Arcane Tower",
-        desc: "A defiance of gravity and logic.",
+        desc: "A reality-bending spire that defies gravity, logic, and sanity.",
         color: '#3498db',
         icon: '🔮',
+        range: [301, 400],
         biomes: [
             { id: 'library_void', name: 'Floating Library', effect: 'Gravity' },
             { id: 'lab', name: 'Alchemy Lab', effect: 'Explosive' },
@@ -86,7 +90,7 @@ export const REALMS = {
         boss: {
             name: "Archmage of Time",
             sprite: "mage_boss",
-            hp: 18000, // Balanced Tier 4 (was 4000)
+            hp: 18000,
             unlockClass: "mechanist", 
             drop: "chronos_staff"
         }
@@ -95,9 +99,10 @@ export const REALMS = {
     iron_fort: {
         id: 'iron_fort',
         name: "Iron Fortress",
-        desc: "A machine of perpetual war.",
+        desc: "A colossal engine of perpetual war, churning smoke and steel.",
         color: '#e74c3c',
         icon: '🛡️',
+        range: [401, 500],
         biomes: [
             { id: 'forge', name: 'The Great Forge', effect: 'Heat' },
             { id: 'mine', name: 'Deep Mines', effect: 'Collapse' },
@@ -108,11 +113,11 @@ export const REALMS = {
         boss: {
             name: "Warlord King",
             sprite: "warrior_boss",
-            hp: 30000, // Balanced Tier 5 (was 10000)
+            hp: 30000,
             unlockClass: "berserker",
             drop: "ragnarok"
         }
     }
 };
 
-window.REALMS = REALMS; // Expose globally
+// window.REALMS = REALMS; // REMOVED v38.0

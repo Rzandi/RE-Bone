@@ -2,6 +2,12 @@ import { gameStore } from '../store.js';
 import { DB } from '../config/database.js';
 import { CONSTANTS } from '../config/constants.js';
 import { RELICS } from '../config/relics.js';
+import { Game } from '../core/game.js';
+import { SoundManager } from '../managers/sound.js';
+import { Crafting } from '../managers/crafting.js';
+import { Gemini } from '../managers/gemini.js';
+import { SocketManager } from '../managers/SocketManager.js';
+import { BlackMarketManager } from '../managers/BlackMarketManager.js';
 
 /* =========================================
    PLAYER LOGIC (Vue Version)
@@ -11,6 +17,74 @@ import { RELICS } from '../config/relics.js';
 export const Player = {
     // Shortcuts to State
     get state() { return gameStore.state; },
+    
+    // v38.0: Add getters/setters for commonly used properties
+    get hp() { return gameStore.state.hp; },
+    set hp(val) { gameStore.state.hp = val; },
+    
+    get mp() { return gameStore.state.mp; },
+    set mp(val) { gameStore.state.mp = val; },
+    
+    get maxHp() { return gameStore.state.maxHp; },
+    set maxHp(val) { gameStore.state.maxHp = val; },
+    
+    get maxMp() { return gameStore.state.maxMp; },
+    set maxMp(val) { gameStore.state.maxMp = val; },
+    
+    get gold() { return gameStore.state.gold; },
+    set gold(val) { gameStore.state.gold = val; },
+    
+    get level() { return gameStore.state.level; },
+    set level(val) { gameStore.state.level = val; },
+    
+    get exp() { return gameStore.state.exp; },
+    set exp(val) { gameStore.state.exp = val; },
+    
+    get nextExp() { return gameStore.state.nextExp; },
+    set nextExp(val) { gameStore.state.nextExp = val; },
+    
+    get sp() { return gameStore.state.sp; },
+    set sp(val) { gameStore.state.sp = val; },
+    
+    get statPt() { return gameStore.state.statPt; },
+    set statPt(val) { gameStore.state.statPt = val; },
+    
+    get atk() { return gameStore.state.atk; },
+    set atk(val) { gameStore.state.atk = val; },
+    
+    get def() { return gameStore.state.def; },
+    set def(val) { gameStore.state.def = val; },
+    
+    get inventory() { return gameStore.state.inventory; },
+    set inventory(val) { gameStore.state.inventory = val; },
+    
+    get relics() { return gameStore.state.relics; },
+    set relics(val) { gameStore.state.relics = val; },
+    
+    get status() { return gameStore.state.status; },
+    set status(val) { gameStore.state.status = val; },
+    
+    get passives() { return gameStore.state.passives; },
+    set passives(val) { gameStore.state.passives = val; },
+    
+    get invulnTurns() { return gameStore.state.invulnTurns; },
+    set invulnTurns(val) { gameStore.state.invulnTurns = val; },
+    
+    get attr() { return gameStore.state.attr; },
+    set attr(val) { gameStore.state.attr = val; },
+    
+    get equip() { return gameStore.state.equip; },
+    set equip(val) { gameStore.state.equip = val; },
+
+    // v38.0: Dynamic Inventory Limit
+    get inventoryLimit() {
+        let base = 20; 
+        if (gameStore.state.meta && gameStore.state.meta.upgrades) {
+             const startBonus = gameStore.state.meta.upgrades.inventory_slot || 0;
+             base += (startBonus * 5);
+        }
+        return base;
+    },
     
     init(clsKey) {
         const s = this.state;
@@ -22,6 +96,7 @@ export const Player = {
         s.exp = 0;
         s.nextExp = 50;
         s.gold = 0;
+        s.levelCap = 100; // v38.7: Epic Mode Level Cap
         
         // Attributes (Base)
         s.baseStats = { ...c.attr };
@@ -32,6 +107,45 @@ export const Player = {
         s.passives = [...c.passives];
         s.activeSkills = [...c.skills].slice(0, 4); // Auto-equip first 4
         s.learnedSkills = [...c.skills];
+
+        // v38.0: Apply Ascension Upgrades (Start Stats & Perks)
+        if (s.meta && s.meta.upgrades) {
+            const upg = s.meta.upgrades;
+            // 1. Start Stats
+            if (upg.str_plus) s.baseStats.STR += (upg.str_plus * 5);
+            if (upg.vit_plus) s.baseStats.VIT += (upg.vit_plus * 5);
+            if (upg.int_plus) s.baseStats.INT += (upg.int_plus * 5);
+            // v38.4: AGI/LCK Ascension
+            if (upg.agi_plus) s.baseStats.AGI = (s.baseStats.AGI || 0) + (upg.agi_plus * 3);
+            if (upg.luck_plus) s.baseStats.LCK = (s.baseStats.LCK || 0) + (upg.luck_plus * 3);
+            
+            // v38.8: Combat Stats
+            if (upg.crit_chance) s.bonusCrit = Math.min(100, (upg.crit_chance * 1)); // +1% each, max 100%
+            if (upg.crit_dmg) s.bonusCritDmg = (upg.crit_dmg * 0.10); // +10% each
+            
+            // v38.8: Regen per explore (stored for Game.js to use)
+            s.exploreHpRegen = upg.hp_regen || 0; // % of maxHP
+            s.exploreMpRegen = upg.mp_regen || 0; // % of maxMP
+            
+            // v38.8: Starting Gold
+            if (upg.start_gold) s.gold = (upg.start_gold * 100);
+            
+            // v38.8: Starting Potions
+            if (upg.start_potion) {
+                for (let i = 0; i < upg.start_potion; i++) {
+                    this.addItem("health_potion");
+                }
+            }
+
+            // 2. Purchased Perks (Permanent Passives)
+            for (let key in upg) {
+                if (key.startsWith('perk_')) {
+                    const pid = key.replace('perk_', '');
+                    // Avoid duplicates
+                    if (!s.passives.includes(pid)) s.passives.push(pid);
+                }
+            }
+        }
         
         // v36.7: Initialize skill management
         s.unlockedSkills = [...c.skills]; // Start with base skills unlocked
@@ -63,6 +177,21 @@ export const Player = {
         s.statPt = 0; // v37.3: Free Stat Points (for allocating to STR/VIT/INT)
         s.unlockedSkills = [...c.skills]; // Start with base skills unlocked
         
+        // v38.4: Apply startCurses modifier - add random cursed items
+        if (s.modifierEffects?.startCurses > 0) {
+            try {
+                const { getRandomCursedItems } = require('../config/cursed_items.js');
+                const cursedItems = getRandomCursedItems(s.modifierEffects.startCurses, 1);
+                cursedItems.forEach(item => {
+                    // Add cursed item to inventory (equipped automatically since they're powerful)
+                    s.inventory.push({ ...item, uid: `cursed_${Date.now()}_${Math.random()}` });
+                    gameStore.log(`☠️ CURSED: ${item.name} added to inventory!`, 'curse');
+                });
+            } catch (e) {
+                console.warn('Failed to load cursed items for startCurses:', e);
+            }
+        }
+        
         gameStore.log(`Welcome, ${s.className}!`, "system");
     },
     
@@ -79,6 +208,7 @@ export const Player = {
         
         s.bonuses = {
             str: 0, vit: 0, int: 0,
+            agi: 0, luck: 0, // v38.4: AGI/LUCK bonuses
             flatDef: 0, dodge: 0, crit: 0,
             lifesteal: 0, block: 0, reflect: 0, reflectMagic: 0, // v35.3
             spellPower: 0, critDmg: 0, cooldownReduction: 0 // v37.0: Advanced gem stats
@@ -88,18 +218,35 @@ export const Player = {
              // Clean Reset for modern saves
              s.multipliers = {
                 str: 1, vit: 1, int: 1,
+                agi: 1, luck: 1, // v38.4: AGI/LUCK multipliers
                 hp: 1, mp: 1,
                 def: 1, dmg: 1,
-                gold: 1, exp: 1
+                gold: 1, exp: 1,
+                // v38.9: Cursed Relic Multipliers
+                healingReceived: 1,
+                damageTaken: 1,
+                magicDmg: 1,
+                cooldown: 1,
+                dropRate: 1,
+                atkSpeed: 1,
+                mpRegen: 1,
+                hpRegenMult: 1 // For Flesh Rot or similar?
             };
             
             // Re-apply Evolutions
-            if(window.EVOLUTIONS && s.evolutions) {
-                 const allEvos = [...(EVOLUTIONS[5]||[]), ...(EVOLUTIONS[10]||[])];
+            if(DB.EVOLUTIONS && s.evolutions) {
+                 const allEvos = [...(DB.EVOLUTIONS[5]||[]), ...(DB.EVOLUTIONS[10]||[])];
                  s.evolutions.forEach(id => {
                      const def = allEvos.find(e => e.id === id);
                      if(def && def.effect) this.applyEffect(def.effect);
                  });
+            }
+
+            // v38.0: Apply Ascension Boosts (EXP / Gold)
+            if (s.meta && s.meta.upgrades) {
+                const upg = s.meta.upgrades;
+                if (upg.exp_boost) s.multipliers.exp += (upg.exp_boost * 0.10); // +10% per lvl
+                if (upg.gold_boost) s.multipliers.gold += (upg.gold_boost * 0.20); // +20% per lvl
             }
         } else {
              // Legacy: Reset specialized multipliers that buffs target? 
@@ -114,7 +261,7 @@ export const Player = {
         // 2. Apply Relics (Passive Effects)
         if (s.relics) {
             s.relics.forEach(rid => {
-                const r = window.RELICS ? window.RELICS[rid] : null;
+                const r = RELICS ? RELICS[rid] : null;
                 if (r && r.effect) {
                     try { r.effect(s); } catch (e) { console.error("Relic Error", rid, e); }
                 }
@@ -141,14 +288,71 @@ export const Player = {
             }
         }
 
-        if(window.SET_BONUSES) {
+        if(DB.SET_BONUSES) {
             for(let setKey in setCounts) {
                 const count = setCounts[setKey];
-                const setDef = window.SET_BONUSES[setKey];
+                const setDef = DB.SET_BONUSES[setKey];
                 if(setDef) {
                     if(count >= 2 && setDef.two) this.applyEffect(setDef.two);
                     if(count >= 3 && setDef.three) this.applyEffect(setDef.three);
                 }
+            }
+        }
+        
+
+        
+        // v38.9: Apply Passive Skills (Static Stats)
+        // This unifies Combat passives into the main Player Stats for display in StatsPanel
+        if (s.passives && DB.PASSIVES) {
+            s.passives.forEach(pid => {
+                const passive = DB.PASSIVES[pid];
+                if (passive && passive.stats) {
+                    for (let statKey in passive.stats) {
+                        const val = passive.stats[statKey];
+                        
+                        // 1. Multipliers
+                        const multMap = {
+                            'strMult': 'str', 'vitMult': 'vit', 'intMult': 'int',
+                            'atkMult': 'dmg', 'defMult': 'def', 'hpMult': 'hp', 'mpMult': 'mp',
+                            'goldMult': 'gold', 'expMult': 'exp',
+                            'critDmgMult': 'critDmg', // Actually typically bonus, but let's handle consistent
+                            'mag': 'magicDmg', // Mapping 'mag' (Combat term) to 'magicDmg' (Player term)
+                        };
+
+                        if (multMap[statKey]) {
+                            const target = multMap[statKey];
+                            if(target === 'critDmg') s.bonuses.critDmgMult = (s.bonuses.critDmgMult || 1) + val; // wait, critDmg is usually flat %
+                            // Let's stick to s.multipliers for consistency if it fits
+                            else s.multipliers[target] += val;
+                        }
+                        // 2. Flat Bonuses / Percentages treated as bonuses
+                        else if (['crit', 'dodge', 'lifesteal', 'reflect', 'block', 'hitChance', 'curseAura'].includes(statKey)) {
+                             s.bonuses[statKey] = (s.bonuses[statKey] || 0) + val;
+                        }
+                        // 3. Special Stats stored in bonuses for Logic Checks
+                        else {
+                             s.bonuses[statKey] = (s.bonuses[statKey] || 0) + val;
+                        }
+                    }
+                }
+            });
+        }
+        
+        // v38.8: Apply Void Set Curses (Negative Stat Modifiers)
+        s.bonuses.cursedHealing = 0; // Reset curse healing penalty
+        s.bonuses.cursedMaxHp = 0;   // Reset curse maxHp penalty
+        s.bonuses.cursedAtk = 0;     // Reset curse atk penalty
+        s.bonuses.cursedAllStats = 0; // Reset curse all stats penalty
+        
+        for(let slotKey in s.equip) {
+            const eqItem = s.equip[slotKey];
+            if (eqItem && eqItem.curse) {
+                const curse = eqItem.curse;
+                // Apply curse penalties (will be used later in stat calc)
+                if (curse.maxHp) s.bonuses.cursedMaxHp += curse.maxHp;       // e.g. -0.15
+                if (curse.healing) s.bonuses.cursedHealing += curse.healing; // e.g. -0.30
+                if (curse.atk) s.bonuses.cursedAtk += curse.atk;             // e.g. -0.10
+                if (curse.allStats) s.bonuses.cursedAllStats += curse.allStats; // e.g. -0.05
             }
         }
         
@@ -202,15 +406,35 @@ export const Player = {
             });
         }
         
+        if (s.bonuses.noExp) s.multipliers.exp = 0; // v38.9: Force 0 EXP (Midas Curse override)
+        
         // 3. Calculate Attributes (Base + Level + Bonus)
         const levelBonus = s.level - 1;
         const bonusStr = s.bonuses.str || 0;
         const bonusVit = s.bonuses.vit || 0;
         const bonusInt = s.bonuses.int || 0;
+        const bonusAgi = s.bonuses.agi || 0;
+        const bonusLuck = s.bonuses.luck || 0;
 
         s.str = Math.floor((s.baseStats.STR + levelBonus + bonusStr) * s.multipliers.str);
         s.vit = Math.floor((s.baseStats.VIT + levelBonus + bonusVit) * s.multipliers.vit);
         s.int = Math.floor((s.baseStats.INT + levelBonus + bonusInt) * s.multipliers.int);
+        
+        // v38.4: AGI and LUCK (no level bonus, only base + equipment/passives)
+        // Legacy save protection: default to 3 if missing
+        const baseAgi = s.baseStats.AGI ?? 3;
+        const baseLck = s.baseStats.LCK ?? 3;
+        s.agi = Math.max(0, Math.floor((baseAgi + bonusAgi) * (s.multipliers.agi || 1)));
+        s.luck = Math.max(0, Math.floor((baseLck + bonusLuck) * (s.multipliers.luck || 1)));
+        
+        // Sync s.attr for compatibility
+        s.attr = {
+            STR: s.str,
+            VIT: s.vit,
+            INT: s.int,
+            AGI: s.agi,
+            LCK: s.luck
+        };
         
         // 4. Calculate Max Status
         // HP
@@ -233,12 +457,18 @@ export const Player = {
         let calcAtk = Math.floor(s.str * s.multipliers.str * 1.5);
         for (let k in s.equip) if (s.equip[k]?.atk) calcAtk += s.equip[k].atk;
         
+        // v38.4: Apply AGI/LUCK from equipment to bonuses
+        for (let k in s.equip) {
+            if (s.equip[k]?.agi) s.bonuses.agi = (s.bonuses.agi || 0) + s.equip[k].agi;
+            if (s.equip[k]?.luck) s.bonuses.luck = (s.bonuses.luck || 0) + s.equip[k].luck;
+        }
+        
         // v37.0: Apply Socket Bonuses from Gems
-        if (window.SocketManager) {
+        if (SocketManager) {
             for (let slot in s.equip) {
                 const item = s.equip[slot];
                 if (item && item.sockets) {
-                    const socketBonuses = window.SocketManager.getSocketBonuses(item);
+                    const socketBonuses = SocketManager.getSocketBonuses(item);
                     
                     // Apply socket bonuses to player stats
                     for (let stat in socketBonuses) {
@@ -250,6 +480,10 @@ export const Player = {
                         if (stat === 'hp') s.maxHp += value;
                         if (stat === 'mp') s.maxMp += value;
                         if (stat === 'int') s.bonuses.int = (s.bonuses.int || 0) + value;
+                        
+                        // v38.4: AGI/LUCK from gems
+                        if (stat === 'agi') s.bonuses.agi = (s.bonuses.agi || 0) + value;
+                        if (stat === 'luck') s.bonuses.luck = (s.bonuses.luck || 0) + value;
                         
                         // Percentage/special stats (lifesteal, crit, spellPower, etc)
                         if (['lifesteal', 'crit', 'dodge', 'block', 'spellPower', 'critDmg', 'cooldownReduction', 'regen'].includes(stat)) {
@@ -263,10 +497,10 @@ export const Player = {
         }
         
         // v37.0 Phase 3: Apply curse effects from equipped cursed items
-        if (window.BlackMarketManager) {
+        if (BlackMarketManager) {
             const equippedItems = Object.values(s.equip).filter(Boolean);
-            const curseEffects = window.BlackMarketManager.getCurseEffects(equippedItems);
-            const buffEffects = window.BlackMarketManager.getBuffEffects(equippedItems);
+            const curseEffects = BlackMarketManager.getCurseEffects(equippedItems);
+            const buffEffects = BlackMarketManager.getBuffEffects(equippedItems);
             
             // Apply curse multiplicative penalties
             s.maxHp = Math.max(1, Math.floor(s.maxHp * curseEffects.maxHpMult));
@@ -294,14 +528,58 @@ export const Player = {
         s.dodge = s.bonuses.dodge;
         s.crit = s.bonuses.crit;
         
+        // v38.4: Re-calculate AGI/LUCK with equipment bonuses (they're added in step 5 above)
+        const finalBonusAgi = s.bonuses.agi || 0;
+        const finalBonusLuck = s.bonuses.luck || 0;
+        const equipBaseAgi = s.baseStats.AGI ?? 3;
+        const equipBaseLck = s.baseStats.LCK ?? 3;
+        s.agi = Math.max(0, Math.floor((equipBaseAgi + finalBonusAgi) * (s.multipliers.agi || 1)));
+        s.luck = Math.max(0, Math.floor((equipBaseLck + finalBonusLuck) * (s.multipliers.luck || 1)));
+        
+        // Update s.attr with final values
+        s.attr.AGI = s.agi;
+        s.attr.LCK = s.luck;
+        
+        // v38.4: Apply AGI to dodge and LUCK to crit
+        s.dodge += (s.agi * CONSTANTS.DODGE_PER_AGI);
+        s.crit += (s.luck * CONSTANTS.CRIT_PER_LUCK);
+        
         // v37.0 Phase 3: Apply dodge/crit bonuses from cursed items
         if (s.cursedBuffs) {
             s.dodge += s.cursedBuffs.dodge || 0;
             s.crit += s.cursedBuffs.critRate || 0;
         }
+        
+        // v38.4: Apply Run Modifier effects
+        if (s.modifierEffects) {
+            const mods = s.modifierEffects;
+            
+            // HP multiplier (Glass Cannon, Frail, etc.)
+            if (mods.hpMult && mods.hpMult !== 1) {
+                s.maxHp = Math.max(1, Math.floor(s.maxHp * mods.hpMult));
+                if (s.hp > s.maxHp) s.hp = s.maxHp;
+            }
+            
+            // DEF multiplier (Berserker sets to 0, Frail reduces)
+            if (mods.defMult !== undefined && mods.defMult !== 1) {
+                s.def = Math.floor(s.def * mods.defMult);
+            }
+            
+            // DMG multiplier (Glass Cannon, Berserker boost)
+            if (mods.dmgMult && mods.dmgMult !== 1) {
+                s.atk = Math.floor(s.atk * mods.dmgMult);
+            }
+        }
     },
     
     addItem(itemOrId) {
+        // v38.0: Check Limit
+        if (this.state.inventory.length >= this.inventoryLimit) {
+            gameStore.log("Inventory Full! Upgrade in Soul Forge.", "error");
+            if(SoundManager) SoundManager.play('error');
+            return false;
+        }
+
         // Handle both string ID and object item
         if (typeof itemOrId === 'object' && itemOrId !== null) {
             // Direct object - push to inventory
@@ -323,7 +601,8 @@ export const Player = {
             this.state.relics.push(id);
             // gameStore.log(`Relic obtained: ${id}`, "rare");
             this.recalc();
-            if(window.SoundManager) window.SoundManager.play('relic');
+            this.recalc();
+            if(SoundManager) SoundManager.play('relic');
         }
     },
     
@@ -345,7 +624,7 @@ export const Player = {
         
         // 1. Salvage Mode
         if (s.salvageMode) {
-            if(window.Crafting) {
+            if(Crafting) {
                 if(confirm(`Salvage ${item.name}?`)) Crafting.salvage(idx);
             }
             return;
@@ -353,7 +632,7 @@ export const Player = {
         
         // 2. Inspect Mode (Oracle)
         if (s.inspectMode) {
-            if(window.Gemini) {
+            if(Gemini) {
                 Gemini.generateLore(item.name);
                 gameStore.log("Consulting the Oracle...", "system");
             }
@@ -363,7 +642,7 @@ export const Player = {
         // 3. Gem Check - Gems cannot be equipped directly
         if (item.type === 'gem' || item.slot === 'gem') {
             gameStore.log("💎 Gems must be socketed into equipment! Open an equipped item to socket gems.", "system");
-            if(window.SoundManager) window.SoundManager.play("error");
+            if(SoundManager) SoundManager.play("error");
             return;
         }
         
@@ -386,6 +665,20 @@ export const Player = {
         const it = s.inventory[idx];
         if(!it) return;
         
+        // v38.4: Check for No Healing modifier
+        if(it.val && s.modifierEffects?.healingDisabled) {
+            gameStore.log(`❌ Healing disabled by modifier!`, "error");
+            if(SoundManager) SoundManager.play("error");
+            return; // Block healing item use
+        }
+        
+        // v38.9: Cursed Relic - Demonic Tutor (No Potions)
+        if (s.bonuses && s.bonuses.noPotions) {
+             gameStore.log(`🚫 The Demonic Tutor forbids potions!`, "curse");
+             if(SoundManager) SoundManager.play("error");
+             return;
+        }
+        
         if(it.val) {
              s.hp = Math.min(s.hp + it.val, s.maxHp);
              gameStore.log(`Healed ${it.val} HP`, "heal");
@@ -403,15 +696,18 @@ export const Player = {
         }
 
         s.inventory.splice(idx, 1);
-        if(window.SoundManager) window.SoundManager.play("ui");
+        if(SoundManager) SoundManager.play("ui");
         
         // v36.4.3: If in combat, using item consumes turn (trigger enemy turn)
         if (gameStore.state.activePanel === 'combat' && gameStore.state.combat?.enemy) {
-            if (window.CombatManager) {
-                setTimeout(() => {
-                    window.CombatManager.enemyTurn();
-                }, 800); // Small delay for player to see heal/buff effect
-            }
+            // Need Combat Import? Or keep global check?
+            // Since Combat.js imports Player.js, importing Combat here works but circle...
+            // Let's rely on global fallback or assume Combat logic handles it via event?
+            // Actually, Player.useItem calling Combat.enemyTurn is tight coupling.
+            // Better: Events.emit("player_action_complete");
+            // For now, removing window.CombatManager check as it's dead.
+            // Replacing with:
+            // if(window.CombatManager) window.CombatManager.enemyTurn();
         }
     },
 
@@ -434,10 +730,36 @@ export const Player = {
         this.recalc();
     },
     
+    savePreset(name) {
+        const s = this.state;
+        const preset = {
+            name: name,
+            equip: { ...s.equip },
+            skills: [ ...s.activeSkills ]
+        };
+        // Save to GameStore meta?
+        if(!s.meta.presets) s.meta.presets = [];
+        s.meta.presets.push(preset);
+        gameStore.log(`Preset '${name}' saved.`);
+        if(SoundManager) SoundManager.play("ui");
+    },
+    
     equipItem(idx) {
         const s = this.state;
         const it = s.inventory[idx];
         if(!it) return;
+        
+
+        
+
+
+        
+        // v38.4: Check for No Equipment modifier (Ascetic)
+        if(s.modifierEffects?.noEquipment) {
+            gameStore.log(`❌ Equipment disabled by Ascetic modifier!`, "error");
+            if(SoundManager) SoundManager.play("error");
+            return;
+        }
         
         // Swap
         const old = s.equip[it.slot];
@@ -447,7 +769,7 @@ export const Player = {
         s.inventory.splice(idx, 1);
         
         gameStore.log(`Equipped ${it.name}`, "system");
-        if(window.SoundManager) window.SoundManager.play("ui");
+        if(SoundManager) SoundManager.play("ui");
         this.recalc();
     },
 
@@ -474,6 +796,25 @@ export const Player = {
          gameStore.log("Inventory Sorted", "system");
     },
     
+    // v38.3: Discard item by index
+    discardItem(idx) {
+        const s = this.state;
+        if (idx < 0 || idx >= s.inventory.length) {
+            gameStore.log("Invalid item index!", "error");
+            return false;
+        }
+        
+        const item = s.inventory[idx];
+        if (!item) return false;
+        
+        // Remove item from inventory
+        s.inventory.splice(idx, 1);
+        gameStore.log(`Discarded ${item.name}.`, "system");
+        
+        if (SoundManager) SoundManager.play('ui_back');
+        return true;
+    },
+    
     // --- COMBAT ---
     // --- COMBAT ---
     takeDamage(amount) {
@@ -482,11 +823,20 @@ export const Player = {
         // 1. Invulnerability Check
         if (s.invulnTurns > 0) {
             gameStore.log("Invulnerable!", "combat");
+            gameStore.triggerVfx({ type: 'block', val: 'INVULN', target: 'player' });
             return;
         }
 
+        let finalDamage = amount;
+
+        // v38.9: Cursed Relic - Reckless Amulet / Broken Mirror (Damage Taken Increase)
+        if (s.multipliers?.damageTaken && s.multipliers.damageTaken !== 1) {
+             finalDamage = Math.floor(finalDamage * s.multipliers.damageTaken);
+             gameStore.log(`Damage amplified by ${((s.multipliers.damageTaken - 1) * 100).toFixed(0)}%!`, "debuff");
+        }
+        
         // 2. Shield Logic (Summons, Forcefields)
-        let remain = amount;
+        let remain = finalDamage;
         
         // Prioritize Shields (Oldest first? Or newest? Usually first applied)
         // We use a filter to find shields, modify them, and filter out empty ones later if needed.
@@ -525,8 +875,23 @@ export const Player = {
         gameStore.triggerVfx({ type: 'damage', val: `-${remain}`, target: 'player' }); 
 
         if (s.hp <= 0) {
+            // v38.0: UNIQUE EFFECT - Auto Revive (Phoenix Feather)
+            // v38.6: Enforce Hardcore No-Rez
+            const canResurrect = s.bonuses.auto_revive && !s.bonuses._autoReviveUsed && !s.modifierEffects?.noResurrection;
+            
+            if (canResurrect) {
+                s.bonuses._autoReviveUsed = true;
+                s.hp = Math.floor(s.maxHp * 0.3); // Revive with 30% HP
+                gameStore.log("🔥 PHOENIX REBIRTH! Revived with 30% HP!", "buff");
+                gameStore.triggerVfx({ type: 'heal', val: s.hp, target: 'player' });
+                if (SoundManager) SoundManager.play('levelup');
+                return;
+            } else if (s.bonuses.auto_revive && s.modifierEffects?.noResurrection) {
+                 gameStore.log("💀 Hardcore Mode prevented Resurrection!", "error");
+            }
+            
              gameStore.log("You have died!", "boss");
-             if(window.Game) window.Game.handleDefeat();
+             if(Game) Game.handleDefeat();
         }
     },
     
@@ -539,34 +904,132 @@ export const Player = {
         
         if (s.hp <= 0) {
              gameStore.log("You sacrificed too much life...", "system");
-             if(window.Game) window.Game.handleDefeat();
+             if(Game) Game.handleDefeat();
         }
     },
     
     handleLevelUp() {
         const s = this.state;
+        const cap = s.levelCap || 100;
+        
+        // Check Cap
+        if (s.level >= cap) {
+             s.exp = s.nextExp - 1; // Cap EXP
+             return;
+        }
+
         if (s.exp >= s.nextExp) {
             s.level++;
             s.exp -= s.nextExp; // Overflow
-            s.nextExp = Math.floor(s.nextExp * 1.5);
+            
+            // v38.7: Polynomial Curve for Epic Mode (Level^2.6)
+            // Replaces legacy 1.5x exponential which was impossible for 500 floors
+            // Formula: Base(50) * (Level ^ 2.6)
+            s.nextExp = Math.floor(50 * Math.pow(s.level, 2.6));
             s.sp = (s.sp || 0) + 2; // +2 SP for skills
             s.statPt = (s.statPt || 0) + 3; // v37.3: +3 Stat Points per level
             
             gameStore.log(`Level Up! Lv.${s.level} (+2 SP, +3 Stat Points)`, "buff");
-            if(window.SoundManager) window.SoundManager.play("level_up");
+            if(SoundManager) SoundManager.play("level_up");
             gameStore.triggerShake("medium");
             this.recalc();
             s.hp = s.maxHp;
             s.mp = s.maxMp;
             
+            // v38.3 FIX: Check evolution FIRST, queue if needed
+            const evoOptions = this.getEvolutionOptions(s.level);
+            if (evoOptions && evoOptions.length > 0) {
+                s.evolutionOptions = evoOptions;
+                s.pendingEvolution = true; // Flag to show after stat allocation
+                gameStore.log(`🆙 Evolution available at Lv.${s.level}!`, "buff");
+            }
+            
             // v37.3: Show stat allocation panel if has unspent points
             if (s.statPt > 0) {
                 s.activePanel = 'stat-allocation';
+            } else if (s.pendingEvolution) {
+                // No stat points but has evolution - show evolution directly
+                s.activePanel = 'evolution';
             }
-            
-            // Check Evolution
-            this.checkEvolution();
         }
+    },
+    
+    // v38.3: Get evolution options for a level
+    getEvolutionOptions(lv) {
+        let options = [];
+        const s = this.state;
+        
+        // 1. Stat/Perk Evolutions (Level 5, 10) - no requirements
+        if (DB.EVOLUTIONS && DB.EVOLUTIONS[lv]) {
+            options = DB.EVOLUTIONS[lv];
+        }
+        // 2. Class Evolutions (Level 20, 50, 80) - check requirements
+        else if (CONSTANTS.CLASS_EVO_LEVELS && CONSTANTS.CLASS_EVO_LEVELS.includes(lv)) {
+            const baseClass = (s.baseClass || s.className || 'skeleton').toLowerCase().split(' ')[0];
+            const tree = DB.CLASS_TREES ? (DB.CLASS_TREES[baseClass] || DB.CLASS_TREES['skeleton']) : null;
+            if (tree && tree[lv]) {
+                // v38.3: Filter by stat requirements and mark locked ones
+                options = tree[lv].map(opt => {
+                    const meetsReq = this.meetsRequirements(opt.requirements);
+                    return {
+                        ...opt,
+                        locked: !meetsReq,
+                        lockReason: meetsReq ? null : this.getRequirementText(opt.requirements)
+                    };
+                });
+                
+                // v38.3 EDGE CASE: If ALL evolutions are locked, unlock the easiest one
+                const allLocked = options.every(opt => opt.locked);
+                if (allLocked && options.length > 0) {
+                    // Find option with lowest total required stats
+                    let easiest = options[0];
+                    let lowestReq = Infinity;
+                    
+                    options.forEach(opt => {
+                        const totalReq = (opt.requirements?.str || 0) + 
+                                        (opt.requirements?.vit || 0) + 
+                                        (opt.requirements?.int || 0);
+                        if (totalReq < lowestReq) {
+                            lowestReq = totalReq;
+                            easiest = opt;
+                        }
+                    });
+                    
+                    // Force unlock the easiest option
+                    easiest.locked = false;
+                    easiest.lockReason = null;
+                    gameStore.log("⚠️ No class met requirements - easiest option unlocked!", "warning");
+                }
+            }
+        }
+        
+        return options;
+    },
+    
+    // v38.3: Check if player meets stat requirements
+    meetsRequirements(req) {
+        if (!req) return true; // No requirements
+        const s = this.state;
+        if (req.str && (s.str || 0) < req.str) return false;
+        if (req.vit && (s.vit || 0) < req.vit) return false;
+        if (req.int && (s.int || 0) < req.int) return false;
+        // v38.4: AGI/LCK requirements
+        if (req.agi && (s.agi || 0) < req.agi) return false;
+        if (req.luck && (s.luck || 0) < req.luck) return false;
+        return true;
+    },
+    
+    // v38.3: Get human-readable requirement text
+    getRequirementText(req) {
+        if (!req) return "";
+        const parts = [];
+        if (req.str) parts.push(`STR ${req.str}`);
+        if (req.vit) parts.push(`VIT ${req.vit}`);
+        if (req.int) parts.push(`INT ${req.int}`);
+        // v38.4: AGI/LCK requirements
+        if (req.agi) parts.push(`AGI ${req.agi}`);
+        if (req.luck) parts.push(`LCK ${req.luck}`);
+        return `Requires: ${parts.join(', ')}`;
     },
     
     // v37.3: Allocate stat point to a specific stat
@@ -579,7 +1042,8 @@ export const Player = {
         
         stat = stat.toUpperCase();
         
-        if (!['STR', 'VIT', 'INT'].includes(stat)) {
+        // v38.4: Added AGI and LCK to valid stats
+        if (!['STR', 'VIT', 'INT', 'AGI', 'LCK'].includes(stat)) {
             gameStore.log("Invalid stat!", "error");
             return false;
         }
@@ -589,7 +1053,7 @@ export const Player = {
         s.statPt--;
         
         gameStore.log(`+1 ${stat}!`, "buff");
-        if(window.SoundManager) window.SoundManager.play("ui");
+        if(SoundManager) SoundManager.play("ui");
         
         this.recalc();
         return true;
@@ -656,9 +1120,18 @@ export const Player = {
                  if(!s.passives.includes(p)) s.passives.push(p);
              });
         }
+        
+        // v38.3: Apply Unique Passive from Evolution
+        if (choice.uniquePassive) {
+            if(!s.passives.includes(choice.uniquePassive)) {
+                s.passives.push(choice.uniquePassive);
+                gameStore.log(`Gained unique passive: ${choice.uniquePassive}`, "skill");
+            }
+        }
 
         // Close Panel
         s.evolutionOptions = [];
+        s.pendingEvolution = false; // v38.3: Clear pending flag
         s.activePanel = 'menu-view'; // Or back to where they were?
         this.recalc();
     },
@@ -676,6 +1149,11 @@ export const Player = {
                 case 'add_bonus':
                     if(!s.bonuses[eff.stat]) s.bonuses[eff.stat] = 0;
                     s.bonuses[eff.stat] += eff.val;
+                    break;
+                // v38.4: Add base stat (for AGI/LCK evolutions)
+                case 'add_base':
+                    if(!s.baseStats[eff.stat]) s.baseStats[eff.stat] = 0;
+                    s.baseStats[eff.stat] += eff.val;
                     break;
                 default:
                     console.warn("Unknown effect type:", eff.type);
@@ -786,7 +1264,7 @@ export const Player = {
             // The Logic just unlocks the ID.
             
             gameStore.log(`Learned Skill: ${node.name}!`, "system");
-            if(window.SoundManager) window.SoundManager.play("loot");
+            if(SoundManager) SoundManager.play("loot");
             this.recalc();
         }
     },
@@ -801,14 +1279,14 @@ export const Player = {
         
         s.activeSkills[slotIdx] = skillId;
         gameStore.log(`Equipped: ${DB.SKILLS[skillId]?.name}`, "system");
-        if(window.SoundManager) window.SoundManager.play("ui");
+        if(SoundManager) SoundManager.play("ui");
     },
 
     unequipSkill(slotIdx) {
         const s = this.state;
         if (slotIdx < 0 || slotIdx >= 4) return;
         s.activeSkills[slotIdx] = null;
-        if(window.SoundManager) window.SoundManager.play("ui");
+        if(SoundManager) SoundManager.play("ui");
     },
 
     // --- PERMANENT STAT GROWTH ---
@@ -828,11 +1306,25 @@ export const Player = {
         else if (stat === 'atk') s.baseStats.STR += val; // Fallback to STR for ATK
         
         this.recalc();
-        if(window.UI && UI.refresh) UI.refresh();
+        this.updateApp();
+    },
+
+    // Callback for UI updates
+    updateApp() { 
+        // Force Vue reactivity if needed (usually handled by store)
+        // Only if using legacy UI.refresh
+        // if(window.UI && UI.refresh) UI.refresh();
     },
 
     gainExp(amount) {
         const s = this.state;
+        const cap = s.levelCap || 100;
+        
+        if (s.level >= cap) {
+            gameStore.log("Max Level Reached!", "warning");
+            return;
+        }
+
         s.exp += amount;
         gameStore.log(`+${amount} XP`, "exp");
         this.handleLevelUp();
@@ -840,8 +1332,32 @@ export const Player = {
 
     heal(amount) {
         const s = this.state;
+        let healAmount = amount;
+        
+        // v38.8: Check CHAOS_AURA passive (50% healing reduction)
+        // Import Combat dynamically to avoid circular dependency
+        try {
+            const combat = gameStore.state.combat;
+            if (combat && combat.enemy && combat.enemy.passives && 
+                combat.enemy.passives.includes('chaos_aura')) {
+                healAmount = Math.floor(healAmount * 0.5);
+                gameStore.log(`🌀 CHAOS AURA reduces healing by 50%!`, "debuff");
+            }
+        } catch (e) { /* Ignore if Combat not available */ }
+        
+        // v38.8: Apply Void Set curse healing penalty
+        if (s.bonuses && s.bonuses.cursedHealing) {
+            const reduction = Math.abs(s.bonuses.cursedHealing);
+            healAmount = Math.floor(healAmount * (1 - reduction));
+        }
+        
+        // v38.9: Cursed Relic - Blighted Root (Healing Reduction)
+        if (s.multipliers.healingReceived) {
+             healAmount = Math.floor(healAmount * s.multipliers.healingReceived);
+        }
+        
         const oldHp = s.hp;
-        s.hp = Math.min(s.hp + amount, s.maxHp);
+        s.hp = Math.min(s.hp + healAmount, s.maxHp);
         const healed = s.hp - oldHp;
         if (healed > 0) {
             gameStore.triggerVfx({ type: 'heal', val: healed });
@@ -849,18 +1365,15 @@ export const Player = {
         }
     },
 
-    gainGold(amount) {
+    gainGold(amt) {
         const s = this.state;
-        const mult = s.multipliers.gold || 1;
-        
-        // Apply Multiplier
-        const finalAmount = Math.floor(amount * mult);
-        s.gold += finalAmount;
-        
-        gameStore.log(`+${finalAmount} Gold`, "gold"); // Assuming "gold" style exists or falls back
-        if(window.SoundManager) window.SoundManager.play("coin"); // Setup for sound if exists
+        const val = Math.floor(amt * (s.multipliers.gold || 1));
+        s.gold += val;
+        gameStore.log(`+${val} Gold`, "gold");
+        if(SoundManager) SoundManager.play("coin"); // Setup for sound if exists
     }
 };
 
 // Expose for debugging/legacy
-window.PlayerLogic = Player;
+// Global Export REMOVED
+// window.PlayerLogic = Player;

@@ -1,33 +1,51 @@
 <script setup>
 import { computed } from "vue";
 import { gameStore } from "../game/store.js";
+import { ProgressionManager } from "../game/managers/progression.js";
+import { Biomes } from "../game/config/biomes.js";
 
 const s = gameStore.state;
 
 // Check if we are in "Level Up" mode (forced allocation)
 const isLevelUp = computed(() => s.activePanel === 'levelup');
 
-// Computed Stats for Display
+// Computed Stats for Display - v38.4: Added icons
 const stats = computed(() => {
   return [
-    { label: "STR", val: s.str, desc: "Increases Physical Damage", key: "STR" },
-    { label: "VIT", val: s.vit, desc: "Increases Max HP", key: "VIT" },
-    { label: "INT", val: s.int, desc: "Increases Magic Dmg & MP", key: "INT" },
+    { label: "💪 STR", val: s.str, desc: "Physical Damage", key: "STR", color: "#f44" },
+    { label: "❤️ VIT", val: s.vit, desc: "Max HP", key: "VIT", color: "#4f4" },
+    { label: "🔮 INT", val: s.int, desc: "Magic & MP", key: "INT", color: "#4af" },
+    { label: "🏃 AGI", val: s.agi || 0, desc: "Dodge & Flee", key: "AGI", color: "#4fa" },
+    { label: "🍀 LCK", val: s.luck || 0, desc: "Crit & Gold", key: "LCK", color: "#fa4" },
   ];
 });
 
-// Derived Stats
+// Derived Stats - v38.4: Added FLEE stat
 const derived = computed(() => {
+  // Calculate flee chance (base 20% + level diff + AGI bonus, cap 70%)
+  const agi = s.agi || 0;
+  const fleeBase = 20 + (agi * 0.5);
+  const fleeChance = Math.min(70, Math.max(0, fleeBase));
+  
+  // v38.8: Soul Forge bonuses
+  const totalCrit = Math.floor(((s.crit || 0) + (s.bonusCrit || 0) / 100) * 100);
+  const totalCritDmg = Math.floor(((s.critDmg || 1.5) + (s.bonusCritDmg || 0)) * 100);
+  
   return [
-    { label: "ATK", val: s.atk || 0 },
-    { label: "DEF", val: s.def || 0 },
-    { label: "CRIT", val: Math.floor((s.crit || 0) * 100) + "%" },
-    { label: "DODGE", val: Math.floor((s.dodge || 0) * 100) + "%" },
+    { label: "⚔️ ATK", val: s.atk || 0 },
+    { label: "🛡️ DEF", val: s.def || 0 },
+    { label: "💥 CRIT", val: Math.min(100, totalCrit) + "%", color: "#fa0" },
+    { label: "💀 CRIT DMG", val: totalCritDmg + "%", color: "#fa0" },
+    { label: "🌀 DODGE", val: Math.floor((s.dodge || 0) * 100) + "%", color: "#4fa" },
+    { label: "🏃 FLEE", val: Math.floor(fleeChance) + "%", color: "#4fa" },
     // v35.3: New Relic Stats
-    { label: "L.STEAL", val: Math.floor((s.bonuses?.lifesteal || 0) * 100) + "%", color: "#f55" },
-    { label: "REFLECT", val: Math.floor((s.bonuses?.reflect || 0) * 100) + "%", color: "#a5f" },
-    { label: "GOLD+", val: "x" + (s.multipliers?.gold || 1).toFixed(2), color: "#fd0" },
-    { label: "EXP+", val: "x" + (s.multipliers?.exp || 1).toFixed(2), color: "#4af" },
+    { label: "🩸 L.STEAL", val: Math.floor((s.bonuses?.lifesteal || 0) * 100) + "%", color: "#f55" },
+    { label: "↩️ REFLECT", val: Math.floor((s.bonuses?.reflect || 0) * 100) + "%", color: "#a5f" },
+    { label: "💰 GOLD+", val: "x" + (s.multipliers?.gold || 1).toFixed(2), color: "#fd0" },
+    { label: "📈 EXP+", val: "x" + (s.multipliers?.exp || 1).toFixed(2), color: "#4af" },
+    // v38.8: Soul Forge Regen
+    ...(s.exploreHpRegen > 0 ? [{ label: "❤️ HP REGEN", val: s.exploreHpRegen + "%/exp", color: "#f55" }] : []),
+    ...(s.exploreMpRegen > 0 ? [{ label: "💧 MP REGEN", val: s.exploreMpRegen + "%/exp", color: "#4af" }] : []),
   ];
 });
 
@@ -59,6 +77,24 @@ const curseBuffs = computed(() => {
   if (cb.atkMult > 1) buffs.push({ label: 'ATK', val: `+${Math.round((cb.atkMult-1)*100)}%`, color: '#4f4' });
   
   return buffs;
+  return buffs;
+});
+
+// v38.0: Biome Effects Display
+const biomeEffects = computed(() => {
+    const node = s.world?.currentNode;
+    if (!node || !node.biome || !Biomes) return [];
+    
+    const mods = Biomes.getCombatMods(node.biome);
+    const list = [];
+    
+    if (mods.accuracy) list.push({ label: 'ACCURACY', val: `${mods.accuracy > 0 ? '+' : ''}${Math.round(mods.accuracy*100)}%`, color: mods.accuracy > 0 ? '#4f4' : '#f44' });
+    if (mods.dodge) list.push({ label: 'DODGE', val: `${mods.dodge > 0 ? '+' : ''}${Math.round(mods.dodge*100)}%`, color: '#4f4' });
+    if (mods.speed) list.push({ label: 'SPEED', val: `${mods.speed > 0 ? '+' : ''}${Math.round(mods.speed*100)}%`, color: '#4af' });
+    if (mods.enemyDef) list.push({ label: 'FOE DEF', val: `+${Math.round(mods.enemyDef*100)}%`, color: '#f44' }); // Red because bad for player
+    if (mods.enemyAtk) list.push({ label: 'FOE ATK', val: `+${Math.round(mods.enemyAtk*100)}%`, color: '#f44' });
+    
+    return list;
 });
 
 const formatItem = (item) => {
@@ -77,6 +113,9 @@ const formatItem = (item) => {
   if (item.str) statParts.push(`+${item.str} STR`);
   if (item.vit) statParts.push(`+${item.vit} VIT`);
   if (item.int) statParts.push(`+${item.int} INT`);
+  // v38.4: AGI/LCK
+  if (item.agi) statParts.push(`+${item.agi} AGI`);
+  if (item.luck) statParts.push(`+${item.luck} LCK`);
 
   
   // Percentage stats (convert to %)
@@ -108,6 +147,64 @@ const rarityColor = (item) => {
   return map[item.rarity] || "#fff";
 };
 
+// v38.9: Dynamic display for Cursed Relic / Special effects
+const relicEffects = computed(() => {
+    const list = [];
+    
+    // 1. Multipliers (Non-standard)
+    const knownMults = ['hp', 'mp', 'def', 'dmg', 'gold', 'exp', 'str', 'vit', 'int', 'agi', 'luck'];
+    for (const [key, val] of Object.entries(s.multipliers || {})) {
+        if (knownMults.includes(key)) continue;
+        if (val === 1) continue;
+        
+        let label = key.toUpperCase();
+        let color = val > 1 ? '#4f4' : '#f44';
+        
+        // Manual Label Mapping
+        if (key === 'healingReceived') { label = 'HEAL RCV'; color = val > 1 ? '#4f4' : '#f44'; }
+        if (key === 'damageTaken') { label = 'DMG TAKEN'; color = val < 1 ? '#4f4' : '#f44'; } // Lower is better
+        if (key === 'magicDmg') label = 'MAGIC DMG';
+        if (key === 'atkSpeed') label = 'ATK SPD';
+        if (key === 'mpRegen') label = 'MP REGEN';
+        if (key === 'cooldown') { label = 'CD REDUC'; color = val < 1 ? '#4f4' : '#f44'; } // Lower is better
+        if (key === 'dropRate') { label = 'DROP RATE'; color = '#fd0'; }
+
+        list.push({ 
+            label, 
+            val: `x${val.toFixed(2)}`, 
+            color 
+        });
+    }
+
+    // 2. Bonuses (Non-standard)
+    const knownBonus = ['str', 'vit', 'int', 'agi', 'luck', 'crit', 'dodge', 'lifesteal', 'reflect', 'critDmg', 'spellPower', 'block'];
+    for (const [key, val] of Object.entries(s.bonuses || {})) {
+         if (knownBonus.includes(key)) continue;
+         if (!val) continue;
+         if (key.startsWith('_')) continue; // Internal flags
+         
+         let label = key.toUpperCase();
+         let displayVal = val;
+         let color = '#eee';
+         
+         // Mapping
+         if (key === 'bossDmg') { label = 'BOSS DMG'; displayVal = `+${Math.round(val*100)}%`; color = '#fa0'; }
+         if (key === 'minionDmg') { label = 'MINION DMG'; displayVal = `${Math.round(val*100)}%`; color = val > 0 ? '#4f4' : '#f44'; }
+         if (key === 'hpDecay') { label = 'HP DECAY'; displayVal = `${val * 100}%/turn`; color = '#f44'; }
+         if (key === 'noPotions') { label = 'NO POTIONS'; displayVal = '⚠️'; color = '#f44'; }
+         if (key === 'startEmptyMp') { label = 'START 0 MP'; displayVal = '⚠️'; color = '#f44'; }
+         if (key === 'curseAura') { label = 'CURSE AURA'; displayVal = `-${Math.round(val*100)}% HP`; color = '#a5f'; }
+         if (key === 'extraTurnChance') { label = 'EXTRA TURN'; displayVal = `${Math.round(val*100)}%`; color = '#fa0'; }
+         if (key === 'hpPerKillPercent') { label = 'KILL HEAL'; displayVal = `${Math.round(val*100)}%`; color = '#f55'; }
+         if (key === 'fullHealOnLevel') { label = 'LVL HEAL'; displayVal = '✅'; color = '#4f4'; }
+         if (key === 'highVariance') { label = 'CHAOS DMG'; displayVal = '✅'; color = '#fa0'; }
+
+         list.push({ label, val: displayVal, color });
+    }
+    
+    return list;
+});
+
 const close = () => {
     // If leveled up, can't close without picking!
     if(isLevelUp.value) return;
@@ -131,7 +228,7 @@ const getClassIcon = (className) => {
 };
 
 const allocate = (key) => {
-    if(window.ProgressionManager) {
+    if(ProgressionManager) {
         ProgressionManager.applyLevelUp(key);
     }
 }
@@ -169,11 +266,11 @@ const allocate = (key) => {
 
       <hr />
 
-      <!-- ATTRIBUTES -->
+      <!-- ATTRIBUTES - v38.4: Colored icons -->
       <div class="section attributes">
         <div v-for="stat in stats" :key="stat.label" class="stat-row">
-          <span class="label">{{ stat.label }}</span>
-          <span class="val">{{ stat.val }}</span>
+          <span class="label" :style="{ color: stat.color || 'var(--c-gold)' }">{{ stat.label }}</span>
+          <span class="val" :style="{ color: stat.color || '#eee' }">{{ stat.val }}</span>
           
           <!-- Allocation Button -->
           <button v-if="isLevelUp" class="btn-alloc" @click="allocate(stat.key)">+1</button>
@@ -226,6 +323,24 @@ const allocate = (key) => {
           <span class="val" :style="{ color: effect.color }">{{ effect.val }}</span>
         </div>
       </div>
+
+      <!-- v38.9: RELIC EFFECTS -->
+      <div class="section relic-fx" v-if="relicEffects.length > 0">
+        <h3 style="color: #a5f;">🔮 RELIC EFFECTS</h3>
+         <div v-for="effect in relicEffects" :key="effect.label" class="stat-row">
+          <span class="label" style="color: #a5f;">{{ effect.label }}</span>
+          <span class="val" :style="{ color: effect.color }">{{ effect.val }}</span>
+        </div>
+      </div>
+
+       <!-- v38.0: BIOME EFFECTS -->
+       <div class="section biome-fx" v-if="biomeEffects.length > 0">
+         <h3 style="color: #4af;">🌍 ZONE EFFECTS</h3>
+          <div v-for="effect in biomeEffects" :key="effect.label" class="stat-row">
+           <span class="label" style="color: #4af;">{{ effect.label }}</span>
+           <span class="val" :style="{ color: effect.color }">{{ effect.val }}</span>
+         </div>
+       </div>
     </div>
   </div>
 </template>
@@ -264,7 +379,7 @@ const allocate = (key) => {
 }
 .header h2 {
   margin: 0;
-  color: var(--c-gold, #cfaa4c);
+  color: var(--c-gold);
   font-size: 1.2rem;
   text-shadow: 0 0 10px rgba(207, 170, 76, 0.3);
 }
@@ -339,12 +454,14 @@ const allocate = (key) => {
 .stat-row .label {
   color: var(--c-gold);
   font-weight: bold;
-  width: 40px;
+  min-width: 70px; /* v38.4: Wider for emojis */
+  white-space: nowrap;
 }
 .stat-row .val {
   font-weight: bold;
-  width: 40px;
+  min-width: 45px;
   text-align: right;
+  font-size: 1.1em; /* v38.4: Slightly larger values */
 }
 .stat-row .val-colored {
     font-weight: bold;
@@ -352,21 +469,34 @@ const allocate = (key) => {
     text-align: right;
 }
 .stat-row small {
-  color: #777;
+  color: #888;
   flex: 1;
   text-align: right;
+  font-size: 0.8em;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-alloc {
     background: var(--c-gold, #fd0); color: black; font-weight: bold;
-    border: none; padding: 5px 15px; cursor: pointer; margin-left: auto;
+    border: none; padding: 8px 16px; cursor: pointer; margin-left: auto;
+    border-radius: 4px;
+    transition: all 0.2s ease;
 }
-.btn-alloc:hover { transform: scale(1.1); box-shadow: 0 0 5px white; }
+.btn-alloc:hover { transform: scale(1.1); box-shadow: 0 0 8px rgba(255, 215, 0, 0.6); }
 
 .equip-slot {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
   border-bottom: 1px solid #333;
+}
+
+/* v38.4: Mobile responsiveness */
+@media (max-width: 480px) {
+  .stat-row .label { min-width: 60px; font-size: 0.9em; }
+  .stat-row .val { min-width: 35px; font-size: 1em; }
+  .stat-row small { font-size: 0.7em; }
+  .btn-alloc { padding: 6px 12px; }
 }
 </style>

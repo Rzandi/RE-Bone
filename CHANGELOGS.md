@@ -4,6 +4,76 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [38.9.1] - 2025-12-26 - 💀 CURSED POLISH UPDATE
+
+### 🐛 Logic Fixes
+
+- **Relics:** Fixed verification for Cursed Relics (Midas, Flesh Rot, Chaos Dice).
+- **UI:** Stats Panel now dynamically lists active negative modifiers.
+- **System:** Correctly hooked passives to player recalculation logic.
+
+## [38.9] - 2025-12-25 - 💀 CURSED ALTARS UPDATE
+
+### 💀 New Features
+
+- **20+ Mythic Cursed Relics:** High risk, high reward items.
+- **Trade-offs:** Stat vs Stat (e.g. +50% Gold / -20% HP).
+- **Dynamic Events:** Relic events now pull from the new pool.
+
+## [38.8] - 2025-12-25 - 🔊 AUDIO ENGINE EXPANSION
+
+- **SFX:** Added 25+ new sound effects (Impacts, Triggers).
+- **Ambience:** Biome-specific background audio.
+- **Haptics:** Vibration support for mobile devices.
+
+## [38.7] - 2025-12-25 - 📱 PWA & MOBILE POLISH
+
+- **Wake Lock:** Prevent screen sleep during gameplay.
+- **Shortcuts:** Desktop/Home Screen quick actions.
+- **Safe Area:** Support for notched displays.
+
+## [38.6] - 2025-12-25 - 🍞 TOAST NOTIFICATIONS
+
+- **System:** Replaced native alerts with custom Toast UI.
+- **Feedback:** Visual cues for level up and drops.
+- **Center:** Notification history center.
+
+## [38.5] - 2025-12-25 - 🛍️ BLACK MARKET & SOULS
+
+- **Economy:** Soul currency implementation.
+- **Gacha:** Mystery Box mechanic.
+- **Inflation:** Dynamic pricing based on progression.
+
+## [38.4] - 2025-12-25 - 🎲 RUN MODIFIERS
+
+- **System:** 9 Challenge Modes (e.g. Glass Cannon).
+- **Rewards:** Score & Soul multipliers.
+- **Stats:** Added AGI & LUCK stats.
+
+## [38.3.0] - 2025-12-25 - 🛡️ AUDIT & STABILITY UPDATE
+
+### 🚨 Critical Fixes
+
+- **Mechanics:** Fixed **Chaos Axe** (and Cursed Items) dealing 0 bonus crit damage. Multipliers are now correctly applied.
+- **Inventory:** Fixed **Discard Trash** logic safer; avoids deleting consumables/mats, targets only common/uncommon gear.
+- **Stability:** Fixed potential crash in `SocketManager` when unsocketing gems.
+- **Stability:** Hardened `SoundManager` against AudioContext failures (autoplay policies).
+
+### 📱 Mobile & UI
+
+- **Quick Skill Bar:** Added dedicated 5-slot bar for mobile users (<768px).
+- **Feedback:** Skill Selector now shows "No MP" state clearly (grayscale + cursor lock).
+- **Loading:** Added global loading overlay for critical operations (Save/Load).
+- **Visuals:** Added "Reputation" progress bar for Black Market.
+
+### 🛠️ Polish
+
+- **Refactor:** Standardized Version numbers across all files.
+- **Performance:** Optimized inventory filtering logic.
+- **UX:** Improved gem socketing reactivity.
+
+---
+
 ## [37.3.0] - 2025-12-24 - 📊 STATS & ANIMATION UPDATE
 
 ### 📊 Stat Allocation System
@@ -574,50 +644,191 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-# 📜 Legacy Version History (v22.0 - v31.0)
+## 🔵 ERA 6: THE RENAISSANCE (Modern Transition)
 
-_Archived changelogs from the Vanilla JS era._
+_The bridge between the Legacy JS era and the Modern Vue 3 architecture._
 
-## [v31.0 Legacy] - Architecture Refactor & Stability 🏗️
+### v30.0 - The Precursor
 
-**Release Date**: 2025-12-18
+- **Preparation:** Final codebase freeze before Vue migration.
+- **Cleanup:** Removal of redundant HTML identifiers.
 
-- **"Stuck at Floor 100" Fixed**: Resolved a critical syntax error in `game.js`.
-- **Refactor**: Decoupled `LootManager` and `ProgressionManager` from `game.js`.
+### v29.0 - Social Update (Legacy)
 
-## [v29.0 Legacy] - Social Update 💀
+- **Hall of Bones:** Implementation of local leaderboard logic.
+- **Daily Dungeon:** Seeded run generation concept.
 
-**Release Date**: 2025-12-16
+### v28.0 - System Overhaul (Legacy)
 
-- **Hall of Bones**: Local Leaderboard.
-- **Daily Dungeon**: Unique daily seeded runs.
+- **Crafting 1.0:** Scrap/Dust conversion prototype.
+- **Skill Tree:** Passive stats array structure.
 
-## [v28.0 Legacy] - System Overhaul 🛠️
+### v27.0 - Content Expansion
 
-**Release Date**: 2025-12-16
+- **Classes:** Prototype definitions for Dark Knight & Nicropriest.
+- **Items:** Added Dragon's Wrath & Eternal Guard sets.
 
-- **Crafting**: Convert Scrap/Dust into items.
-- **Salvage**: Breakdown items for materials.
-- **Skill Tree**: Passives like HP, ATK, DEF.
+### v26.0 - Mobile Optimization
 
-## [v27.0 Legacy] - Content Expansion
+- **Responsiveness:** CSS media queries for 320px screens.
+- **Touch:** Basic touch event listeners.
 
-**Release Date**: 2025-12-16
+---
 
-- **Classes**: Dark Knight, Necro Priest, Shadow Assassin.
-- **Biome**: Crystal Caverns (Floors 75-55).
-- **Items**: Dragon's Wrath Set, Eternal Guard Set.
+# 📜 Legacy Archives (v1.0 - v25.0)
 
-## [v26.2 Legacy] - Mobile Optimization
+_Preserved history of the development cycle from Prototype to Sovereign Edition._
 
-**Release Date**: 2025-12-15
+## 🟣 ERA 5: THE ULTIMATE FORM (AI & Final Polish)
 
-- **Responsive**: CSS for 320px+ screens.
-- **Touch**: Added `TouchManager` for swipe/tap.
+_Integration of AI, critical bug fixes, and strategic depth._
 
-## [v25.0 Legacy] - Legendary Update
+### v25.0 - Sovereign Edition (Current Legacy)
 
-**Release Date**: 2025-12-15
+- **Expanded Skillset:** 3 Active Skills & 2 Unique Passives per class/enemy.
+- **Evolution System:** Branching classes at Level 5 & 10.
+- **Passive Engine:** Logic automation for Lifesteal, Evasion, Thorns.
+- **Restoration:** Recovered missing features from refactoring.
 
-- **Legendary Items**: 16 new items with unique effects (e.g. Phoenix Feather).
-- **Achievements**: Track stats and unlocks.
+### v24.0 - Perk Mastery (Restored)
+
+- **Perk System:** Permanent passive skills (Vampirism, Greed, Second Wind).
+- **Dynamic Cost:** Exponential price scaling (3x).
+- **Loadout:** Select max 2 perks before run.
+
+### v23.0 - Refactoring
+
+- **Modularization:** Code cleanup (DB, UI, Player, Game, SoundManager).
+- **Performance:** Memory leak fixes and loop stabilization.
+
+### v22.0 - AI Activated
+
+- **Soul Speak:** Real-time dynamic chat with enemies (Gemini API).
+- **Oracle:** AI-generated lore items.
+
+### v21.0 - Soul Mastery
+
+- **Class Selection:** Skeleton, Ghoul, Phantom.
+- **Save Integrity:** Fixed stat loss bug on load.
+
+### v20.0 - Hazards & Secrets
+
+- **Environmental Hazards:** Magma (DoT), Poison Gas.
+- **Resistance Items:** Magma Charm, Gas Mask.
+- **Secrets:** Locked Doors & Skeleton Keys.
+
+## 🔴 ERA 4: THE NARRATIVE (Story & Structure)
+
+_Refactoring phase where the game concept was inverted: Floor 50 -> Floor 1._
+
+### v19.0 - Economy Restoration
+
+- **Merchant:** Gold system and shopkeeper implementation.
+- **Sell System:** Sell items from inventory.
+- **Scaling:** Deep floor items have higher stats (+1, +2).
+
+### v18.0 - World & War
+
+- **Smart Enemy AI:** Enemies use skills (Web, Acid, Bash).
+- **Debuffs:** Slow, Weak correctly impacting stats.
+
+### v16.0 - The Revenge
+
+- **Story Arc:** Narrative flashbacks at floors 45, 35, 25, 15, 5.
+- **Final Boss:** The Hero Party (Leon, Elena, Gareth).
+- **Biomes:** Unique text descriptions every 10 floors.
+
+### v15.0 - The Ascent (Reverse Dungeon)
+
+- **Concept Flip:** Start at Floor 50 (Hell), climb to Surface (Floor 1).
+- **Difficulty Curve:** Inverted scaling.
+
+## 🟠 ERA 3: THE SOUL (Deep RPG Systems)
+
+_Heavy RPG features: Economy, Crafting, Meta-progression._
+
+### v17.0 - Stats Overhaul
+
+- **New Stats:** AGI (Evasion) & LUK (Crit/Drop).
+- **Formulas:** Damage calculation fix.
+
+### v14.0 - Elemental Chaos
+
+- **Status Effects:** Burn, Poison, Freeze, Shock, Bleed, Wet, Weak, Slow.
+- **Combos:** Elemental interactions (Poison + Fire = Explosion).
+
+### v13.0 - The Armory
+
+- **Equipment Slots:** Weapon, Armor, Accessory split.
+- **Dynamic Stats:** Gear calculation updates.
+
+### v11.0 - Soulbound
+
+- **Meta Progression:** Soul Shards currency (persists after death).
+- **Rarity:** Color-coded loot (Common, Rare, Epic, Legend).
+
+## 🟡 ERA 2: THE DUNGEON (World & Atmosphere)
+
+_Expansion of world variation, enemies, and audio-visuals._
+
+### v12.0 - Symphony of Death
+
+- **Audio Engine:** Procedural SFX using Web Audio API.
+- **Bestiary:** Kill tracker and enemy encyclopedia.
+
+### v10.0 - Juice & Polish
+
+- **VFX:** Screen Shake, Flash, Pop-up text.
+- **UI:** Inventory stacking improvements.
+
+### v9.0 - The Sanctuary (Restored)
+
+- **Save System:** LocalStorage implementation.
+- **Bone Shrine:** Safe zones for healing/saving.
+- **Main Menu:** New Game / Continue.
+
+### v8.0 - Forked Paths
+
+- **Exploration:** Branching paths (Safe vs Dangerous).
+- **Stat Checks:** Interactive events matching stats.
+
+### v7.0 - Arcane Arts (Restored)
+
+- **MP System:** Mana resource added.
+- **Active Skills:** Spells implementation.
+- **Evolution V1:** First iteration of class changes at Level 5.
+
+### v6.0 - The Descent
+
+- **Floor System:** Progression logic.
+- **Bosses:** Periodic boss battles.
+
+## 🟢 ERA 1: THE AWAKENING (Foundation)
+
+_Basic engine structure and gameplay loop._
+
+### v5.0 - Stat Building
+
+- **Level Up:** XP system.
+- **Allocation:** Manual points for STR/VIT/INT.
+
+### v4.0 - Risk & Reward
+
+- **Events:** Chest vs Trap.
+- **Rest:** Ambush mechanics.
+
+### v3.0 - The Scavenger
+
+- **Inventory:** Array-based slots.
+- **Loot:** Item usage (Consumables).
+
+### v2.0 - Combat Prototype
+
+- **Combat UI:** First interface.
+- **Anatomy:** Body part targeting system (later removed).
+
+### v1.0 - The Skeleton
+
+- **Prototype:** Basic HTML Structure.
+- **Stats:** HP/STR.
+- **Log:** Text-based output.

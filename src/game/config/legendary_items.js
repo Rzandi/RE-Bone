@@ -383,8 +383,8 @@ const SET_BONUSES = {
   }
 };
 
-// Export to global
-window.LEGENDARY_ITEMS = LEGENDARY_ITEMS; // Needed for Game.js drop logic
-window.SET_BONUSES = SET_BONUSES;
+// Export to global - REMOVED v38.0
+// window.LEGENDARY_ITEMS = LEGENDARY_ITEMS;
+// window.SET_BONUSES = SET_BONUSES;
 
 export { LEGENDARY_ITEMS, SET_BONUSES };

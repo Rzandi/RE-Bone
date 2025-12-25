@@ -5,6 +5,14 @@ import {
     DEFAULT_DISTRIBUTION 
 } from '../config/loot_config.js';
 
+import { DB } from '../config/database.js';
+import { Player } from '../logic/Player.js';
+import { Game } from '../core/game.js';
+import { gameStore } from '../store.js'; // v38.3: For floor sync
+import { RELICS } from '../config/relics.js';
+import { Ascension } from './ascension.js';
+import { CONSTANTS } from '../config/constants.js'; // v38.4: For LUCK bonuses
+
 const LootManager = {
     /**
      * Main drop logic for enemies
@@ -13,7 +21,7 @@ const LootManager = {
     dropLoot(enemy) {        let dropChance = 0.3; // 30% base drop rate
         let droppedItem = null;
         
-        const floor = Game.floor; // Dependency on Game State
+        const floor = gameStore.state?.floor || Game.state?.floor || 1; // v38.3: Prefer gameStore for sync
 
         // Boss guaranteed legendary drop (Only Main Bosses)
         const isMainBoss = enemy.isBoss && (floor === 1 || floor % 20 === 0);
@@ -45,15 +53,33 @@ const LootManager = {
             // Mini Bosses have better minimum rarity
             if (enemy.isBoss && rarity === "common") rarity = "rare";
 
-            let item = this.getRandomItemByRarity(rarity);
+            let itemId = this.getRandomItemByRarity(rarity);
             
-            if (item && DB.ITEMS[item]) {
-                Player.addItem(item);
-                droppedItem = DB.ITEMS[item].name;
-            } else if (item) {
-                // Fallback if item ID invalid but exists?
-                 Player.addItem(item);
-                 droppedItem = item;
+            if (itemId && DB.ITEMS[itemId]) {
+                const baseItem = DB.ITEMS[itemId];
+                let newItem = { ...baseItem, id: itemId, uid: Date.now() + Math.random() };
+                
+                // v38.7: Soul Forging (Scaling Items)
+                // Floor 20 = +1. Floor 500 = +25.
+                if (['weapon','armor','acc'].includes(newItem.slot) && floor > 20) {
+                     const plus = Math.floor(floor / 20);
+                     if (plus > 0) {
+                         newItem.plus = plus;
+                         newItem.name = `${newItem.name} +${plus}`;
+                         newItem.price = Math.floor(newItem.price * (1 + plus * 0.2)); 
+                         
+                         // Bake Stats
+                         const mult = 1 + (plus * 0.1);
+                         if(newItem.atk) newItem.atk = Math.floor(newItem.atk * mult);
+                         if(newItem.def) newItem.def = Math.floor(newItem.def * mult);
+                         if(newItem.hp) newItem.hp = Math.floor(newItem.hp * mult);
+                         if(newItem.mp) newItem.mp = Math.floor(newItem.mp * mult);
+                         // Don't scale % stats like crit/dodge yet to avoid broken values
+                     }
+                }
+                
+                Player.addItem(newItem);
+                droppedItem = newItem.name;
             }
         }
         return droppedItem;
@@ -66,16 +92,24 @@ const LootManager = {
      */
     getRarityRoll(floor) {
         let roll = Math.random();
-        let floorBonus = (100 - floor) / 100 * 0.1; 
+        // v38.6: Rarity Bonus Logic (Higher Floor = Better Loot)
+        // Capped at +30% for balance
+        let floorBonus = Math.min(0.3, floor * 0.002); 
+        if (floor > 100) floorBonus += (floor - 100) * 0.001; // Extra boost for Endless 
+        
+        // v38.4: LUCK bonus to rarity (+0.5% per LUCK point)
+        const luck = Player.state?.luck || 0;
+        const luckBonus = luck * CONSTANTS.RARITY_PER_LUCK;
+        const totalBonus = floorBonus + luckBonus;
         
         // v30.0 Mythic Drop (Ascension Only)
-        if (window.Ascension && Ascension.level > 0) {
-            if (roll < 0.01) return "mythic";
+        if (Ascension && Ascension.meta.ascensionLevel > 0) {
+            if (roll < 0.01 + (luckBonus * 0.5)) return "mythic"; // LUCK helps mythic slightly
         }
 
-        if (roll < 0.02 + floorBonus) return "legend";
-        if (roll < 0.15 + floorBonus) return "epic";
-        if (roll < 0.45 + floorBonus) return "rare";
+        if (roll < 0.02 + totalBonus) return "legend";
+        if (roll < 0.15 + totalBonus) return "epic";
+        if (roll < 0.45 + totalBonus) return "rare";
         
         // v36.5: Deep Floor Clamps (No trash late game) - FIXED INVERTED LOGIC
         if (floor >= 90) return "epic"; // Minimum Epic at Floor 90+
@@ -253,7 +287,25 @@ const LootManager = {
         let itemId = this.getRandomItemByRarity(rarity);
         if (!itemId || !DB.ITEMS[itemId]) return null;
         
-        return { ...DB.ITEMS[itemId], id: itemId };
+        // v38.7: Apply Scaling to Chest/Event drops too
+        let newItem = { ...DB.ITEMS[itemId], id: itemId };
+        if (['weapon','armor','acc'].includes(newItem.slot) && floor > 20) {
+             const plus = Math.floor(floor / 20);
+             if (plus > 0) {
+                 newItem.plus = plus;
+                 newItem.name = `${newItem.name} +${plus}`;
+                 newItem.price = Math.floor(newItem.price * (1 + plus * 0.2));
+                 
+                 // Bake Stats
+                 const mult = 1 + (plus * 0.1);
+                 if(newItem.atk) newItem.atk = Math.floor(newItem.atk * mult);
+                 if(newItem.def) newItem.def = Math.floor(newItem.def * mult);
+                 if(newItem.hp) newItem.hp = Math.floor(newItem.hp * mult);
+                 if(newItem.mp) newItem.mp = Math.floor(newItem.mp * mult);
+             }
+        }
+        
+        return newItem;
     },
     
     // v35.1: Merchant Stock Generator
@@ -273,7 +325,9 @@ const LootManager = {
              let attempts = 0;
              let item = null;
              while(!item && attempts < 5) {
-                 item = this.getRandomItemByRarity(rarity);
+                 // Use generateDrop to get Scaled Items (Objects)
+                 // Pass rarityOverride
+                 item = this.generateDrop(floor, rarity);
                  attempts++;
              }
              
@@ -293,11 +347,11 @@ const LootManager = {
     
     // v35.2 Relic Drop
     dropRelic(tier="common") {
-        if(!window.RELICS) return null;
+        if(!RELICS) return null;
         
         // Filter by rarity if needed, or just random from pool
-        const pool = Object.keys(window.RELICS).filter(k => {
-             const r = window.RELICS[k];
+        const pool = Object.keys(RELICS).filter(k => {
+             const r = RELICS[k];
              if(tier === 'legend' && r.rarity === 'legend') return true;
              if(tier === 'common') return true; // All pool for now?
              return true;
@@ -307,16 +361,17 @@ const LootManager = {
         
         // Try to give one the player doesn't have
         let valid = pool;
-        if(window.Player && window.Player.relics) {
-            valid = pool.filter(id => !window.Player.relics.includes(id));
+        if(Player && Player.state.relics) {
+            valid = pool.filter(id => !Player.state.relics.includes(id));
         }
         
         if(valid.length === 0) return null; // Player has all relics?
         
         const picked = valid[Math.floor(Math.random() * valid.length)];
         Player.addRelic(picked);
-        return window.RELICS[picked].name;
+        return RELICS[picked].name;
     }
 };
 
-window.LootManager = LootManager;
+// window.LootManager = LootManager;
+export { LootManager };

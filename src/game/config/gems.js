@@ -177,6 +177,74 @@ export const GEM_TYPES = {
     desc: 'Pristine cosmic crystal.',
     lore: 'Wisdom of fallen stars.',
     usage: 'Mage pinnacle. +10% CDR!'
+  },
+
+  // ========== JADE (Agility) - v38.4 ==========
+  lesser_jade: {
+    id: 'lesser_jade',
+    name: 'Lesser Jade',
+    icon: '🌿',
+    quality: 'lesser',
+    baseBonus: { agi: 2, dodge: 0.01 },
+    desc: 'A small green-white stone. Minor agility.',
+    lore: 'Wind-touched mineral.',
+    usage: '+2 AGI, +1% dodge.'
+  },
+  
+  jade: {
+    id: 'jade',
+    name: 'Jade',
+    icon: '🍀',
+    quality: 'standard',
+    baseBonus: { agi: 4, dodge: 0.02 },
+    desc: 'A smooth verdant gem. Swift movement.',
+    lore: 'Prized by assassins.',
+    usage: '+4 AGI, +2% dodge.'
+  },
+  
+  perfect_jade: {
+    id: 'perfect_jade',
+    name: 'Perfect Jade',
+    icon: '🌲',
+    quality: 'perfect',
+    baseBonus: { agi: 8, dodge: 0.05, crit: 0.03 },
+    desc: 'Flawless wind crystal.',
+    lore: 'Speed of the storm itself.',
+    usage: '+8 AGI, +5% dodge, +3% crit!'
+  },
+
+  // ========== CITRINE (Luck) - v38.4 ==========
+  lesser_citrine: {
+    id: 'lesser_citrine',
+    name: 'Lesser Citrine',
+    icon: '🌟',
+    quality: 'lesser',
+    baseBonus: { luck: 2 },
+    desc: 'A small golden shard. Minor fortune.',
+    lore: 'Lucky find.',
+    usage: '+2 LUCK.'
+  },
+  
+  citrine: {
+    id: 'citrine',
+    name: 'Citrine',
+    icon: '⭐',
+    quality: 'standard',
+    baseBonus: { luck: 5, crit: 0.02 },
+    desc: 'A brilliant golden gem. Good fortune.',
+    lore: 'Fortune favors the bold.',
+    usage: '+5 LUCK, +2% crit.'
+  },
+  
+  perfect_citrine: {
+    id: 'perfect_citrine',
+    name: 'Perfect Citrine',
+    icon: '✨',
+    quality: 'perfect',
+    baseBonus: { luck: 10, crit: 0.05, lifesteal: 0.03 },
+    desc: 'Flawless fortune crystal.',
+    lore: 'Luck incarnate.',
+    usage: '+10 LUCK, +5% crit, +3% lifesteal!'
   }
 };
 

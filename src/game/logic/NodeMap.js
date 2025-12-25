@@ -3,12 +3,14 @@
    Handles Slay-the-Spire style graph generation
    ========================================= */
 
+import { REALMS } from '../config/realms.js';
+
 export const NodeMap = {
     config: {
-        layers: 15,          // Depth of the map
+        layers: 20,          // Depth of the map (Matches 20 Floor Biome Chunk)
         width: 5,            // Max nodes per layer
         paths: 3,            // Min paths from start
-        bossLayer: 14        // The final layer is Boss
+        bossLayer: 19        // The final layer is Boss
     },
 
     nodeTypes: {
@@ -20,9 +22,9 @@ export const NodeMap = {
         START: { id: 'start', icon: '🏁', color: '#ffffff', chance: 0.0 } // Special
     },
 
-    generateMap(realmId) {
+    generateMap(realmId, startFloor = 1) {
         let map = [];
-        const realmConfig = window.REALMS ? window.REALMS[realmId] : null;
+        const realmConfig = REALMS ? REALMS[realmId] : null;
 
         // 1. Generate Layers
         for (let l = 0; l < this.config.layers; l++) {
@@ -31,12 +33,12 @@ export const NodeMap = {
             // First Layer: All Combat (easier start)
             if (l === 0) {
                 for (let i = 0; i < 3; i++) {
-                    layerNodes.push(this.createNode(l, i, 'combat', realmConfig));
+                    layerNodes.push(this.createNode(l, i, 'combat', realmConfig, startFloor));
                 }
             } 
             // Last Layer: Boss
             else if (l === this.config.layers - 1) {
-                layerNodes.push(this.createNode(l, 0, 'boss', realmConfig));
+                layerNodes.push(this.createNode(l, 0, 'boss', realmConfig, startFloor));
             }
             // Middle Layers
             else {
@@ -44,10 +46,10 @@ export const NodeMap = {
                 let count = 2 + Math.floor(Math.random() * 3);
                 for (let i = 0; i < count; i++) {
                     let type = this.getRandomType(l);
-                    // Force Rest Site at ~50% mark (Layer 7)
-                    if (l === 7 && i === 0) type = 'rest';
+                    // Force Rest Site at around 50% mark
+                    if (l === 10 && i === 0) type = 'rest';
                     
-                    layerNodes.push(this.createNode(l, i, type, realmConfig));
+                    layerNodes.push(this.createNode(l, i, type, realmConfig, startFloor));
                 }
             }
             map.push(layerNodes);
@@ -102,14 +104,18 @@ export const NodeMap = {
         return map;
     },
 
-    createNode(layer, index, typeId, realmConfig = null) {
+    createNode(layer, index, typeId, realmConfig = null, startFloor = 1) {
         const type = Object.values(this.nodeTypes).find(t => t.id === typeId);
         
-        // v34.0: Assign Sub-Biome
+        // v38.6: Epic Mode Biome Logic (20 Floors per Biome)
         let biome = null;
         if(realmConfig && realmConfig.biomes) {
-            // Simple logic: 5 biomes spread across 15 layers -> 3 layers per biome
-            const biomeIndex = Math.min(Math.floor(layer / 3), realmConfig.biomes.length - 1);
+            const currentFloor = startFloor + layer;
+            // Cycle 0-99 (100 floors per realm)
+            // Biome 0: 0-19, Biome 1: 20-39...
+            const relFloor = (currentFloor - 1) % 100;
+            const biomeIndex = Math.floor(relFloor / 20) % realmConfig.biomes.length;
+            
             biome = realmConfig.biomes[biomeIndex];
         }
 

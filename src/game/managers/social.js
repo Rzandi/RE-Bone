@@ -3,7 +3,9 @@
    Handles Leaderboards, Daily Runs, and Sharing
    ========================================= */
 
-export const Social = {
+import { gameStore } from '../store.js';
+
+export const SocialManager = {
   // Storage Keys
   KEY_SCORES: "rebone_scores_v1",
   KEY_DAILY: "rebone_daily_last",
@@ -30,7 +32,7 @@ export const Social = {
     if (history.length > 20) history.pop();
     
     localStorage.setItem(this.KEY_SCORES, JSON.stringify(history));
-    UI.log("Run saved to Hall of Bones!", "log system");
+    if(gameStore) gameStore.log("Run saved to Hall of Bones!", "system");
     
     return newEntry.score;
   },
@@ -133,12 +135,12 @@ export const Social = {
 #ReBoneGame`;
 
     navigator.clipboard.writeText(text).then(() => {
-        UI.toast("Copied to Clipboard!");
+        if(gameStore) gameStore.log("Copied to Clipboard!", "system");
     }).catch(err => {
         console.error("Failed to copy", err);
-        UI.toast("Failed to copy");
+        if(gameStore) gameStore.log("Failed to copy", "error");
     });
   }
 };
 
-window.Social = Social;
+// window.Social = Social;

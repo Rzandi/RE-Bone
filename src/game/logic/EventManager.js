@@ -3,8 +3,14 @@
    Handles Text Events, Choices, and Outcomes
    ========================================= */
 
-import { gameStore } from '../store';
-import { EVENTS_DB } from '../config/events';
+import { gameStore } from '../store.js';
+import { EVENTS_DB } from '../config/events.js';
+import { Player } from '../logic/Player.js';
+import { Game } from '../core/game.js';
+import { SoundManager } from '../managers/sound.js';
+import { Achievements } from '../managers/achievements.js';
+import { LootManager } from '../managers/loot.js';
+import { RELICS } from '../config/relics.js';
 
 export const EventManager = {
     // Current Active Event
@@ -64,7 +70,9 @@ export const EventManager = {
         
         // Apply Effects
         if (choice.effect) {
-            choice.effect();
+            // v38.0: Dependency Injection for Effects
+            const context = { Player, gameStore, SoundManager, Achievements, LootManager, Game };
+            choice.effect(context);
         }
 
         // Save History (if event has ID)
@@ -89,9 +97,131 @@ export const EventManager = {
     endEvent() {
         // Return to Map
         // Assuming Game.js handles this via a direct call or we set activePanel back
-        if(window.Game) {
-             window.Game.returnToMap();
+        if(Game) {
+             Game.returnToMap();
         }
+    },
+    
+    // v38.8: VOID FORGE - Crafting Event for Void Set
+    // Requires: 4 Limit Break Shards + 1 Void Essence
+    triggerVoidForge() {
+        const shards = gameStore.state.gatekeeper?.limitBreakShards || 0;
+        const essence = gameStore.state.gatekeeper?.voidEssence || 0;
+        
+        const canCraft = shards >= 4 && essence >= 1;
+        
+        const voidForgeEvent = {
+            id: 'void_forge',
+            title: "THE VOID FORGE",
+            text: canCraft 
+                ? `You possess ${shards} Limit Break Shards and ${essence} Void Essence.\n\nThe Void whispers: "Choose your form of power..."`
+                : `You possess ${shards}/4 Limit Break Shards and ${essence}/1 Void Essence.\n\nThe Void stirs: "Return when you have conquered all Gatekeepers..."`,
+            lore: "void_forge_accessed",
+            choices: canCraft ? [
+                {
+                    txt: "⚔️ VOID EDGE (Weapon)",
+                    resultText: "The blade materializes from nothingness. ATK +100, 20% Lifesteal. CURSE: -15% Max HP.",
+                    effect: (ctx) => {
+                        gameStore.state.gatekeeper.limitBreakShards -= 4;
+                        gameStore.state.gatekeeper.voidEssence -= 1;
+                        
+                        const voidEdge = {
+                            id: 'void_edge',
+                            name: 'Void Edge',
+                            slot: 'weapon',
+                            atk: 100,
+                            rarity: 'mythic',
+                            desc: 'ATK +100, 20% Lifesteal. CURSE: -15% Max HP.',
+                            uniqueEffect: 'lifesteal_20',
+                            curse: { maxHp: -0.15 },
+                            isVoidSet: true
+                        };
+                        Player.addItem(voidEdge);
+                        gameStore.log("💜 VOID EDGE forged!", "rare");
+                        SoundManager?.play("relic");
+                    }
+                },
+                {
+                    txt: "🛡️ ABYSSAL PLATE (Armor)",
+                    resultText: "Darkness hardens into armor. HP +200, 30% DR. CURSE: -30% Healing.",
+                    effect: (ctx) => {
+                        gameStore.state.gatekeeper.limitBreakShards -= 4;
+                        gameStore.state.gatekeeper.voidEssence -= 1;
+                        
+                        const abyssalPlate = {
+                            id: 'abyssal_plate',
+                            name: 'Abyssal Plate',
+                            slot: 'armor',
+                            hp: 200,
+                            rarity: 'mythic',
+                            desc: 'HP +200, 30% DR. CURSE: -30% Healing.',
+                            uniqueEffect: 'damage_reduction_30',
+                            curse: { healing: -0.30 },
+                            isVoidSet: true
+                        };
+                        Player.addItem(abyssalPlate);
+                        gameStore.log("💜 ABYSSAL PLATE forged!", "rare");
+                        SoundManager?.play("relic");
+                    }
+                },
+                {
+                    txt: "💍 CHAOS RING (Accessory)",
+                    resultText: "A ring of pure chaos forms. +15% Crit, +20 AGI. CURSE: -10% ATK.",
+                    effect: (ctx) => {
+                        gameStore.state.gatekeeper.limitBreakShards -= 4;
+                        gameStore.state.gatekeeper.voidEssence -= 1;
+                        
+                        const chaosRing = {
+                            id: 'chaos_ring',
+                            name: 'Chaos Ring',
+                            slot: 'acc',
+                            crit: 15,
+                            agi: 20,
+                            rarity: 'mythic',
+                            desc: '+15% Crit, +20 AGI. CURSE: -10% ATK.',
+                            curse: { atk: -0.10 },
+                            isVoidSet: true
+                        };
+                        Player.addItem(chaosRing);
+                        gameStore.log("💜 CHAOS RING forged!", "rare");
+                        SoundManager?.play("relic");
+                    }
+                },
+                {
+                    txt: "💎 NULL SHARD (Gem)",
+                    resultText: "A shard of pure nullity. Status Immunity (1/fight). CURSE: -5% All Stats.",
+                    effect: (ctx) => {
+                        gameStore.state.gatekeeper.limitBreakShards -= 4;
+                        gameStore.state.gatekeeper.voidEssence -= 1;
+                        
+                        const nullShard = {
+                            id: 'null_shard',
+                            name: 'Null Shard',
+                            slot: 'gem',
+                            rarity: 'mythic',
+                            desc: 'Status Immunity (1/fight). CURSE: -5% All Stats.',
+                            uniqueEffect: 'status_immunity_once',
+                            curse: { allStats: -0.05 },
+                            isVoidSet: true
+                        };
+                        Player.addItem(nullShard);
+                        gameStore.log("💜 NULL SHARD forged!", "rare");
+                        SoundManager?.play("relic");
+                    }
+                },
+                {
+                    txt: "Leave (Keep Materials)",
+                    resultText: "The Void will wait..."
+                }
+            ] : [
+                {
+                    txt: "Leave",
+                    resultText: "You must defeat more Gatekeepers..."
+                }
+            ]
+        };
+        
+        this.startEvent(voidForgeEvent);
     },
 
     checkRequirement(req) {
@@ -122,7 +252,7 @@ export const EventManager = {
 
     // --- HIDDEN EVENT LOGIC ---
     checkHiddenEvents() {
-        if (!window.EVENTS_DB || !EVENTS_DB.hidden) return null;
+        if (!EVENTS_DB || !EVENTS_DB.hidden) return null;
         
         const history = gameStore.state.history.events;
         
@@ -234,7 +364,7 @@ export const EventManager = {
                                  { id: 'buff_dodge', turn: 10, val: 50 }
                              ];
                              const b = buffs[Math.floor(Math.random()*buffs.length)];
-                             if(window.Player) Player.status.push(b);
+                             if(Player) Player.status.push(b);
                              gameStore.log("Experimental Buff Applied!", "buff");
                          }
                     },
@@ -260,7 +390,7 @@ export const EventManager = {
                         
                         // 70% Chance Relic, 30% Trap (Nothing)
                         if(Math.random() < 0.7) {
-                             if(window.LootManager) {
+                             if(LootManager) {
                                  const relicName = LootManager.dropRelic('common');
                                  if(relicName) gameStore.state.event.text = `Success! You found: ${relicName}`;
                                  else gameStore.state.event.text = "The chest was empty (Max Relics?)";
@@ -276,7 +406,7 @@ export const EventManager = {
                     resultText: "The lock clicks open smoothly.",
                     effect: () => {
                         gameStore.state.gold -= 100;
-                        if(window.LootManager) {
+                        if(LootManager) {
                              const relicName = LootManager.dropRelic('rare'); // Better tier
                              if(relicName) gameStore.state.event.text = `Success! You found: ${relicName}`;
                              else gameStore.state.event.text = "The chest was empty.";
@@ -302,7 +432,7 @@ export const EventManager = {
                     resultText: "You strain your muscles...",
                     effect: () => {
                         if(gameStore.state.str >= 20) {
-                            if(window.LootManager) {
+                            if(LootManager) {
                                 const relicName = LootManager.dropRelic('rare');
                                 gameStore.state.event.text = `You lift it easily! Underneath lies: ${relicName}`;
                             }
@@ -321,7 +451,7 @@ export const EventManager = {
                         gameStore.state.hp = Math.min(gameStore.state.hp, gameStore.state.maxHp);
                         gameStore.triggerVfx({ type: 'damage', val: 20 });
                         
-                        if(window.LootManager) {
+                        if(LootManager) {
                             const relicName = LootManager.dropRelic('epic'); // High reward
                             gameStore.log(`Sacrificed 20 Max HP for ${relicName}`, "item");
                             gameStore.state.event.text = `The statue grinds open. You found: ${relicName}`;
@@ -331,6 +461,41 @@ export const EventManager = {
                 { txt: "Ignore", resultText: "You ignore the challenge." }
             ]
         };
+
+        // 3. The Cursed Altar (Dynamic Challenge) 💀
+        // Dynamically find all 'mythic' items from RELICS (assuming all mythics are curses for now, or filter by key)
+        const cursedIdols = Object.keys(RELICS).filter(k => RELICS[k].rarity === 'mythic');
+        const selectedCurseId = cursedIdols[Math.floor(Math.random() * cursedIdols.length)];
+        const curseData = RELICS[selectedCurseId];
+
+        const cursedAltar = {
+            title: "Altar of the Damned",
+            text: `A dark aura surrounds the ${curseData.name}. It whispers power... and ruin.`,
+            choices: [
+                {
+                    txt: `Accept ${curseData.name}`,
+                    // Dynamic description based on ID would be nice, but generic "Curse" warning works
+                    resultText: "The idol binds to your soul.",
+                    effect: () => {
+                        gameStore.state.relics.push(selectedCurseId);
+                        
+                        // Extra bonus for Greed (Gold) handled in Relic? 
+                        // No, Idol of Greed passive is +100% Gold Gain.
+                        // If we want immediate Gold, we should add it here.
+                        if (selectedCurseId === 'idol_of_greed') {
+                             gameStore.state.gold += 1000;
+                             gameStore.log("Greed rewards you: +1000 Gold", "gold");
+                        }
+                        
+                        gameStore.log(`Accepted ${curseData.name}`, "curse");
+                        gameStore.triggerVfx({ type: 'curse', val: 1 });
+                        if(Player && Player.recalc) Player.recalc();
+                    }
+                },
+                { txt: "Touch Nothing", resultText: "You step away from the darkness." }
+            ]
+        };
+
 
         // 1. ADD GENERIC EVENTS (From embedded or DB)
         // (Using the local hardcoded 'common' from below for now, but really should be in DB)
@@ -348,8 +513,8 @@ export const EventManager = {
                         resultText: "You drink the potion.",
                         effect: () => { 
                             gameStore.state.gold -= 50; 
-                            if(window.Player) {
-                                window.Player.heal(20);
+                            if(Player) {
+                                Player.heal(20);
                             } else {
                                 gameStore.state.hp = Math.min(gameStore.state.hp + 20, gameStore.state.maxHp);
                             }
@@ -367,9 +532,9 @@ export const EventManager = {
                         req: { type: 'hp', val: 10 },
                         resultText: "The altar glows. You feel stronger.",
                         effect: () => { 
-                             if(window.Player) {
-                                 window.Player.takeDamage(10);
-                                 window.Player.gainStat('str', 1);
+                             if(Player) {
+                                 Player.takeDamage(10);
+                                 Player.gainStat('str', 1);
                              } else {
                                 gameStore.state.hp -= 10;
                                 gameStore.state.str += 1;
@@ -396,9 +561,9 @@ export const EventManager = {
         }
 
         // 3. ADD CLASS SPECIFIC EVENTS
-        if (window.Player && EVENTS_DB.classes) {
+        if (Player && EVENTS_DB.classes) {
             // Check Base Class (e.g. 'skeleton')
-            const classId = window.Player.classId || 'skeleton'; // fallback
+            const classId = Player.classId || 'skeleton'; // fallback
             // We need a mapping or check for 'family' vs 'id'
             // Simplified: Check if exact ID exists, OR if family exists
             
@@ -424,6 +589,7 @@ export const EventManager = {
         // Inject into pool slightly more common than Legendary
         if(Math.random() < 0.05) return [gamblingChest];
         if(Math.random() < 0.05) return [challengeAltar];
+        if(Math.random() < 0.05) return [cursedAltar];
 
         // RARE CHANCE FOR LEGENDARY EVENT (10%)
         if (Math.random() < 0.1) {
@@ -439,4 +605,4 @@ export const EventManager = {
     }
 };
 
-window.EventManager = EventManager;
+// window.EventManager = EventManager;

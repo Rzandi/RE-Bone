@@ -11,6 +11,9 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+          enabled: true
+      },
       includeAssets: ['pwa-icon.png', 'Logo_Skull.jpg'],
       manifest: {
         name: 'Re:BONE',
@@ -24,14 +27,26 @@ export default defineConfig({
         icons: [
           {
             src: 'pwa-icon.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-icon.png',
-            sizes: '512x512',
-            type: 'image/png'
+            sizes: '1024x1024',
+            type: 'image/png',
+            purpose: 'any'
           }
+        ],
+        shortcuts: [
+            {
+                name: "Daily Challenge",
+                short_name: "Daily",
+                description: "Play today's challenge run",
+                url: "/?action=daily",
+                icons: [{ src: "pwa-icon.png", sizes: "1024x1024", type: "image/png" }]
+            },
+            {
+                name: "Inventory",
+                short_name: "Bag",
+                description: "Check your items",
+                url: "/?action=inventory",
+                icons: [{ src: "pwa-icon.png", sizes: "1024x1024", type: "image/png" }]
+            }
         ]
       }
     })

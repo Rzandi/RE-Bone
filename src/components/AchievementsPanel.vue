@@ -1,28 +1,31 @@
 <script setup>
 import { computed } from "vue";
 import { gameStore } from "../game/store.js";
+import { Achievements } from "../game/managers/achievements.js";
 
 const list = computed(() => {
-    if(window.Achievements) {
+    if(Achievements) {
         return Object.values(Achievements.list);
     }
     return [];
 });
 
 const progress = computed(() => {
-     if(window.Achievements) {
+     if(Achievements) {
          return `${Achievements.getUnlockedCount()} / ${Achievements.getTotalCount()}`;
      }
      return "0/0";
 });
 
 const close = () => {
-    // Smart Close
-    if (window.Game && window.Game.state.progress > 0 || window.Game.currAction !== 'idle') {
-        gameStore.state.activePanel = 'menu-view';
-    } else {
+    // v38.0: Use previousPanel to go back to where we came from
+    const prev = gameStore.state.previousPanel;
+    if (prev && prev === 'title') {
         gameStore.state.activePanel = 'title';
+    } else {
+        gameStore.state.activePanel = 'menu-view';
     }
+    gameStore.state.previousPanel = null; // Clear after use
 };
 
 const getStatus = (ach) => {

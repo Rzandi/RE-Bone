@@ -73,10 +73,25 @@ export const CONSTANTS = {
   ACHIEVEMENT_KEY: 'rebone_achievements',
 
   // Gameplay Constants
-  LEVEL_CAP: 100,
-  EVOLUTION_LEVELS: [5, 10, 20, 50, 80],
-  CLASS_EVO_LEVELS: [20, 50, 80]
+  LEVEL_CAP: 200, // v38.8: Updated for Gatekeeper Boss System (100 base + 20*5)
+  // v38.7: Rebalanced Evolution Pacing (User Request)
+  EVOLUTION_LEVELS: [10, 20],      
+  CLASS_EVO_LEVELS: [30, 60, 90],
+
+  // v38.4: AGI (Agility) Constants
+  DODGE_PER_AGI: 0.003,      // +0.3% per AGI point
+  FLEE_PER_AGI: 0.005,       // +0.5% per AGI point
+  CDR_PER_AGI: 0.002,        // +0.2% per AGI (max 20%)
+  BASE_FLEE_CHANCE: 0.20,    // Nerfed base flee (was 0.30)
+  MAX_FLEE_CHANCE: 0.70,     // Cap at 70%
+  MAX_CDR_FROM_AGI: 0.20,    // 20% max CDR from AGI
+  
+  // v38.4: LUCK Constants
+  CRIT_PER_LUCK: 0.003,      // +0.3% per LUCK point
+  GOLD_PER_LUCK: 0.005,      // +0.5% per LUCK point
+  RARITY_PER_LUCK: 0.005,    // +0.5% per LUCK point
+  GEM_DROP_PER_LUCK: 0.005   // +0.5% per LUCK point
 };
 
-// Global for Legacy Compatibility (Optional, but safe)
-window.CONSTANTS = CONSTANTS;
+// Global for Legacy Compatibility - REMOVED for v38.0 strict mode
+// window.CONSTANTS = CONSTANTS;

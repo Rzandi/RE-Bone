@@ -2,6 +2,11 @@
    ACHIEVEMENT SYSTEM
    ========================================= */
 
+import { Player } from '../logic/Player.js';
+import { Game } from '../core/game.js';
+import { gameStore } from '../store.js';
+import { CONSTANTS } from '../config/constants.js';
+
 export const Achievements = {
   list: {
     // Combat Achievements
@@ -124,6 +129,31 @@ export const Achievements = {
       name: "Abyss Explorer",
       desc: "Survive floor 100",
       icon: "🌑",
+      unlocked: false
+    },
+    // v38.8: Gatekeeper Floor Achievements
+    floor_200: {
+      name: "Soul Warden's Bane",
+      desc: "Survive floor 200",
+      icon: "👁️",
+      unlocked: false
+    },
+    floor_300: {
+      name: "Chaos Conqueror",
+      desc: "Survive floor 300", 
+      icon: "🌀",
+      unlocked: false
+    },
+    floor_400: {
+      name: "Primordial Slayer",
+      desc: "Survive floor 400",
+      icon: "🦴",
+      unlocked: false
+    },
+    floor_500: {
+      name: "Void Walker",
+      desc: "Survive floor 500 - Enter The Endless",
+      icon: "⬛",
       unlocked: false
     },
     floor_1: {
@@ -419,7 +449,7 @@ export const Achievements = {
   unlock(id) {
     if (this.list[id] && !this.list[id].unlocked) {
       this.list[id].unlocked = true;
-      UI.log(`🏆 Achievement: ${this.list[id].name}!`, "log boss");
+      gameStore.log(`🏆 Achievement: ${this.list[id].name}!`, "boss"); // Was "log boss"
       
       // Show achievement popup animation
       this.showUnlockPopup(this.list[id]);
@@ -433,6 +463,8 @@ export const Achievements = {
     // Create popup element
     const popup = document.createElement('div');
     popup.className = 'achievement-popup';
+    // This DOM maniuplation is acceptable for now as it's a transient global overlay
+    // But ideally should be an event emitted to App.vue
     popup.innerHTML = `
       <div class="achievement-content">
         <div class="achievement-icon">${achievement.icon}</div>
@@ -517,5 +549,5 @@ export const Achievements = {
   }
 };
 
-// Export to global
-window.Achievements = Achievements;
+// Export to global - REMOVED v38.0
+// window.Achievements = Achievements;

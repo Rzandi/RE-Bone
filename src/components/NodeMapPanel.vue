@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, nextTick, onUnmounted } from 'vue';
 import { gameStore } from '../game/store';
 import { NodeMap } from '../game/logic/NodeMap';
+import { Game } from '../game/core/game.js';
 
 const s = gameStore.state;
 
@@ -46,7 +47,7 @@ const selectNode = (node) => {
    
    // HACK: Minimal delay for visual feedback
    setTimeout(() => {
-       if (window.Game) window.Game.resolveNode(node);
+       if (Game && Game.resolveNode) Game.resolveNode(node);
    }, 300);
 };
 
@@ -107,8 +108,8 @@ const updateLines = () => {
 // Generate Map if empty (Safety check)
 onMounted(() => {
     if ((!map.value || map.value.length === 0) && activeRealm.value) {
-        console.log("Generating Map for", activeRealm.value);
-        s.world.nodeMap = NodeMap.generateMap(activeRealm.value);
+        // console.log("Generating Map for", activeRealm.value);
+        s.world.nodeMap = NodeMap.generateMap(activeRealm.value, s.floor);
     }
     
     // Wait for DOM
@@ -145,7 +146,7 @@ const isCurrent = (node) => {
   <div class="node-map-panel">
     <div class="map-header">
        <h3>🗺️ THE ATLAS</h3>
-       <button @click="$emit('back')">MENU</button>
+       <button @click="s.activePanel = 'menu-view'">MENU</button>
     </div>
 
     <!-- SVG Layer for Lines -->

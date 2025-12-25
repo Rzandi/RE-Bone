@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch, onMounted, onUnmounted } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted, onErrorCaptured } from "vue";
 import { gameStore } from "./game/store";
 import LogPanel from "./components/LogPanel.vue";
 import ControlPanel from "./components/ControlPanel.vue";
@@ -10,9 +10,11 @@ import CombatPanel from "./components/CombatPanel.vue";
 import EvolutionPanel from "./components/EvolutionPanel.vue";
 import SkillsPanel from "./components/SkillsPanel.vue";
 import CombatSkillSelector from "./components/CombatSkillSelector.vue";
+import LevelUpPanel from "./components/LevelUpPanel.vue"; // NEW
 import CraftingPanel from "./components/CraftingPanel.vue";
 import LeaderboardPanel from "./components/LeaderboardPanel.vue";
 import ClassSelectionPanel from "./components/ClassSelectionPanel.vue";
+import BossRushPanel from "./components/BossRushPanel.vue"; // NEW
 import SoulForgePanel from "./components/SoulForgePanel.vue";
 import AchievementsPanel from "./components/AchievementsPanel.vue";
 import VictoryPanel from "./components/VictoryPanel.vue";
@@ -29,7 +31,14 @@ import SkillManagementPanel from "./components/SkillManagementPanel.vue";
 import ReforgePanel from "./components/ReforgePanel.vue"; // v37.0 Phase 2
 import BlackMarketPanel from "./components/BlackMarketPanel.vue"; // v37.0 Phase 3
 import StatAllocationPanel from "./components/StatAllocationPanel.vue"; // v37.3: Free stat points
+import SocketingPanel from "./components/SocketingPanel.vue";
+import RunSetupPanel from "./components/RunSetupPanel.vue"; // v38.4: Challenge modifiers
+import DailyChallengePanel from "./components/DailyChallengePanel.vue"; // v38.5: Daily Challenge
+import ToastNotification from "./components/ToastNotification.vue"; // v38.8: Toast system
 import { REALMS } from "./game/config/realms";
+import { Game } from "./game/core/game.js";
+import { Combat } from "./game/logic/Combat.js";
+import { DB } from "./game/config/database.js";
 
 const s = gameStore.state;
 const realmsConfig = REALMS; // Make available to template
@@ -49,15 +58,69 @@ watch(() => s.sp, (newSP) => {
 // v36.9 Phase 3: Mobile detection (FIXED: Now reactive to window resize)
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
+// v38.9: PWA Enhancements
+import { WakeLockManager } from "./game/managers/WakeLockManager";
+import { registerSW } from 'virtual:pwa-register';
+
+// v38.0: Store handler reference for cleanup
+let resizeHandler = null;
+
 onMounted(() => {
-  const handleResize = () => {
-    windowWidth.value = window.innerWidth;
-  };
-  window.addEventListener('resize', handleResize);
+  window.addEventListener('resize', resizeHandler);
   
-  onUnmounted(() => {
-    window.removeEventListener('resize', handleResize);
+  // v38.9: Initialize Wake Lock
+  WakeLockManager.init();
+  // Request wake lock on first user interaction (click/touch)
+  window.addEventListener('click', () => {
+      WakeLockManager.request();
+  }, { once: true });
+  
+  // v38.9: Capture Install Prompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      gameStore.state.installPrompt = e;
+      gameStore.log("App Install available!", "system");
   });
+  
+  // v38.9: Handle App Shortcuts (Query Params)
+  const params = new URLSearchParams(window.location.search);
+  const action = params.get('action');
+  if (action === 'daily') {
+      // Wait for game init?
+      setTimeout(() => {
+          gameStore.state.activePanel = 'daily';
+      }, 500);
+  } else if (action === 'inventory') {
+      setTimeout(() => {
+          gameStore.state.activePanel = 'inventory';
+      }, 500);
+  }
+  
+  // v38.9: Service Worker Updates
+  registerSW({
+      onNeedRefresh() { 
+          gameStore.showToast("Update available! Please reload.", "refresh", 10000);
+      },
+      onOfflineReady() {
+          gameStore.showToast("Ready to play offline!", "wifi", 3000);
+      },
+  });
+});
+
+// v38.2: Global Error Boundary
+onErrorCaptured((err, instance, info) => {
+  console.error("Global Error Captured:", err, info);
+  gameStore.log(`Critical Error: ${err.message}`, "error");
+  return false; 
+});
+
+onUnmounted(() => {
+  // Cleanup resize listener
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler);
+  }
+  // Cleanup keyboard listener
+  window.removeEventListener('keydown', handleKeyPress);
 });
 
 const isMobile = computed(() => windowWidth.value <= 767);
@@ -116,7 +179,7 @@ const formatNumber = (num) => {
 const handleAction = (action) => {
   switch (action) {
     case "explore":
-      if (window.Game) window.Game.exploreState();
+      if (Game) Game.exploreState();
       break;
     case "menu":
       gameStore.state.activePanel = "pause-menu";
@@ -124,32 +187,31 @@ const handleAction = (action) => {
 
     // Combat
     case "attack":
-      if (window.CombatManager) window.CombatManager.playerAttack();
+      if (Combat) Combat.playerAttack();
       break;
     case "flee":
-      if (window.Game) window.Game.exploreState(); // Or menu
+      if (Game) Game.exploreState(); // Or menu
       break;
 
     // States
     case "skill":
-      if (window.Game) window.Game.skillState();
+      if (Game) Game.skillState();
       break;
     case "item":
       // Save current panel before switching to inventory
       gameStore.state.previousPanel = gameStore.state.activePanel;
-      if (window.Game) window.Game.invState();
+      if (Game) Game.invState();
       break;
     case "shop":
-      if (window.Game) window.Game.merchantState();
+      if (Game) Game.merchantState();
       break;
     case "soul_shop":
-      if (window.Game) window.Game.openSoulShop();
+      if (Game) Game.openSoulShop();
       break;
     case "rest":
-      if (window.Game) window.Game.restState();
+      if (Game) Game.restState();
       break;
     case "status":
-      // Todo: Status Panel
       gameStore.state.activePanel = "status";
       break;
     case "settings":
@@ -160,20 +222,20 @@ const handleAction = (action) => {
       gameStore.state.previousPanel = null;
       
       // v37.3 Fix: Restore Frozen Enemy if missing
-      if ((!s.combat || !s.combat.enemy) && window.Game && window.Game._frozenEnemy) {
+      if ((!s.combat || !s.combat.enemy) && Game && Game._frozenEnemy) {
           if(!s.combat) s.combat = {};
-          s.combat.enemy = window.Game._frozenEnemy;
-          window.Game.enemy = window.Game._frozenEnemy;
-          // Clear freeze to prevent zombie loops later? No, keep acts as safety until new combat
+          s.combat.enemy = Game._frozenEnemy;
+          Game.enemy = Game._frozenEnemy;
       }
       break;
+      
+    // v38.8 FIX: Proper back action handler
     case "back":
       // v37.3 Fix: Context-Aware Return for Inventory Root Only
-      // If we are in Inventory and there is a fight, Back goes to Combat.
       if (gameStore.state.activePanel === 'inventory') {
            const storeEnemy = s.combat && s.combat.enemy;
-           const coreEnemy = window.Game && window.Game.enemy;
-           const frozenEnemy = window.Game && window.Game._frozenEnemy;
+           const coreEnemy = Game && Game.enemy;
+           const frozenEnemy = Game && Game._frozenEnemy;
            
            if (storeEnemy || coreEnemy || frozenEnemy) {
                gameStore.state.activePanel = 'combat';
@@ -183,19 +245,26 @@ const handleAction = (action) => {
                if (!storeEnemy && !coreEnemy && frozenEnemy) {
                    if (!s.combat) s.combat = {};
                    s.combat.enemy = frozenEnemy;
-                   window.Game.enemy = frozenEnemy;
+                   Game.enemy = frozenEnemy;
                }
                return;
            }
       }
 
-      // Restore previous panel if it exists, otherwise go to menu
+      // Use previousPanel if it exists, otherwise fallback
       if (gameStore.state.previousPanel) {
         const prev = gameStore.state.previousPanel;
-        gameStore.state.previousPanel = null; // Clear it
+        gameStore.state.previousPanel = null;
         gameStore.state.activePanel = prev;
       } else {
-        if (window.Game) window.Game.menuState();
+        // Fallback to title if we came from StartScreen panels
+        const currentPanel = gameStore.state.activePanel;
+        const startScreenPanels = ['run-setup', 'achievements', 'leaderboard', 'shop-ascension', 'daily'];
+        if (startScreenPanels.includes(currentPanel)) {
+          gameStore.state.activePanel = 'title';
+        } else if (Game) {
+          Game.menuState();
+        }
       }
       break;
   }
@@ -223,11 +292,11 @@ const handleKeyPress = (e) => {
   if (s.activePanel === 'combat' && ['1', '2', '3', '4', '5'].includes(e.key)) {
     const index = parseInt(e.key) - 1;
     const equippedSkills = s.equippedSkills || [];
-    if (equippedSkills[index] && window.CombatManager) {
+    if (equippedSkills[index] && Combat) {
       const skillId = equippedSkills[index];
-      const skillData = window.DB?.SKILLS?.[skillId];
+      const skillData = DB?.SKILLS?.[skillId];
       if (skillData) {
-        window.CombatManager.executeSkill(skillId, skillData);
+        Combat.executeSkill(skillId, skillData);
       }
     }
   }
@@ -247,12 +316,29 @@ if (typeof window !== 'undefined') {
       'shake-hv': s.shake === 'heavy'
   }">
     <!-- OVERLAYS -->
+    <div v-if="s.isLoading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">SAVING...</div>
+    </div>
     <MobileTooltip />
     <LoreCard />
     <VFXLayer />
+    
+    <!-- v38.8: Toast Notifications -->
+    <div class="toast-container">
+      <ToastNotification 
+        v-for="toast in s.toasts" 
+        :key="toast.id"
+        :message="toast.message"
+        :icon="toast.icon"
+        :duration="toast.duration"
+        @dismiss="gameStore.dismissToast(toast.id)"
+      />
+    </div>
 
     <!-- TITLE SCREEN -->
     <StartScreen v-if="s.activePanel === 'title'" />
+    <DailyChallengePanel v-else-if="s.activePanel === 'daily'" />
 
     <!-- GAME UI -->
     <template v-else>
@@ -281,10 +367,19 @@ if (typeof window !== 'undefined') {
             <span v-if="s.world && s.world.activeRealm && realmsConfig[s.world.activeRealm]" class="realm-icon">
               {{ realmsConfig[s.world.activeRealm].icon }}
             </span>
-            <span class="floor-text">FL {{ s.floor }}</span>
-            <span class="progress-badge">({{ s.progress }}%)</span>
+            <span class="floor-text">FL {{ isMobile && s.floor > 999 ? formatNumber(s.floor) : s.floor }}</span>
+            <span class="progress-badge" v-if="s.floor <= 100">({{ s.progress }}%)</span>
           </div>
           <div class="class-display">{{ s.className }} Lv.{{ s.level }}</div>
+          
+          <!-- v38.4: Speed Run Timer (Polished) -->
+          <div v-if="s.currentFloorTime > 0" class="speed-run-timer-container">
+              <div class="speed-run-bar" :style="{ width: (s.currentFloorTime / (s.modifierEffects.floorTimer || 60)) * 100 + '%' }"></div>
+              <div class="speed-run-content" :class="{'timer-low': s.currentFloorTime <= 10}">
+                   <span class="timer-icon">⏳</span>
+                   <span class="timer-val">{{ s.currentFloorTime }}s</span>
+              </div>
+          </div>
         </div>
         
         <!-- Right: Stats -->
@@ -376,6 +471,7 @@ if (typeof window !== 'undefined') {
         <Transition name="panel-slide" mode="out-in">
           <SkillManagementPanel v-if="s.activePanel === 'skill-management'" key="skill-mgmt" />
         </Transition>
+        <SkillsPanel v-if="s.activePanel === 'skills'" />
         
         <Transition name="panel-slide" mode="out-in">
           <CombatSkillSelector v-if="s.activePanel === 'skill-selector'" key="skill-select" />
@@ -384,6 +480,9 @@ if (typeof window !== 'undefined') {
         <CraftingPanel v-if="s.activePanel === 'crafting'" />
         <LeaderboardPanel v-if="s.activePanel === 'leaderboard'" />
         <ClassSelectionPanel v-if="s.activePanel === 'class'" />
+        <LevelUpPanel v-if="s.activePanel === 'levelup'" />
+        <EvolutionPanel v-if="s.activePanel === 'evo'" /> <!-- NEW -->
+        <BossRushPanel v-if="s.activePanel === 'boss-rush'" />
         <SoulForgePanel v-if="s.activePanel === 'shop-ascension'" />
         <AchievementsPanel v-if="s.activePanel === 'achievements'" />
         <SettingsPanel v-if="s.activePanel === 'settings'" /> <!-- NEW -->
@@ -393,7 +492,9 @@ if (typeof window !== 'undefined') {
         <EventPanel v-if="s.activePanel === 'event'" />
         <ReforgePanel v-if="s.activePanel === 'reforge'" /> <!-- v37.0 Phase 2 -->
         <BlackMarketPanel v-if="s.activePanel === 'black_market'" /> <!-- v37.0 Phase 3 -->
+        <SocketingPanel v-if="s.activePanel === 'socketing'" />
         <StatAllocationPanel v-if="s.activePanel === 'stat-allocation'" /> <!-- v37.3: Free stat points -->
+        <RunSetupPanel v-if="s.activePanel === 'run-setup'" /> <!-- v38.4: Challenge modifiers -->
 
         <!-- CONTROLS -->
         <ControlPanel @action="handleAction" />
@@ -422,10 +523,10 @@ if (typeof window !== 'undefined') {
   grid-template-columns: auto 1fr auto;
   gap: 12px;
   padding: 10px 12px;
-  background: var(--glass-bg, rgba(20, 20, 25, 0.85));
+  background: var(--glass-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid var(--glass-border);
   align-items: center;
 }
 
@@ -526,7 +627,7 @@ if (typeof window !== 'undefined') {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: var(--c-gold, #cfaa4c);
+  color: var(--c-gold);
   font-weight: bold;
 }
 
@@ -546,7 +647,7 @@ if (typeof window !== 'undefined') {
 
 .class-display {
   font-size: 0.8rem;
-  color: var(--text-secondary, #a0a0a0);
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 
@@ -569,7 +670,7 @@ if (typeof window !== 'undefined') {
   align-items: center;
   gap: 4px;
   font-size: 0.7rem;
-  color: var(--text-secondary, #a0a0a0);
+  color: var(--text-secondary);
 }
 
 .bar-icon {
@@ -624,7 +725,7 @@ if (typeof window !== 'undefined') {
   justify-content: flex-end;
   gap: 4px;
   font-size: 0.8rem;
-  color: var(--c-gold, #cfaa4c);
+  color: var(--c-gold);
   margin-top: 2px;
 }
 
@@ -771,8 +872,85 @@ if (typeof window !== 'undefined') {
 }
 
 /* ============================================
+   v38.4: Speed Run Timer
+   ============================================ */
+.speed-run-timer-container {
+    position: relative;
+    width: 80px;
+    height: 24px;
+    background: #111;
+    border: 1px solid #444;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+    box-shadow: 0 2px 4px #000;
+}
+
+.speed-run-bar {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #a00, #f44);
+    opacity: 0.4;
+    transition: width 1s linear;
+    z-index: 1;
+}
+
+.speed-run-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #fff;
+    gap: 4px;
+}
+
+.timer-low {
+    color: #ff5555;
+    text-shadow: 0 0 5px #f00;
+    animation: timerPulse 0.5s infinite alternate;
+}
+
+@keyframes timerPulse {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0.8; transform: scale(1.05); }
+}
+
+/* ============================================
+   v38.0: UTILITIES
    v36.9 PHASE 1: MOBILE TOUCH OPTIMIZATION
    ============================================ */
+
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    backdrop-filter: blur(5px);
+}
+.loading-spinner {
+    width: 40px; height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid var(--c-gold);
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+.loading-text {
+    color: var(--c-gold);
+    font-weight: bold;
+    letter-spacing: 2px;
+    animation: pulse 1.5s infinite;
+}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 /* Global touch optimization */
 * {
@@ -902,5 +1080,20 @@ body {
     right: 20px;
   }
 }
+
+/* v38.8: Toast Notification Container */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast-container > * {
+  pointer-events: auto;
+}
 </style>
-```
+

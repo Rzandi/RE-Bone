@@ -3,6 +3,9 @@ import { gameStore } from '../store.js';
 import { DB } from '../config/database.js';
 import { generateSocketCount } from '../config/database.js';
 import { GEMS } from '../config/gems.js';
+import { Player } from '../logic/Player.js';
+import { Achievements } from './achievements.js';
+import { SoundManager } from './sound.js';
 
 export const SocketManager = {
   
@@ -70,13 +73,13 @@ export const SocketManager = {
     gameStore.log(`Socketed ${GEMS[gemType].icon} ${GEMS[gemType].name}`, 'buff');
     
     // v37.0: Achievement tracking
-    if (window.Achievements) {
-      window.Achievements.addProgress('socket_novice', 1);
-      window.Achievements.addProgress('socket_master', 1);
+    if (Achievements) {
+      Achievements.addProgress('socket_novice', 1);
+      Achievements.addProgress('socket_master', 1);
       
       // Check if item is now fully socketed (3 sockets all filled)
       if (item.sockets.length === 3 && item.sockets.every(s => s !== null)) {
-        window.Achievements.unlock('fully_socketed');
+        Achievements.unlock('fully_socketed');
       }
     }
     
@@ -97,7 +100,8 @@ export const SocketManager = {
     }
 
     const inventory = gameStore.state.inventory;
-    const maxInv = (window.Player && window.Player.maxInventory) || 20;
+    // v38.2 Fix: Use proper getter for inventory limit
+    const maxInv = (Player && Player.inventoryLimit) ? Player.inventoryLimit : 20;
 
     // Check availability in inventory (stacking)
     const existingGem = inventory.find(i => i.type === 'gem' && i.gemType === gemType);
@@ -132,7 +136,7 @@ export const SocketManager = {
     gameStore.log(`Removed ${GEMS[gemType].icon} ${GEMS[gemType].name}`, 'system');
     
     // v37.1 Polish: Play sound
-    if (window.SoundManager) window.SoundManager.play('relic'); // Use relic sound for now
+    if (SoundManager) SoundManager.play('relic'); // Use relic sound for now
     
     return { success: true };
   },
@@ -182,24 +186,24 @@ export const SocketManager = {
     };
     
     // Add to inventory via Player
-    if (window.Player) {
-      window.Player.addItem(gemItem);
+    if (Player) {
+      Player.addItem(gemItem);
     }
     
     gameStore.log(`Found ${baseGem.icon} ${baseGem.name} (FL${floor})!`, 'loot');
     
     // v37.0: Track gem achievements
-    if (window.Achievements) {
-      window.Achievements.addProgress('gem_collector', 1);
-      window.Achievements.addProgress('gem_hoarder', 1);
+    if (Achievements) {
+      Achievements.addProgress('gem_collector', 1);
+      Achievements.addProgress('gem_hoarder', 1);
       
       // Rarity-specific achievements
       if (baseGem.rarity === 'rare') {
-        window.Achievements.addProgress('rare_gem_finder', 1);
+        Achievements.addProgress('rare_gem_finder', 1);
       } else if (baseGem.rarity === 'epic') {
-        window.Achievements.addProgress('epic_gem_finder', 1);
+        Achievements.addProgress('epic_gem_finder', 1);
       } else if (baseGem.rarity === 'legendary') {
-        window.Achievements.unlock('legendary_gem_finder');
+        Achievements.unlock('legendary_gem_finder');
       }
     }
   },
@@ -263,10 +267,10 @@ export const SocketManager = {
     
     return item.sockets.map(gemType => {
       if (!gemType) return '⭕'; // Empty socket
-      return GEMS[gemType].icon; // Filled socket
+      return (GEMS[gemType] && GEMS[gemType].icon) ? GEMS[gemType].icon : '💎'; // Fallback for invalid/missing gem
     }).join('');
   }
 };
 
-// Make available globally
-window.SocketManager = SocketManager;
+// Make available globally - REMOVED v38.0
+// window.SocketManager = SocketManager;

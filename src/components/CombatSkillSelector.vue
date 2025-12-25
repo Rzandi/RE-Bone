@@ -2,6 +2,8 @@
 import { computed } from "vue";
 import { gameStore } from "../game/store.js";
 import { DB } from "../game/config/database.js";
+import { SoundManager } from "../game/managers/sound.js";
+import { Combat } from "../game/logic/Combat.js";
 
 const s = gameStore.state;
 
@@ -96,16 +98,28 @@ const useSkill = (skill) => {
         } else {
             gameStore.log("Not enough MP!", "error");
         }
-        if (window.SoundManager) window.SoundManager.play('error');
+        if (SoundManager) SoundManager.play('error');
         return;
     }
     
     // Deduct MP (UI side immediate feedback)
-    s.mp -= (skill.mpCost || 0);
+    let mpCost = skill.mpCost || 0;
+    
+    // v38.0: UNIQUE EFFECT - Free Cast (Mage Robes) - 20% chance to cast for free
+    if (s.bonuses && s.bonuses.free_cast && Math.random() < 0.20) {
+        mpCost = 0;
+        gameStore.log("✨ FREE CAST! No MP cost!", "buff");
+    }
+    // v38.0: UNIQUE EFFECT - Reduce MP Cost (Wizard Hat) - 20% reduction
+    else if (s.bonuses && s.bonuses.reduce_mp_cost) {
+        mpCost = Math.floor(mpCost * 0.8);
+    }
+    
+    s.mp -= mpCost;
     
     // Execute (v36.6: Pass skill ID for cooldown tracking)
-    if (window.CombatManager) {
-        CombatManager.executeSkill(skill.id, skill);
+    if (Combat) {
+        Combat.executeSkill(skill.id, skill);
     }
 };
 
@@ -171,7 +185,7 @@ const close = () => {
     background: var(--glass-bg, rgba(17, 17, 20, 0.95));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-top: 2px solid var(--c-gold, #cfaa4c);
+    border-top: 2px solid var(--c-gold);
     display: flex; flex-direction: column; z-index: 100;
     box-shadow: 0 -5px 30px rgba(0,0,0,0.8);
 }
@@ -184,7 +198,7 @@ const close = () => {
 }
 .header h2 { 
     margin: 0; font-size: 1rem; 
-    color: var(--c-gold, #cfaa4c);
+    color: var(--c-gold);
     text-shadow: 0 0 10px rgba(207, 170, 76, 0.3);
 }
 .btn-close { 
@@ -217,7 +231,7 @@ const close = () => {
 }
 .skill-card:hover { 
     background: linear-gradient(135deg, rgba(45, 45, 55, 0.9), rgba(35, 35, 45, 0.95));
-    border-color: var(--c-gold, #cfaa4c);
+    border-color: var(--c-gold);
     box-shadow: 0 0 15px rgba(207, 170, 76, 0.2);
     transform: translateX(3px);
 }
@@ -234,7 +248,7 @@ const close = () => {
     border-color: #555;
 }
 
-.skill-card.no-mp { opacity: 0.6; cursor: not-allowed; }
+.skill-card.no-mp { opacity: 0.6; cursor: not-allowed; filter: grayscale(1); }
 
 .mp-warning {
     color: #f55;

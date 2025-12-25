@@ -3,6 +3,8 @@
 
 import { gameStore } from '../store.js';
 import { CURSED_ITEMS, countOwnedCursedItems } from './cursed_items.js';
+import { BlackMarketManager } from '../managers/BlackMarketManager.js';
+import { Achievements } from '../managers/achievements.js';
 
 // ============================================
 // SHADY DEALER CHAIN EVENTS
@@ -318,7 +320,7 @@ export const BlackMarketEventManager = {
   // Check if shady dealer should appear
   shouldTriggerDealer(floor) {
     const s = gameStore.state;
-    const rep = window.BlackMarketManager?.getDealerReputation() || 0;
+    const rep = BlackMarketManager?.getDealerReputation() || 0;
     
     // Find eligible event based on rep
     for (const key of Object.keys(SHADY_DEALER_EVENTS).reverse()) {
@@ -396,8 +398,8 @@ export const BlackMarketEventManager = {
       }
       
       // Track achievement
-      if (event.achievementId && window.Achievements) {
-        window.Achievements.unlock(event.achievementId);
+      if (event.achievementId && Achievements) {
+        Achievements.unlock(event.achievementId);
       }
     }
     
@@ -406,6 +408,4 @@ export const BlackMarketEventManager = {
 };
 
 // Global export
-window.BlackMarketEventManager = BlackMarketEventManager;
-window.SHADY_DEALER_EVENTS = SHADY_DEALER_EVENTS;
-window.CURSED_COLLECTOR_EVENTS = CURSED_COLLECTOR_EVENTS;
+

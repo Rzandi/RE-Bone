@@ -6,6 +6,9 @@
 import { gameStore } from "../store.js";
 import { DB } from "../config/database.js";
 import { SaveManager } from "./SaveManager.js"; // Use SaveManager for persistence
+import { Player } from "../logic/Player.js";
+import { Game } from "../core/game.js";
+import { SoundManager } from "./sound.js";
 
 export const Ascension = {
   // Constants
@@ -19,12 +22,32 @@ export const Ascension = {
   // Backwards compatibility for VIEWs
   get SHOP_ITEMS() {
      return [
+        // Original Stats
         { id: "str_plus", name: "Titan's Strength", desc: "Start with +5 STR", cost: 5, max: 10 },
         { id: "vit_plus", name: "Golem's Heart", desc: "Start with +5 VIT", cost: 5, max: 10 },
         { id: "int_plus", name: "Lich's Mind", desc: "Start with +5 INT", cost: 5, max: 10 },
+        
+        // v38.8: New Stats
+        { id: "agi_plus", name: "Ghost Walker", desc: "Start with +3 AGI", cost: 5, max: 10 },
+        { id: "luck_plus", name: "Fortune's Child", desc: "Start with +3 LUCK", cost: 5, max: 10 },
+        
+        // Percentage Bonuses
         { id: "exp_boost", name: "Ancient Wisdom", desc: "+10% EXP Gain", cost: 10, max: 5 },
         { id: "gold_boost", name: "Midas Touch", desc: "+20% Gold Gain", cost: 8, max: 5 },
         { id: "mythic_chance", name: "God's Favor", desc: "+1% Mythic Drop Rate", cost: 20, max: 3 },
+        
+        // v38.8: Regen (per explore)
+        { id: "hp_regen", name: "Undying Will", desc: "+1% MaxHP on Explore", cost: 15, max: 10 },
+        { id: "mp_regen", name: "Soul Siphon", desc: "+1% MaxMP on Explore", cost: 15, max: 10 },
+        
+        // v38.8: Combat Stats
+        { id: "crit_chance", name: "Deathblow", desc: "+1% Crit Chance", cost: 25, max: 10 },
+        { id: "crit_dmg", name: "Executioner", desc: "+10% Crit Damage", cost: 30, max: 5 },
+        
+        // v38.8: Starting Bonuses
+        { id: "start_gold", name: "Inheritance", desc: "+100 Starting Gold", cost: 10, max: 5 },
+        { id: "start_potion", name: "Emergency Kit", desc: "+1 Starting Potion", cost: 20, max: 3 },
+        
         // v35.1: Inventory Expansion
         { id: "inventory_slot", name: "Bag of Holding", desc: "+5 Inventory Slots", cost: 100, max: 10, scale: 1.5 }
      ];
@@ -68,7 +91,7 @@ export const Ascension = {
     this.generateStock();
     
     // SOFT RESET LOGIC (v33.0)
-    if (window.Player && window.Game) {
+    if (Player && Game) {
         // 1. Reset Player (Use init to fully wipe state)
         // Default to skeleton or keep current class name if we want them to stick with it?
         // Usually Rogue-likes reset to base class or character select.
@@ -91,7 +114,7 @@ export const Ascension = {
         gameStore.state.activePanel = 'title'; // Go to title to re-select class
         
         gameStore.triggerVfx({ type: 'critical', val: "ASCENSION!", target: 'player' });
-        if(window.SoundManager) window.SoundManager.play("ascend");
+        if(SoundManager) SoundManager.play("ascend");
         setTimeout(() => {
              alert(`ASCENSION SUCCESSFUL!\n\nNew Cycle: ${this.meta.ascensionLevel}\nEnemies are stronger.\nYou have gained ${reward} Souls.`);
         }, 500);
@@ -200,9 +223,11 @@ export const Ascension = {
 
 // Auto-init on load
 // Ensure DB is loaded first
-window.addEventListener('load', () => {
-  if(window.Ascension) Ascension.init();
-});
+// Auto-init on load
+// Ensure DB is loaded first
+// window.addEventListener('load', () => { // REMOVED v38.0
+//   if(window.Ascension) Ascension.init();
+// });
 
-// Explicit Self-Bind
-window.Ascension = Ascension;
+// Explicit Self-Bind - REMOVED v38.0
+// window.Ascension = Ascension;

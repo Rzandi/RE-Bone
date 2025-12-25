@@ -29,4 +29,6 @@ const Events = {
     }
 };
 
-window.Events = Events;
+// Export to global scope - REMOVED v38.0
+// window.Events = Events;
+export { Events };

@@ -7,21 +7,26 @@ const META_KEY = 'rebone_meta_v32';
 
 export const SaveManager = {
     saveGame() {
-        try {
-            // Save RUN data
-            const runData = JSON.stringify(gameStore.state);
-            localStorage.setItem(SAVE_KEY, runData);
-            
-            // Save META data explicitly too
-            this.saveMeta();
-            
-            gameStore.log("Game Saved.", "system");
-            return true;
-        } catch (e) {
-            console.error("Save failed", e);
-            gameStore.log("Save failed!", "system");
-            return false;
-        }
+        gameStore.state.isLoading = true;
+        // Simulate async delay for visual feedback (optional but feels better)
+        setTimeout(() => {
+            try {
+                // Save RUN data
+                const runData = JSON.stringify(gameStore.state);
+                localStorage.setItem(SAVE_KEY, runData);
+                
+                // Save META data explicitly too
+                this.saveMeta();
+                
+                gameStore.log("Game Saved.", "system");
+            } catch (e) {
+                console.error("Save failed", e);
+                gameStore.log("Save failed!", "system");
+            } finally {
+                gameStore.state.isLoading = false;
+            }
+        }, 500); // 500ms delay for visual feedback
+        return true;
     },
     
     saveMeta() {
@@ -60,12 +65,24 @@ export const SaveManager = {
             
             // --- STATE REPAIR ---
             
+            if (!gameStore.state.merchantGemStock) gameStore.state.merchantGemStock = [];
+            
             // v37.0: Repair Gems & Synthesis Data
             if (!gameStore.state.gems) gameStore.state.gems = [];
             if (!gameStore.state.synthesisFailures) gameStore.state.synthesisFailures = {};
-            if (typeof gameStore.state.souls !== 'number') gameStore.state.souls = 0;
             if (typeof gameStore.state.essence !== 'number') gameStore.state.essence = 0;
-            if (!gameStore.state.merchantGemStock) gameStore.state.merchantGemStock = [];
+
+            // v38.0: Unify Souls Currency (Migrate run souls to meta)
+            if (typeof gameStore.state.souls === 'number' && gameStore.state.souls > 0) {
+                 gameStore.state.meta.souls = (gameStore.state.meta.souls || 0) + gameStore.state.souls;
+                 gameStore.state.souls = 0; 
+                 this.saveMeta();
+                 // console.log("Migrated legacy souls to meta:", gameStore.state.meta.souls);
+            }
+            // Ensure meta souls exist
+            if (typeof gameStore.state.meta.souls !== 'number') gameStore.state.meta.souls = 0;
+            
+            // v37.0: Ensure socket data structure exists on items
             
             // v37.0: Ensure socket data structure exists on items
             // Sockets should already be saved with inventory items, but verify
@@ -82,11 +99,14 @@ export const SaveManager = {
                 gameStore.state.baseStats = { STR: 5, VIT: 5, INT: 5 };
             }
             
+            // v38.4: Ensure runTime exists
+            if (typeof gameStore.state.runTime !== 'number') gameStore.state.runTime = 0;
+            
             // 1. Repair Multipliers
             Player.recalc();
             
             // 2. Repair Evolution Options (Functions are lost in JSON)
-            if (gameStore.state.activePanel === 'evolution') {
+            if (gameStore.state.activePanel === 'evo' || gameStore.state.activePanel === 'evolution') {
                 // Re-calculating options will restore the 'effect' functions from DB
                 Player.checkEvolution();
             }
@@ -147,11 +167,29 @@ export const SaveManager = {
                 if (!e.itemStock) e.itemStock = {};
             }
             
+            // v38.8: Repair Gatekeeper Boss state
+            if (!gameStore.state.gatekeeper) {
+                gameStore.state.gatekeeper = {
+                    defeated: {},
+                    pendingCapUnlock: null,
+                    limitBreakShards: 0,
+                    voidEssence: 0
+                };
+            } else {
+                // Repair corrupted data
+                const g = gameStore.state.gatekeeper;
+                if (!g.defeated) g.defeated = {};
+                if (typeof g.limitBreakShards !== 'number') g.limitBreakShards = 0;
+                if (typeof g.voidEssence !== 'number') g.voidEssence = 0;
+            }
+            
             gameStore.log("Game Loaded.", "system");
+            gameStore.state.isLoading = false; // v38.3: Reset loading state
             return true;
         } catch (e) {
             console.error("Load failed", e);
             gameStore.log("Load failed!", "system");
+            gameStore.state.isLoading = false; // v38.3: Reset even on error
             return false;
         }
     },
@@ -197,37 +235,84 @@ export const SaveManager = {
             }
         }, intervalMs);
         */
-       console.log("Auto-save disabled for Roguelike Mode");
+       // console.log("Auto-save disabled for Roguelike Mode");
     },
 
   // Cloud Save (Export to String)
   exportSaveString() {
     try {
+      // v38.3: Save current state before export - handle circular refs
+      let runData;
+      try {
+        runData = JSON.stringify(gameStore.state);
+      } catch (jsonErr) {
+        console.error("JSON stringify failed for gameStore.state:", jsonErr);
+        // Fallback: save minimal data
+        runData = JSON.stringify({
+          level: gameStore.state.level || 1,
+          className: gameStore.state.className || 'Skeleton',
+          floor: gameStore.state.floor || 1,
+          gold: gameStore.state.gold || 0,
+          fallback: true
+        });
+      }
+      
+      localStorage.setItem(SAVE_KEY, runData);
+      this.saveMeta();
+      
       const allData = {
-        save: localStorage.getItem('rebone_save_v32'),
-        meta: localStorage.getItem('rebone_meta_v32'),
+        save: localStorage.getItem(SAVE_KEY) || runData,
+        meta: localStorage.getItem(META_KEY),
         achievements: localStorage.getItem('rebone_achievements'),
         settings: localStorage.getItem('rebone_settings'),
         timestamp: Date.now(),
-        version: "v36.4"
+        version: "v38.3"
       };
-      return btoa(JSON.stringify(allData));
+      
+      console.log("Exporting save data:", allData.save ? "Has Save" : "No Save", allData.meta ? "Has Meta" : "No Meta");
+      
+      // v38.3 FIX: Use proper UTF-8 to Base64 encoding for Unicode characters (emoji support)
+      const jsonString = JSON.stringify(allData);
+      const encoded = this.utf8ToBase64(jsonString);
+      
+      console.log("Export successful, string length:", encoded.length);
+      return encoded;
     } catch (e) {
-      console.error("Export Failed", e);
-      return null;
+      console.error("Export Failed:", e);
+      return "ERROR:" + e.message;
     }
+  },
+  
+  // v38.3: UTF-8 safe Base64 encoding (supports emoji/unicode)
+  utf8ToBase64(str) {
+    // Use TextEncoder to properly encode UTF-8
+    const bytes = new TextEncoder().encode(str);
+    let binary = '';
+    bytes.forEach(byte => binary += String.fromCharCode(byte));
+    return btoa(binary);
+  },
+  
+  // v38.3: UTF-8 safe Base64 decoding
+  base64ToUtf8(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
   },
 
   // Cloud Save (Import from String)
   importSaveString(str) {
     try {
-      const decoded = atob(str);
+      // v38.3 FIX: Use UTF-8 safe decoding for unicode/emoji support
+      const decoded = this.base64ToUtf8(str);
       const data = JSON.parse(decoded);
       
       if (!data.version || !data.meta) throw new Error("Invalid Save Data");
       
-      if(data.save) localStorage.setItem('rebone_save_v32', data.save);
-      if(data.meta) localStorage.setItem('rebone_meta_v32', data.meta);
+      if(data.save) localStorage.setItem(SAVE_KEY, data.save);
+      if(data.meta) localStorage.setItem(META_KEY, data.meta);
       if(data.achievements) localStorage.setItem('rebone_achievements', data.achievements);
       if(data.settings) localStorage.setItem('rebone_settings', data.settings);
       
@@ -239,5 +324,5 @@ export const SaveManager = {
   }
 };
 
-// Expose for debugging
-window.SaveManager = SaveManager;
+// Expose for debugging - REMOVED for v38.0 strict mode
+// window.SaveManager = SaveManager;

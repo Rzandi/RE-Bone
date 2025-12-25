@@ -427,5 +427,5 @@ export const ownsCursedItem = (inventory, itemId) => {
   return inventory.some(item => item.id === itemId);
 };
 
-// Global export
-window.CURSED_ITEMS = CURSED_ITEMS;
+// Global export - REMOVED v38.0
+// window.CURSED_ITEMS = CURSED_ITEMS;

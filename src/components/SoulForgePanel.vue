@@ -3,33 +3,26 @@ import { computed, ref, onMounted } from "vue";
 import { gameStore } from "../game/store.js";
 import { DB } from "../game/config/database.js";
 import { SaveManager } from "../game/managers/SaveManager.js";
+import { Ascension } from "../game/managers/ascension.js";
 
 const s = gameStore.state;
-const items = computed(() => window.Ascension ? Ascension.SHOP_ITEMS : []);
-const upgrades = computed(() => s.meta ? s.meta.upgrades : {});
-const souls = computed(() => s.meta ? s.meta.souls : 0);
+
+// Safe Accessors
+const meta = computed(() => s.meta || {});
+const souls = computed(() => meta.value.souls || 0);
+const upgrades = computed(() => meta.value.upgrades || {});
+const unlockedClasses = computed(() => meta.value.unlockedClasses || ['skeleton']);
 
 const activeTab = ref('classes');
 
-// --- CLASS SHOP LOGIC ---
-const unlockedClasses = computed(() => s.meta ? s.meta.unlockedClasses : []);
-
-// Safely access Ascension logic (Actions only)
-const ascensionShopItems = computed(() => window.Ascension ? window.Ascension.SHOP_ITEMS : []);
-// Bind directly to meta for sync
-const ascensionUpgrades = computed(() => s.meta ? s.meta.upgrades : {});
-const ascensionShopStock = computed(() => (s.meta && s.meta.shopStock) ? s.meta.shopStock : []);
-const ascensionRefreshCount = computed(() => {
-    const val = s.meta ? s.meta.refreshCount : 3;
-    return (isNaN(val) || val === undefined) ? 3 : val;
-});
-
-// Currency: Sync with Meta Souls
-// Duplicate removed
+// Shop Data (with safety checks)
+const shopItems = computed(() => (Ascension?.SHOP_ITEMS) || []);
+const shopStock = computed(() => (meta.value.shopStock) || []);
+const refreshCount = computed(() => (meta.value.refreshCount !== undefined) ? meta.value.refreshCount : 3);
 
 // --- CLASS SHOP LOGIC ---
 const lockedClasses = computed(() => {
-    const all = DB.CLASSES;
+    const all = DB.CLASSES || {};
     const unlocked = unlockedClasses.value;
     const list = [];
     
@@ -43,7 +36,6 @@ const lockedClasses = computed(() => {
 
 const classCost = computed(() => {
     // Formula: 50 * (2 ^ bought_count)
-    // We need to count how many BUYABLE classes we have unlocked.
     const unlocked = unlockedClasses.value;
     let boughtCount = 0;
     unlocked.forEach(id => {
@@ -55,7 +47,7 @@ const classCost = computed(() => {
 
 const buyClass = (id) => {
     const cost = classCost.value;
-    if(s.meta.souls >= cost) {
+    if(souls.value >= cost) {
         s.meta.souls -= cost;
         s.meta.unlockedClasses.push(id);
         SaveManager.saveMeta();
@@ -63,40 +55,45 @@ const buyClass = (id) => {
     }
 }
 
-// --- LEGACY ASCENSION LOGIC (Keep for upgrades if needed) ---
+// --- UPGRADE LOGIC ---
 const buy = (id) => {
-    if(window.Ascension) window.Ascension.buyUpgrade(id);
+    if(Ascension) Ascension.buyUpgrade(id);
 };
 
 const initializeShop = () => {
-    if(window.Ascension) window.Ascension.refreshShop();
+    if(Ascension) Ascension.refreshShop();
 };
 
 const refreshShop = () => {
-     if(window.Ascension) window.Ascension.refreshShop();
+     if(Ascension) Ascension.refreshShop();
 };
 
-    const close = () => {
-        // Smart Close
-        if (s.activePanel === 'shop-ascension') {
-            // Check if we came from Menu (in-game) or Title
-            // A simple heuristic: If Player has a class and we are not in 'idle' state?
-            // Or simpler: If we have a 'Game' object and loop is running?
-            // Let's assume if 'Game.currAction' is defined.
-            
-            // If we have a running game (not just initialized):
-            if (window.Game && window.Game.state.progress > 0 || window.Game.currAction !== 'idle') {
-                gameStore.state.activePanel = 'menu-view';
-            } else {
-                gameStore.state.activePanel = 'title';
-            }
+const close = () => {
+    // Smart Close Logic
+    const prev = gameStore.state.previousPanel;
+    
+    if (prev === 'title') {
+        gameStore.state.activePanel = 'title';
+    } else if (prev === 'menu-view') {
+        gameStore.state.activePanel = 'menu-view';
+    } else {
+        // Fallback heuristic
+        if (s.hp > 0 && s.floor > 0) {
+            gameStore.state.activePanel = 'menu-view';
+        } else {
+            gameStore.state.activePanel = 'title';
         }
-    };
-    
-    // Ensure all 3 tabs are available
-    // const activeTab = ref('classes'); // 'classes' | 'upgrades' | 'perks'
-    
-    </script>
+    }
+    gameStore.state.previousPanel = null;
+};
+
+// Ensure Shop is generated
+onMounted(() => {
+    if(Ascension && Ascension.shopStock.length === 0) {
+        Ascension.generateStock();
+    }
+});
+</script>
     
     <template>
       <div class="soul-forge-panel scanline">
@@ -110,6 +107,7 @@ const refreshShop = () => {
             <button :class="{ active: activeTab === 'classes' }" @click="activeTab = 'classes'">CLASSES</button>
             <button :class="{ active: activeTab === 'upgrades' }" @click="activeTab = 'upgrades'">STATS</button>
             <button :class="{ active: activeTab === 'perks' }" @click="activeTab = 'perks'">PERKS</button>
+            <button :class="{ active: activeTab === 'cosmetics' }" @click="activeTab = 'cosmetics'">✨ STYLE</button>
         </div>
 
     <div class="content">
@@ -137,19 +135,19 @@ const refreshShop = () => {
 
         <!-- STATS / UPGRADES TAB -->
         <div v-show="activeTab === 'upgrades'" class="grid">
-            <div v-for="item in ascensionShopItems" :key="item.id" class="card">
+            <div v-for="item in shopItems" :key="item.id" class="card">
                  <!-- Filter out class unlocks from this tab -->
                  <template v-if="!item.id.startsWith('unlock_')">
                     <h3>{{ item.name }}</h3>
                     <p>{{ item.desc }}</p>
                     <div class="stats-mini" style="color:#aaa;">
-                        Level: {{ ascensionUpgrades[item.id] || 0 }} / {{ item.max }}
+                        Level: {{ upgrades[item.id] || 0 }} / {{ item.max }}
                     </div>
                     
                     <button @click="buy(item.id)" 
-                            :disabled="souls < item.cost || (ascensionUpgrades[item.id] || 0) >= item.max"
-                            :style="(ascensionUpgrades[item.id] || 0) >= item.max ? 'background:#556; color:#889' : ''">
-                        {{ (ascensionUpgrades[item.id] || 0) >= item.max ? 'MAXED' : `UPGRADE (${item.cost} 👻)` }}
+                            :disabled="souls < item.cost || (upgrades[item.id] || 0) >= item.max"
+                            :style="(upgrades[item.id] || 0) >= item.max ? 'background:#556; color:#889' : ''">
+                        {{ (upgrades[item.id] || 0) >= item.max ? 'MAXED' : `UPGRADE (${item.cost} 👻)` }}
                     </button>
                  </template>
             </div>
@@ -157,28 +155,40 @@ const refreshShop = () => {
 
         <!-- PERKS TAB -->
         <div v-show="activeTab === 'perks'" class="grid">
-            <div v-if="ascensionShopStock.length === 0" class="empty-msg">
-                No Perks Available via Soul Shop yet.
-                <button @click="initializeShop">Initialize Shop</button>
+            <div v-if="shopStock.length === 0" class="empty-msg">
+                No Perks Available.
+                <button @click="initializeShop" style="margin-top:10px; width:auto;">Initialize Shop</button>
             </div>
             
-            <div v-else v-for="pid in ascensionShopStock" :key="pid" class="card">
-                <template v-if="DB.PASSIVES[pid]">
+            <div v-else v-for="pid in shopStock" :key="pid" class="card">
+                <template v-if="DB.PASSIVES && DB.PASSIVES[pid]">
                     <h3>{{ DB.PASSIVES[pid].name }}</h3>
                     <p>{{ DB.PASSIVES[pid].desc }}</p>
                     
                     <button @click="buy('perk_' + pid)" 
-                            :disabled="souls < 50 || ascensionUpgrades['perk_' + pid] === 1"
-                             :style="ascensionUpgrades['perk_' + pid] ? 'background:#556; color:#889' : ''">
-                        {{ ascensionUpgrades['perk_' + pid] ? 'OWNED' : 'BUY (50 👻)' }}
+                            :disabled="souls < 50 || upgrades['perk_' + pid] === 1"
+                             :style="upgrades['perk_' + pid] ? 'background:#556; color:#889' : ''">
+                        {{ upgrades['perk_' + pid] ? 'OWNED' : 'BUY (50 👻)' }}
                     </button>
                 </template>
             </div>
              <!-- Refresh Button -->
-             <div style="width:100%; text-align:center; padding:10px;">
-                <button @click="refreshShop" style="width:auto; background:#f90;">
-                   🔄 Refresh Perks ({{ ascensionRefreshCount }})
+             <div style="width:100%; text-align:center; padding:10px; grid-column: 1 / -1;">
+                <button @click="refreshShop" style="width:auto; background:#f90; color:#000;">
+                   🔄 Refresh Perks ({{ refreshCount }})
                 </button>
+            </div>
+        </div>
+
+        <!-- v38.8: COSMETICS TAB (Placeholder) -->
+        <div v-show="activeTab === 'cosmetics'" class="cosmetics-placeholder">
+            <div class="coming-soon-icon">✨</div>
+            <h2>STYLE SHOP</h2>
+            <p>Coming Soon...</p>
+            <div class="preview-list">
+                <div class="preview-item">🎭 Titles</div>
+                <div class="preview-item">💀 Death Effects</div>
+                <div class="preview-item">🌈 Screen Filters</div>
             </div>
         </div>
     </div>
@@ -233,4 +243,30 @@ button:hover:not(:disabled) { box-shadow: 0 0 10px #a8dadc; }
 .empty-msg { width: 100%; text-align: center; color: #667; margin-top: 50px; font-size: 1.5rem; }
 
 .btn-close { width: auto; background: transparent; color: #fff; border: 1px solid #444; }
+
+/* v38.8: Cosmetics Placeholder */
+.cosmetics-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    color: #889;
+}
+.coming-soon-icon { font-size: 5rem; margin-bottom: 20px; animation: pulse 2s infinite; }
+.cosmetics-placeholder h2 { color: #a8dadc; margin: 0 0 10px 0; }
+.cosmetics-placeholder p { font-size: 1.2rem; margin-bottom: 30px; }
+.preview-list { display: flex; gap: 20px; }
+.preview-item { 
+    background: #223; 
+    padding: 15px 25px; 
+    border-radius: 8px; 
+    border: 1px dashed #445;
+    color: #667;
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+}
 </style>

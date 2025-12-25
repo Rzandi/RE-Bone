@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import { gameStore } from '../game/store.js';
 import { DB } from '../game/config/database.js';
+import { SocketManager } from '../game/managers/SocketManager.js';
+import { Player } from '../game/logic/Player.js';
 
 const s = gameStore.state;
 
@@ -14,8 +16,10 @@ const socketableItems = computed(() => {
   );
 });
 
-// Get player gems
-const playerGems = computed(() => s.gems || []);
+// Get player gems from inventory (s.gems is widely used for currency, but physical gems are in inventory)
+const playerGems = computed(() => {
+  return (s.inventory || []).filter(i => i.type === 'gem');
+});
 
 // Selected item for socketing
 const selectedItem = ref(null);
@@ -40,20 +44,18 @@ const insertGem = (gemType) => {
     return;
   }
   
-  if (window.SocketManager) {
-    const result = window.SocketManager.insertGem(
-      selectedItem.value, 
-      selectedSocket.value, 
-      gemType
-    );
-    
-    if (!result.success) {
-      gameStore.log(result.error, 'error');
-    } else {
-      // v37.0: Recalc after socketing to apply bonuses
-      if (window.Player && window.Player.recalc) {
-        Player.recalc();
-      }
+  const result = SocketManager.insertGem(
+    selectedItem.value, 
+    selectedSocket.value, 
+    gemType
+  );
+  
+  if (!result.success) {
+    gameStore.log(result.error, 'error');
+  } else {
+    // v37.0: Recalc after socketing to apply bonuses
+    if (Player && Player.recalc) {
+      Player.recalc();
     }
   }
 };
@@ -62,12 +64,10 @@ const insertGem = (gemType) => {
 const removeGem = (socketIndex) => {
   if (!selectedItem.value) return;
   
-  if (window.SocketManager) {
-    window.SocketManager.removeGem(selectedItem.value, socketIndex);
-    // v37.0: Recalc after removing to update bonuses
-    if (window.Player && window.Player.recalc) {
-      Player.recalc();
-    }
+  SocketManager.removeGem(selectedItem.value, socketIndex);
+  // v37.0: Recalc after removing to update bonuses
+  if (Player && Player.recalc) {
+    Player.recalc();
   }
 };
 
@@ -79,15 +79,19 @@ const getGemInfo = (gemType) => {
 // Get socket display
 const getSocketDisplay = (item) => {
   if (!item.sockets) return '';
-  if (window.SocketManager) {
-    return window.SocketManager.getSocketDisplay(item);
-  }
-  return '';
+  return SocketManager.getSocketDisplay(item);
 };
 
-// Close panel
+// Close panel - return to previous or inventory
 const close = () => {
-  s.activePanel = 'menu-view';
+    // v38.2: Context-aware return (Fixes Combat -> Socketing -> Back bug)
+    if (s.previousPanel) {
+        const prev = s.previousPanel;
+        s.previousPanel = null;
+        s.activePanel = prev;
+    } else {
+        s.activePanel = 'inventory';
+    }
 };
 </script>
 

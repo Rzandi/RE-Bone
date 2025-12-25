@@ -1,6 +1,9 @@
 // v37.0 Reforging System
 // Reroll item stats at the cost of gold or souls
 import { gameStore } from '../store.js';
+import { Player } from '../logic/Player.js';
+import { SaveManager } from './SaveManager.js';
+import { EconomyManager } from './EconomyManager.js';
 
 export const ReforgeManager = {
   
@@ -42,7 +45,10 @@ export const ReforgeManager = {
   // Check if player can afford reforge
   canAffordGold(rarity) {
     const s = gameStore.state;
-    const cost = this.goldCosts[rarity] || 0;
+    // v38.7: Scale Gold Cost with Floor Multiplier
+    const baseCost = this.goldCosts[rarity] || 0;
+    const mult = EconomyManager ? EconomyManager.getFloorMult() : 1;
+    const cost = Math.floor(baseCost * mult);
     
     if (s.gold < cost) {
       return { success: false, error: `Need ${cost} gold` };
@@ -54,7 +60,7 @@ export const ReforgeManager = {
   canAffordSoul(rarity) {
     const s = gameStore.state;
     const cost = this.soulCosts[rarity] || 0;
-    const souls = Number(s.souls) || 0;
+    const souls = s.meta.souls || 0;
     
     if (souls < cost) {
       return { success: false, error: `Need ${cost} souls` };
@@ -115,7 +121,7 @@ export const ReforgeManager = {
     gameStore.log(`🔨 Reforged ${item.name}: ${changes}`, 'buff');
     
     // Trigger recalc if equipped (potential issue #2)
-    if (window.Player && window.Player.recalc) {
+    if (Player && Player.recalc) {
       setTimeout(() => Player.recalc(), 50);
     }
     
@@ -133,7 +139,8 @@ export const ReforgeManager = {
     const s = gameStore.state;
     
     // Deduct cost
-    s.souls = (Number(s.souls) || 0) - affordCheck.cost;
+    s.meta.souls = (s.meta.souls || 0) - affordCheck.cost;
+    SaveManager.saveMeta();
     
     // Store original stats
     const originalStats = {
@@ -178,7 +185,7 @@ export const ReforgeManager = {
     gameStore.log(`✨ Soul Reforge ${item.name}: ${changes}${bonusMsg}`, 'buff');
     
     // Trigger recalc
-    if (window.Player && window.Player.recalc) {
+    if (Player && Player.recalc) {
       setTimeout(() => Player.recalc(), 50);
     }
     
@@ -235,8 +242,11 @@ export const ReforgeManager = {
   
   // Get costs for UI display
   getCosts(rarity) {
+    const baseGold = this.goldCosts[rarity] || 0;
+    const mult = EconomyManager ? EconomyManager.getFloorMult() : 1;
+    
     return {
-      gold: this.goldCosts[rarity] || 0,
+      gold: Math.floor(baseGold * mult),
       souls: this.soulCosts[rarity] || 0
     };
   },
@@ -280,8 +290,99 @@ export const ReforgeManager = {
     }
     
     return ranges;
+  },
+
+  // =========================================
+  // v38.7: UPGRADE SYSTEM (+1 to +10)
+  // =========================================
+  
+  getUpgradeCost(item) {
+      const currentPlus = item.plus || 0;
+      const nextPlus = currentPlus + 1;
+      
+      // Max Level +10
+      if (nextPlus > 10) return null;
+      
+      const isSoul = nextPlus > 5;
+      
+      if (isSoul) {
+          // Soul Cost: +6 .. +10
+          // Base 10, scales with level
+          return {
+              type: 'souls',
+              val: 10 * Math.pow( nextPlus - 4, 1.5 ) // 10 * 2^1.5 approx 28 souls
+          };
+      } else {
+          // Gold Cost: +1 .. +5
+          // Base 100 * rarity, scales
+          let baseMap = { common: 100, uncommon: 200, rare: 500, epic: 1000, legendary: 2500 };
+          let base = baseMap[item.rarity] || 100;
+          
+          // Floor Scaling
+          const floorMult = EconomyManager ? EconomyManager.getFloorMult() : 1;
+          
+          return {
+              type: 'gold',
+              val: Math.floor(base * nextPlus * floorMult)
+          };
+      }
+  },
+
+  upgradeItem(item) {
+      const costInfo = this.getUpgradeCost(item);
+      if (!costInfo) return { success: false, error: "Max level reached!" };
+      
+      const s = gameStore.state;
+      
+      // 1. Check Cost
+      let costVal = Math.floor(costInfo.val);
+      if (costInfo.type === 'gold') {
+          if (s.gold < costVal) return { success: false, error: `Need ${costVal} Gold` };
+          s.gold -= costVal;
+      } else {
+          if ((s.meta.souls || 0) < costVal) return { success: false, error: `Need ${costVal} Souls` };
+          s.meta.souls = (s.meta.souls || 0) - costVal;
+          SaveManager.saveMeta();
+      }
+      
+      // 2. Perform Upgrade
+      const currentPlus = item.plus || 0; // 0 if undefined
+      const nextPlus = currentPlus + 1;
+      
+      // Calculate Multiplier Ratio
+      // Old Mult: 1 + (0.1 * current)
+      // New Mult: 1 + (0.1 * next)
+      // Factor = New / Old
+      const oldMult = 1 + (currentPlus * 0.1);
+      const newMult = 1 + (nextPlus * 0.1);
+      const ratio = newMult / oldMult;
+      
+      // Update Stats
+      if(item.atk) item.atk = Math.max(1, Math.floor(item.atk * ratio));
+      if(item.def) item.def = Math.max(1, Math.floor(item.def * ratio));
+      if(item.hp) item.hp = Math.max(1, Math.floor(item.hp * ratio));
+      if(item.mp) item.mp = Math.max(1, Math.floor(item.mp * ratio));
+      
+      // Update Name & Plus
+      item.plus = nextPlus;
+      // Regex to remove old +X
+      item.name = item.name.replace(/ \+\d+$/, "") + ` +${nextPlus}`;
+      
+      // Update Value
+      item.price = Math.floor(item.price * 1.2); // Increase value
+      
+      gameStore.log(`Upgraded to +${nextPlus}!`, "buff");
+      if(SoundManager) SoundManager.play("upgrade_success"); // Assume sound exists or fallback
+      
+      // Recalc Player
+      if (Player && Player.recalc) {
+         setTimeout(() => Player.recalc(), 50);
+      }
+      
+      return { success: true, item };
   }
-};
 
 // Global access
-window.ReforgeManager = ReforgeManager;
+// Global access - REMOVED for v38.0 strict mode
+// window.ReforgeManager = ReforgeManager;
+};

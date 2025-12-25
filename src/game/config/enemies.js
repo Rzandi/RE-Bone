@@ -454,4 +454,109 @@ const BOSSES_DB = {
     },
 };
 
+// v38.8: GATEKEEPER BOSSES (Level Cap Guardians)
+// HP/ATK scale dynamically based on player stats in game.js
+export const GATEKEEPER_BOSSES = {
+    100: {
+        id: 'limit_breaker',
+        name: "LIMIT BREAKER",
+        baseHpMult: 4,      // HP = Player.maxHp * 4
+        atkRange: [0.8, 1.0], // ATK = Player.atk * (0.8-1.0)
+        defMult: 0.5,
+        exp: 1000,
+        lore: {
+            title: "THE FIRST SEAL",
+            text: "At the peak of mortal power, the first seal awakens. The Limit Breaker was forged from the shattered dreams of warriors who couldn't transcend. It guards the threshold between the mundane and the extraordinary.",
+            quote: "\"You wish to break your limits? Then BREAK ME.\""
+        },
+        sprite: { idle: "🚧", attack: "⚔️💥" },
+        skills: ["limit_slash", "power_lock"],
+        passives: ["barrier", "limit_break", "first_seal"],
+        drops: [{ id: "limit_break_shard", chance: 1.0 }],
+        isGatekeeper: true,
+        capUnlock: 20
+    },
+    200: {
+        id: 'soul_warden',
+        name: "SOUL WARDEN",
+        baseHpMult: 4,
+        atkRange: [0.8, 1.0],
+        defMult: 0.5,
+        exp: 2000,
+        lore: {
+            title: "THE COLLECTOR",
+            text: "The Warden has collected ten thousand souls. Each one whispers of power lost. It offers a deal: your soul, or your death. There is no third option.",
+            quote: "\"I have waited eons for a soul like yours...\""
+        },
+        sprite: { idle: "👁️", attack: "💀✨" },
+        skills: ["soul_drain", "spirit_prison", "mass_haunt"],
+        passives: ["ethereal", "soul_harvest", "debt_collector"],
+        drops: [{ id: "limit_break_shard", chance: 1.0 }],
+        isGatekeeper: true,
+        capUnlock: 20
+    },
+    300: {
+        id: 'chaos_sentinel',
+        name: "CHAOS SENTINEL",
+        baseHpMult: 4,
+        atkRange: [0.8, 1.0],
+        defMult: 0.5,
+        exp: 3500,
+        lore: {
+            title: "THE UNRAVELING",
+            text: "When order dies, chaos is born. The Sentinel stands at the crossroads of fate, its form shifting between nightmare and dream. To fight it is to fight yourself.",
+            quote: "\"Reality is merely a suggestion. Let me show you TRUE chaos.\""
+        },
+        sprite: { idle: "🌀", attack: "💥🌀" },
+        skills: ["chaos_beam", "reality_warp", "elemental_flux"],
+        passives: ["adaptive", "chaos_aura", "mirror_image"],
+        drops: [{ id: "limit_break_shard", chance: 1.0 }],
+        isGatekeeper: true,
+        capUnlock: 20
+    },
+    400: {
+        id: 'primordial_gate',
+        name: "PRIMORDIAL GATE",
+        baseHpMult: 4,
+        atkRange: [0.8, 1.0],
+        defMult: 0.5,
+        exp: 5000,
+        lore: {
+            title: "THE FINAL SEAL",
+            text: "Before time, before death, there was the Gate. It does not judge. It does not forgive. It simply... is. Those who pass become legend. Those who fail become fuel.",
+            quote: "\"Beyond me lies infinity. Are you ready to become eternal?\""
+        },
+        sprite: { idle: "🌌", attack: "☠️🌌" },
+        skills: ["oblivion", "void_crush", "gate_of_souls"],
+        passives: ["undying", "primordial_roar", "void_shield", "inevitable"],
+        drops: [{ id: "limit_break_shard", chance: 1.0 }],
+        isGatekeeper: true,
+        capUnlock: 20
+    },
+    500: {
+        id: 'the_void',
+        name: "THE VOID",
+        baseHpMult: 5,      // Slightly harder
+        atkRange: [0.9, 1.1], // Can exceed player ATK
+        defMult: 0.6,
+        exp: 10000,
+        lore: {
+            title: "THE ENDLESS GATE",
+            text: "You have broken all seals. You have transcended mortality. And yet... there is more. The Void awaits. It offers power beyond imagination, but at a cost. Everything you are. Everything you were.",
+            quote: "\"Step through, and become INFINITE.\""
+        },
+        sprite: { idle: "⬛", attack: "💀⬛💀" },
+        skills: ["annihilation", "time_stop", "void_embrace"],
+        passives: ["beyond_death", "entropy", "the_end"],
+        drops: [
+            { id: "limit_break_shard", chance: 1.0 },
+            { id: "limit_break_shard", chance: 1.0 },
+            { id: "void_essence", chance: 1.0 }
+        ],
+        isGatekeeper: true,
+        isEndlessGate: true,
+        capUnlock: 20
+    }
+};
+
 export { BIOME_ENEMIES, ENEMIES_DB, BOSSES_DB };

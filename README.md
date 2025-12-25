@@ -1,6 +1,6 @@
 # 🎮 Re:BONE - Vue Edition
 
-**Version**: v37.3.0 STATS & ANIMATION 📊⚔️  
+**Version**: v38.9.1 CURSED ALTARS & POLISH 💀✨  
 **Genre**: Pixel Art Dungeon Crawler  
 **Platform**: Web Browser (Desktop + Mobile PWA) 📱  
 **Status**: Production Ready ✅
@@ -114,4 +114,4 @@ Detailed patch notes and version history can be found in [CHANGELOGS.md](CHANGEL
 **Powered By**: Gemini AI ✨  
 **Engine**: Custom Vue 3 + Vite Engine
 
-_Last updated: v37.3.0 (Dec 2025)_
+_Last updated: v38.9.1 (Dec 2025)_

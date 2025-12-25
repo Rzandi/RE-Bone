@@ -5,6 +5,7 @@
    - Haptic integration
    ========================================= */
 import { gameStore } from "../store.js";
+import { MobileHandler } from "./mobile.js";
 
 export const SoundManager = {
   ctx: null,
@@ -18,12 +19,20 @@ export const SoundManager = {
   
   // Initialize Audio Context (Must be triggered by user interaction)
   init() {
-    if (!this.ctx) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AudioContext();
-    }
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
+    try {
+      if (!this.ctx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+      }
+      if (this.ctx.state === "suspended") {
+        this.ctx.resume().catch(e => {
+            // Expected if no user gesture yet
+        });
+      }
+    } catch (e) {
+      console.warn("SoundManager init failed:", e);
+      // Fallback: Disable sound for this session?
+      this.ctx = null;
     }
   },
   
@@ -37,7 +46,8 @@ export const SoundManager = {
   },
   
   playTone(freq, type, dur, vol = 0.1) {
-    if (this.isMuted || !this.ctx) return;
+    if (this.isMuted) return;
+    if (!this.ctx) return; // Safety check
     
     // Master Volume Scaling
     const masterVol = this.volume;
@@ -61,6 +71,7 @@ export const SoundManager = {
   playBGM() {
     if (this.isMuted) return;
     this.init(); // Ensure context is ready
+    if (!this.ctx) return;
     
     // Drone
     const drone = this.ctx.createOscillator();
@@ -117,6 +128,7 @@ export const SoundManager = {
     this.lastPlayTime[t] = now;
     
     this.init(); // Ensure context exists
+    if (!this.ctx) return;
     
     // SFX Library
     if (t === "ui") this.playTone(400, "square", 0.05, 0.05);
@@ -138,12 +150,12 @@ export const SoundManager = {
     }
 
     // Haptics Integration (v36.1)
-    if (window.MobileHandler) {
-        if (t === 'hit') window.MobileHandler.vibrate(50); // Short
-        if (t === 'click') window.MobileHandler.vibrate(10); // Tiny
-        if (t === 'victory') window.MobileHandler.vibrate([100, 50, 100]);
-        if (t === 'hazard') window.MobileHandler.vibrate(200);
-        if (t === 'relic') window.MobileHandler.vibrate([50, 50, 50]);
+    if (MobileHandler) {
+        if (t === 'hit') MobileHandler.vibrate(50); // Short
+        if (t === 'click') MobileHandler.vibrate(10); // Tiny
+        if (t === 'victory') MobileHandler.vibrate([100, 50, 100]);
+        if (t === 'hazard') MobileHandler.vibrate(200);
+        if (t === 'relic') MobileHandler.vibrate([50, 50, 50]);
     }
     
     // Complex Sounds
@@ -282,7 +294,7 @@ export const SoundManager = {
         [300, 400, 500].forEach((f, i) => {
             this.playToneAt(f, "sine", 0.1, 0.05, now + i * 0.03);
         });
-        if (window.MobileHandler) window.MobileHandler.vibrate(100);
+        if (MobileHandler) MobileHandler.vibrate(100);
     }
     
     if (t === "dodge") {
@@ -310,7 +322,7 @@ export const SoundManager = {
         let now = this.ctx.currentTime;
         this.playToneAt(200, "square", 0.05, 0.1, now);
         this.playToneAt(400, "triangle", 0.15, 0.08, now + 0.02);
-        if (window.MobileHandler) window.MobileHandler.vibrate(80);
+        if (MobileHandler) MobileHandler.vibrate(80);
     }
     
     if (t === "heal") {
@@ -349,7 +361,7 @@ export const SoundManager = {
         let now = this.ctx.currentTime;
         this.playToneAt(150, "sawtooth", 0.1, 0.1, now);
         this.playToneAt(120, "square", 0.15, 0.08, now + 0.05);
-        if (window.MobileHandler) window.MobileHandler.vibrate([50, 30, 50]);
+        if (MobileHandler) MobileHandler.vibrate([50, 30, 50]);
     }
 
     // Economy Sounds
@@ -391,7 +403,7 @@ export const SoundManager = {
         this.playToneAt(100, "sawtooth", 0.15, 0.12, now);
         this.playToneAt(80, "square", 0.2, 0.1, now + 0.05);
         this.playToneAt(300, "triangle", 0.1, 0.06, now + 0.08);
-        if (window.MobileHandler) window.MobileHandler.vibrate([100, 50, 100]);
+        if (MobileHandler) MobileHandler.vibrate([100, 50, 100]);
     }
 
     // Black Market Sounds
@@ -437,7 +449,7 @@ export const SoundManager = {
         fanfare.forEach((f, i) => {
             this.playToneAt(f, "triangle", 0.4, 0.07, now + i * 0.1);
         });
-        if (window.MobileHandler) window.MobileHandler.vibrate([50, 50, 50, 50, 150]);
+        if (MobileHandler) MobileHandler.vibrate([50, 50, 50, 50, 150]);
     }
 
     // Notification Sounds
@@ -448,7 +460,7 @@ export const SoundManager = {
             this.playToneAt(f, "sine", 0.25, 0.06, now + i * 0.12);
         });
         this.playToneAt(1318, "triangle", 0.5, 0.08, now + 0.5);
-        if (window.MobileHandler) window.MobileHandler.vibrate([100, 50, 100]);
+        if (MobileHandler) MobileHandler.vibrate([100, 50, 100]);
     }
     
     if (t === "warning") {
@@ -486,6 +498,7 @@ export const SoundManager = {
   playAmbience(realmId) {
       if (this.isMuted) return;
       this.init();
+      if (!this.ctx) return; // Safety check
       
       // Stop old BGM
       this.stopBGM();

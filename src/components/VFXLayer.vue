@@ -10,6 +10,12 @@ let lastProcessedLength = 0;
 watch(
   () => s.vfx.length,
   (newLen) => {
+    // Check for reset (new length smaller than processed)
+    if (newLen < lastProcessedLength) {
+      lastProcessedLength = 0;
+    }
+    
+    // Process new items
     if (newLen > lastProcessedLength) {
       const newItems = s.vfx.slice(lastProcessedLength);
       lastProcessedLength = newLen;
@@ -108,6 +114,10 @@ const getAttackIcon = (item) => {
     if (item.target === 'player') return '💥'; // Enemy attacking
   }
   
+  if (item.type === 'poison') return '🤢';
+  if (item.type === 'heat') return '🔥';
+  if (item.type === 'shock') return '⚡';
+  
   return ''; // No icon for particles
 };
 
@@ -117,6 +127,10 @@ const getParticleColor = (t) => {
         case 'ice': return '#aaf';
         case 'blood': return '#a00';
         case 'heal': return '#4f4';
+        case 'sludge': return '#2ecc71'; // Poison
+        case 'spore': return '#9b59b6'; // Purple
+        case 'mist': return '#bdc3c7'; // Gray
+        case 'gold': return '#f1c40f';
         default: return '#fff';
     }
 }

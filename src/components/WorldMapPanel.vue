@@ -1,25 +1,23 @@
 <script setup>
 import { computed } from 'vue';
+
 import { gameStore } from '../game/store';
+import { Game } from '../game/core/game.js';
 
 const unlockedRealms = computed(() => gameStore.state.world.unlockedRealms);
 
-const realms = [
-  { id: 'light_castle', name: 'Castle of Light', icon: '🏰', desc: 'Domain of the Paladin', color: '#ffcc00' },
-  { id: 'shadow_guild', name: 'Shadow Guild', icon: '🗡️', desc: 'Hideout of the Rogue', color: '#a020f0' },
-  { id: 'arcane_tower', name: 'Arcane Tower', icon: '🔮', desc: 'Spire of the Mage', color: '#00ffff' },
-  { id: 'nature_den', name: 'Nature\'s Den', icon: '🌳', desc: 'Forest of the Druid', color: '#00ff00' },
-  { id: 'iron_fort', name: 'Iron Fortress', icon: '🛡️', desc: 'Citadel of the Warrior', color: '#ff4400' }
-];
+import { REALMS } from '../game/config/realms.js';
+
+const realms = computed(() => Object.values(REALMS));
 
 const selectRealm = (realm) => {
     // For now, just log or set active
-    console.log("Selected Realm:", realm.name);
+    // console.log("Selected Realm:", realm.name);
     gameStore.log(`You enter the ${realm.name}...`, 'boss');
     
     // Call Game Core
-    if (window.Game) {
-        window.Game.enterRealm(realm.id);
+    if (Game) {
+        Game.enterRealm(realm.id);
     }
 };
 </script>

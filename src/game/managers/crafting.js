@@ -49,12 +49,12 @@ export const Crafting = {
         Player.addItem(recipe.output);
       }
       
-      if(window.gameStore) gameStore.log(`Crafted ${recipe.name}!`, "item");
-      if(window.SoundManager) SoundManager.play("loot");
+      if(gameStore) gameStore.log(`Crafted ${recipe.name}!`, "item");
+      if(SoundManager) SoundManager.play("loot");
       
       // UI update is reactive via Player.inventory mutation
     } else {
-        if(window.gameStore) gameStore.log("Not enough materials!", "error");
+        if(gameStore) gameStore.log("Not enough materials!", "error");
     }
   },
 
@@ -67,7 +67,7 @@ export const Crafting = {
     
     // Check locked status
     if (Player.isLocked(item)) {
-       if(window.gameStore) gameStore.log("Item is Locked! Cannot Salvage.", "error");
+       if(gameStore) gameStore.log("Item is Locked! Cannot Salvage.", "error");
        return;
     }
 
@@ -102,7 +102,7 @@ export const Crafting = {
       if (Math.random() < 0.10) { // 10% chance
         const frag = Math.random() < 0.5 ? CONSTANTS.MATERIALS.FRAG_DRAGON : CONSTANTS.MATERIALS.FRAG_VOID;
         Player.addItem(frag); 
-        if(window.gameStore) gameStore.log(`✨ LUCKY! Salvager found ${DB.ITEMS[frag].name}`, "rare");
+        if(gameStore) gameStore.log(`✨ LUCKY! Salvager found ${DB.ITEMS[frag].name}`, "rare");
       }
     }
     
@@ -117,9 +117,10 @@ export const Crafting = {
        for(let i=0; i<extraCount; i++) Player.addItem(extraMat);
     }
     
-    if(window.gameStore) gameStore.log(`Salvaged ${item.name} -> Materials`, "item");
-    if(window.SoundManager) SoundManager.play("ui");
+    if(gameStore) gameStore.log(`Salvaged ${item.name} -> Materials`, "item");
+    if(SoundManager) SoundManager.play("ui");
   }
 };
 
-window.Crafting = Crafting;
+// Export to global scope - REMOVED v38.0
+// window.Crafting = Crafting;

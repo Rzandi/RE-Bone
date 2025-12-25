@@ -41,7 +41,7 @@ const RECIPES = {
     output: "leather_armor",
     count: 1,
     desc: "Stitch leather armor"
-  }, // Added comma
+  },  
   // Legendary Crafting (v28.0)
   dragon_claw: {
     id: "dragon_claw",

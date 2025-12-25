@@ -4,6 +4,9 @@
  * v37.1: Enhanced with performance modes and expanded haptics
  */
 
+import { gameStore } from '../store.js';
+import { SoundManager } from './sound.js';
+
 export const MobileHandler = {
   touchStartTime: 0,
   touchStartX: 0,
@@ -58,13 +61,13 @@ export const MobileHandler = {
       if (document.hidden) {
         // Pause animations and audio when hidden
         document.body.classList.add('app-hidden');
-        if (window.SoundManager && window.SoundManager.bgm) {
-          window.SoundManager.bgm.suspend?.();
+        if (SoundManager && SoundManager.bgm) {
+          SoundManager.bgm.suspend?.();
         }
       } else {
         document.body.classList.remove('app-hidden');
-        if (window.SoundManager && window.SoundManager.bgm) {
-          window.SoundManager.bgm.resume?.();
+        if (SoundManager && SoundManager.bgm) {
+          SoundManager.bgm.resume?.();
         }
       }
     });
@@ -261,8 +264,8 @@ export const MobileHandler = {
       
       if ('vibrate' in navigator) {
           // Check Settings if available
-          if (window.gameStore && window.gameStore.state.settings) {
-             if (window.gameStore.state.settings.haptics === false) return;
+          if (gameStore && gameStore.state.settings) {
+             if (gameStore.state.settings.haptics === false) return;
           }
           
           // v37.1: Support preset names
@@ -284,13 +287,9 @@ export const MobileHandler = {
   }
 };
 
-// Auto-initialize on load
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => MobileHandler.init());
-} else {
-  MobileHandler.init();
-}
+// Auto-initialize REMOVED v38.0 - Called by Entry.js
+// if (document.readyState === 'loading') { ... }
 
-// Export to global scope
-window.MobileHandler = MobileHandler;
+// Export to global scope - REMOVED v38.0
+// window.MobileHandler = MobileHandler;
 

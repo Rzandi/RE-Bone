@@ -2,6 +2,8 @@
    VISUAL EFFECTS MANAGER
    ========================================= */
 
+import { gameStore } from '../store.js';
+
 export const VFX = {
   // Create skill-specific visual effects
   showSkillEffect(skillName, targetElement) {
@@ -50,9 +52,9 @@ export const VFX = {
     
     const count = type === 'fire' ? 12 : type === 'ice' ? 10 : type === 'blood' ? 8 : 6;
     
-    if(window.GameStore) {
+    if(gameStore) {
         for(let i=0; i<count; i++) {
-            window.GameStore.state.vfx.push({
+            gameStore.state.vfx.push({
                 id: Math.random(),
                 type: `particle-${type}`,
                 val: '', // No text, just particle
@@ -64,9 +66,9 @@ export const VFX = {
   
   // v35.3: Relic visual cue (Glimmer on player)
   showRelicTrigger(name) {
-       if(window.GameStore) {
+       if(gameStore) {
             // Text Popup
-            window.GameStore.state.vfx.push({
+            gameStore.state.vfx.push({
                 id: Math.random(),
                 type: 'buff',
                 val: name || 'Relic!',
@@ -74,7 +76,7 @@ export const VFX = {
             });
             // Sparkles
             for(let i=0; i<5; i++) {
-                window.GameStore.state.vfx.push({
+                gameStore.state.vfx.push({
                     id: Math.random(),
                     type: 'particle-heal', // Reuse heal green/gold sparkles
                     val: '',
@@ -86,69 +88,47 @@ export const VFX = {
   
   // Play skill-specific animation on target
   playSkillAnimation(type, targetElement) {
-    const sprite = document.getElementById('mob-sprite');
-    if(!sprite) return;
-    
-    if (type === 'fire') {
-      sprite.classList.add('vfx-burning');
-      setTimeout(() => sprite.classList.remove('vfx-burning'), 600);
-    } else if (type === 'ice') {
-      sprite.classList.add('vfx-frozen');
-      setTimeout(() => sprite.classList.remove('vfx-frozen'), 600);
-    } else if (type === 'blood') {
-      sprite.classList.add('vfx-bleeding');
-      setTimeout(() => sprite.classList.remove('vfx-bleeding'), 500);
-    } else if (type === 'stun') {
-      sprite.classList.add('vfx-stunned');
-      setTimeout(() => sprite.classList.remove('vfx-stunned'), 400);
-    } else if (type === 'heal') {
-      sprite.classList.add('vfx-healing');
-      setTimeout(() => sprite.classList.remove('vfx-healing'), 600);
+    // v38.0: Push animation event to store
+    if(gameStore) {
+        gameStore.state.vfx.push({
+            id: Math.random(),
+            type: 'animation',
+            val: type, // 'fire', 'ice', etc.
+            target: 'enemy'
+        });
     }
   },
   
   // Boss entrance animation
   playBossEntrance(callback) {
-    const sprite = document.getElementById('mob-sprite');
-    const panel = document.getElementById('panel-combat');
-    const app = document.getElementById('app');
-
-    if(!sprite || !panel || !app) {
-        if(callback) callback();
-        return;
-    }
-    
-    // Screen shake
-    app.classList.add('shake-heavy');
-    
-    // Boss entrance
-    sprite.classList.add('boss-entrance');
-    panel.classList.add('boss-entrance-bg');
-    
-    // Flash effect
-    setTimeout(() => {
-        if(document.getElementById('app')) document.getElementById('app').classList.add('flash');
-    }, 300);
-    
-    // Cleanup and callback
-    setTimeout(() => {
-      if(document.getElementById('app')) document.getElementById('app').classList.remove('shake-heavy', 'flash');
-      if(sprite) sprite.classList.remove('boss-entrance');
-      if(panel) panel.classList.remove('boss-entrance-bg');
-      if (callback) callback();
-    }, 1200);
+      // v38.0: Push boss entrance event
+      if(gameStore) {
+          gameStore.state.vfx.push({
+              id: Math.random(),
+              type: 'boss-entrance',
+              duration: 1200
+          });
+      }
+      
+      // Callback after duration
+      if(callback) {
+          setTimeout(callback, 1200);
+      }
   },
   
   // Enhanced screen shake
   screenShake(intensity = 'normal') {
-    const app = document.getElementById('app');
-    if(!app) return;
-    const className = intensity === 'heavy' ? 'shake-heavy' : 'shake';
-    
-    app.classList.add(className);
-    setTimeout(() => app.classList.remove(className), 400);
+      if(gameStore) {
+          gameStore.state.vfx.push({
+              id: Math.random(),
+              type: 'screen-shake',
+              val: intensity, // 'normal' or 'heavy'
+              duration: 400
+          });
+      }
   }
 };
 
 // Export to global scope
-window.VFX = VFX;
+// Export to global scope - REMOVED v38.0
+// window.VFX = VFX;

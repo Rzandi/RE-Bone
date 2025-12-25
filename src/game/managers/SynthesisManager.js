@@ -1,6 +1,13 @@
 // v37.0 Item Synthesis System
 // Combine 3 items of same tier → 1 item of higher tier
 import { gameStore } from '../store.js';
+import { LootManager } from './loot.js';
+import { SocketManager } from './SocketManager.js';
+import { Player } from '../logic/Player.js';
+import { Achievements } from './achievements.js';
+
+import { SoundManager } from './sound.js';
+import { SaveManager } from './SaveManager.js';
 
 export const SynthesisManager = {
   
@@ -39,7 +46,7 @@ export const SynthesisManager = {
     // Check materials (if implemented) - with type coercion
     const materials = this.materialCosts[rarity];
     if (materials) {
-      const souls = Number(s.souls) || 0;
+      const souls = s.meta.souls || 0;
       const essence = Number(s.essence) || 0;
       
       if (materials.souls && souls < materials.souls) {
@@ -128,7 +135,7 @@ export const SynthesisManager = {
     
     // Enhanced synthesis costs more (souls) - with type coercion
     if (useEnhanced) {
-      const souls = Number(s.souls) || 0;
+      const souls = s.meta.souls || 0;
       const essence = Number(s.essence) || 0;
       
       // Check souls
@@ -143,7 +150,10 @@ export const SynthesisManager = {
     // Deduct costs
     s.gold -= goldCost;
     if (useEnhanced) {
-      if (materials.souls) s.souls = (Number(s.souls) || 0) - materials.souls;
+      if (materials.souls) {
+          s.meta.souls = (s.meta.souls || 0) - materials.souls;
+          SaveManager.saveMeta();
+      }
       if (materials.essence) s.essence = (Number(s.essence) || 0) - materials.essence;
     }
     
@@ -162,7 +172,7 @@ export const SynthesisManager = {
       gameStore.log(`⚗️ Synthesis FAILED! ${Math.round(successRate * 100)}% chance${bonusMsg}`, 'system');
       gameStore.log(`💔 Next ${baseItem.rarity} synthesis: +${Math.round((pityBonus + 0.05) * 100)}% success rate!`, 'buff');
       
-      if (window.SoundManager) window.SoundManager.play('error');
+      if (SoundManager) SoundManager.play('error');
       return { success: false, error: 'Synthesis failed', destroyed: true };
     }
     
@@ -172,8 +182,8 @@ export const SynthesisManager = {
     // SUCCESS - Generate new item of higher tier
     const floor = gameStore.state.floor || 1;
     
-    if (window.LootManager) {
-      const newItem = window.LootManager.generateDrop(floor, nextRarity, baseItem.slot);
+    if (LootManager) {
+      const newItem = LootManager.generateDrop(floor, nextRarity, baseItem.slot);
       
       if (newItem) {
         // v37.0: Enhanced synthesis bonuses
@@ -185,9 +195,9 @@ export const SynthesisManager = {
           if (newItem.mp) newItem.mp = Math.floor(newItem.mp * 1.10);
           
           // Guaranteed socket (if applicable for rarity)
-          if (window.SocketManager && ['rare', 'epic', 'legendary'].includes(nextRarity)) {
+          if (SocketManager && ['rare', 'epic', 'legendary'].includes(nextRarity)) {
             if (!newItem.sockets) {
-              window.SocketManager.addSocketsToItem(newItem);
+              SocketManager.addSocketsToItem(newItem);
             }
           }
           
@@ -198,21 +208,21 @@ export const SynthesisManager = {
           gameStore.log(`⚗️ Synthesis SUCCESS! Created ${newItem.name}!`, 'loot');
         }
         
-        if (window.SoundManager) window.SoundManager.play('loot');
+        if (SoundManager) SoundManager.play('loot');
         
         // Add new item
-        if (window.Player) {
-          window.Player.addItem(newItem);
+        if (Player) {
+          Player.addItem(newItem);
         }
         
         // Track achievement
-        if (window.Achievements) {
-          window.Achievements.addProgress('synthesis_novice', 1);
-          window.Achievements.addProgress('synthesis_master', 1);
+        if (Achievements) {
+          Achievements.addProgress('synthesis_novice', 1);
+          Achievements.addProgress('synthesis_master', 1);
           
           // Check if legendary synthesis
           if (nextRarity === 'legendary') {
-            window.Achievements.unlock('legendary_synthesis');
+            Achievements.unlock('legendary_synthesis');
           }
         }
         
@@ -243,5 +253,6 @@ export const SynthesisManager = {
 };
 
 // Global access
-window.SynthesisManager = SynthesisManager;
+// Global access - REMOVED for v38.0 strict mode
+// window.SynthesisManager = SynthesisManager;
 

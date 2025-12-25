@@ -56,4 +56,5 @@ export const SpriteManager = {
 };
 
 // Export to global scope
-window.SpriteManager = SpriteManager;
+// Export to global scope - REMOVED v38.0
+// window.SpriteManager = SpriteManager;

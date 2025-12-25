@@ -11,6 +11,7 @@ export const gameState = reactive({
     mp: 1,
     maxMp: 1,
     level: 1,
+    isLoading: false, // v38.2: Global loading state
     exp: 0,
     nextExp: 100,
     className: "Novice",
@@ -20,6 +21,15 @@ export const gameState = reactive({
     logs: [],
     buttons: [], // Dynamic Buttons from UI.setButtons
     previousPanel: null, // Track previous panel for back navigation
+    toasts: [], // v38.8: Toast notification queue
+    runTime: 0, // v38.4: Play time in seconds
+    
+    // v38.5: Run State & Modifiers
+    isDailyChallenge: false,
+    dailySeed: 0,
+    activeModifiers: [],
+    modifierEffects: {}, 
+
     inventory: [],
     // Stats
     str: 0,
@@ -31,7 +41,6 @@ export const gameState = reactive({
     
     // Inventory State
     lockedItems: [],
-    merchantStock: [], 
     inspectMode: false,
     salvageMode: false,
     lore: { active: false, title: "", text: "" }, // NEW
@@ -60,6 +69,25 @@ export const gameState = reactive({
     mysteryBoxPity: {}, // Track pity for mystery boxes { boxType_boxSize: count }
     blackMarket: { purchases: 0, lastRep: 0 }, // Dealer reputation tracking
     cursedItemsOwned: [], // IDs of cursed items ever owned (for achievements)
+    triggeredCurseEvents: [], // v38.0: Track triggered curse events (for one-time unlocks)
+    curseModifiers: {}, // v38.0: Curse system modifiers { resistance, canTransfer, buffMult, debuffMult }
+    
+    // v38.4 Run Modifiers System
+    activeModifiers: [], // Currently active run modifiers ['no_healing', 'glass_cannon', etc.]
+    modifierEffects: {   // Computed effects from active modifiers
+        healingDisabled: false,
+        dmgMult: 1,
+        hpMult: 1,
+        defMult: 1,
+        goldMult: 1,
+        permadeath: false,
+        noResurrection: false,
+        noEquipment: false,
+        floorTimer: 0,
+        startCurses: 0
+    },
+    currentFloorTime: 0, // v38.4: Current time remaining for Speed Run modifier
+    
     
     // v37.0 Phase 4: Dynamic Economy
     economy: {
@@ -103,12 +131,21 @@ export const gameState = reactive({
         souls: 0,
         unlockedClasses: ['skeleton'],
         maxFloor: 1, // Track max floor for unlocks
+        hasCompletedFloor100: false, // v38.4: Unlock condition for run modifiers
     },
     
     // v35.3 History & Lore
     history: {
         events: [], // IDs of completed events
         lore: []    // Discovered lore fragments
+    },
+    
+    // v38.8: Gatekeeper Boss System
+    gatekeeper: {
+        defeated: {},        // { 100: true, 200: true, ... }
+        pendingCapUnlock: null, // Level cap to unlock after defeating gatekeeper
+        limitBreakShards: 0, // Count of collected shards
+        voidEssence: 0       // Count of void essence
     },
     
     // v34.0 World Map State
@@ -145,7 +182,7 @@ export const gameStore = {
             timestamp: Date.now()
         });
         
-        if(this.state.vfx.length > 20) this.state.vfx.shift();
+        if(this.state.vfx.length > 50) this.state.vfx.shift();
     },
 
     triggerShake(intensity = "medium") {
@@ -156,9 +193,46 @@ export const gameStore = {
         setTimeout(() => {
             if(this.state.shake === intensity) this.state.shake = null;
         }, 500); // 500ms shake
+    },
+
+    // v38.8: Toast Notification System
+    showToast(message, icon = "📢", duration = 3000) {
+        // v38.8: Safety Cap (Max 5 toasts)
+        if (this.state.toasts.length >= 5) this.state.toasts.shift();
+        
+        this.state.toasts.push({
+            id: Date.now() + Math.random(),
+            message,
+            icon,
+            duration
+        });
+        // Auto-cleanup handled by component
+    },
+
+    dismissToast(id) {
+        const idx = this.state.toasts.findIndex(t => t.id === id);
+        if (idx !== -1) this.state.toasts.splice(idx, 1);
+    },
+
+    // v38.8: Haptic Feedback (Mobile)
+    haptic(pattern = "light") {
+        if (!navigator.vibrate) return; // Not supported
+        
+        const patterns = {
+            light: [10],          // Quick tap
+            medium: [30],         // Normal tap
+            heavy: [50],          // Strong tap
+            success: [20, 50, 20], // Double pulse
+            error: [100, 30, 100], // Warning pattern
+            levelup: [20, 30, 20, 30, 80] // Celebration
+        };
+        
+        try {
+            navigator.vibrate(patterns[pattern] || patterns.light);
+        } catch (e) { /* Ignore errors */ }
     }
 };
 
-// Global access for legacy code
-window.GameStore = gameStore; 
-window.gameStore = gameStore; // Alias for compatibility 
+// Global access REMOVED v38.0 - use imports
+// window.GameStore = gameStore; 
+// window.gameStore = gameStore;
