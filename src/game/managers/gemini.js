@@ -3,11 +3,10 @@
    ========================================= */
    
 import { gameStore } from '../store.js';
-import { SECRETS } from '../config/secrets.js';
-// import { UI } from '../core/ui_bridge.js'; // REMOVED v38.0
+
 
 export const Gemini = {
-  apiKey: SECRETS ? SECRETS.GEMINI_API_KEY : "",
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY || "",
   isLoading: false,
   
   async call(prompt) {
@@ -59,7 +58,6 @@ export const Gemini = {
         // gameStore.state.vfx.push({ type: 'text', val: r, target: 'mob' });
     }
   },
-  // No extra character here
 };
 
-// window.Gemini = Gemini; // REMOVED v38.0
+

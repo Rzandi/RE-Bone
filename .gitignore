@@ -25,3 +25,8 @@ dist-ssr
 
 # Security
 src/game/config/secrets.js
+
+# Environment
+.env
+.env.local
+.env.*.local
